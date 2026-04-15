@@ -1,13 +1,271 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>libber</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Libber — My Points</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f9f9f7;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.2);
+      --text: #1a1a18;
+      --text-muted: #888780;
+      --text-hint: #b4b2a9;
+      --success-bg: #eaf3de;
+      --success-border: #639922;
+      --success-text: #3b6d11;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --font: 'DM Mono', 'Courier New', monospace;
+      --font-ui: system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1rem 1rem 3rem;
+    }
+
+    @media (min-width: 640px) {
+      .page {
+        max-width: 540px;
+        padding: 1.5rem 1rem 3rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .page {
+        max-width: 600px;
+        padding: 2rem 1rem 3rem;
+      }
+    }
+
+    .header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .user-id {
+      font-size: 12px;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    #user-id {
+      font-family: var(--font);
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    .refresh-btn {
+      padding: 6px 10px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      transition: color 0.2s, transform 0.2s;
+      margin-left: auto;
+    }
+
+    .refresh-btn:hover {
+      color: var(--text);
+      border-color: var(--border-strong);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+
+    .refresh-btn.loading {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .points-summary {
+      background: var(--success-bg);
+      border: 0.5px solid var(--success-border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .total-points {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .total-points .label {
+      font-size: 12px;
+      color: var(--success-text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    .total-points .amount {
+      font-size: 42px;
+      font-weight: 500;
+      color: var(--success-text);
+      font-family: var(--font);
+    }
+
+    .section-title {
+      font-size: 12px;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .store-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 2rem;
+    }
+
+    .store-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: border-color 0.1s, background 0.1s;
+    }
+
+    .store-card:hover {
+      background: #f4f4f1;
+      border-color: var(--border-strong);
+    }
+
+    .store-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .store-points {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--success-text);
+      font-family: var(--font);
+    }
+
+    .empty {
+      font-size: 14px;
+      color: var(--text-hint);
+      text-align: center;
+      padding: 2rem 0;
+    }
+
+    #stores-section {
+      margin-top: 2rem;
+    }
+
+    .available-stores {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .store-join-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: border-color 0.1s, background 0.1s;
+    }
+
+    .store-join-card:hover {
+      background: #f4f4f1;
+      border-color: var(--border-strong);
+    }
+
+    .store-join-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .join-btn {
+      font-size: 13px;
+      padding: 6px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s;
+    }
+
+    .join-btn:hover {
+      background: #f4f4f1;
+      border-color: var(--border-strong);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- HEADER -->
+    <div class="header">
+      <div style="display: flex; align-items: center; gap: 1rem; width: 100%;">
+        <div>
+          <span class="user-id">Your ID</span>
+          <span id="user-id">Loading...</span>
+        </div>
+        <button id="refresh-btn" class="refresh-btn" title="Refresh points">↻</button>
+      </div>
+    </div>
+
+    <!-- YOUR POINTS -->
+    <div id="user-stores">
+      <p class="empty">Loading your points...</p>
+    </div>
+
+    <!-- AVAILABLE STORES -->
+    <div id="stores-section">
+      <h2 class="section-title">Join a store</h2>
+      <div id="stores-list">Loading...</div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
 </html>

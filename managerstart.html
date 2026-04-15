@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Libber Manager Start</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #eef4ef;
+      --surface: #fcfffc;
+      --border: rgba(22, 40, 28, 0.14);
+      --border-strong: rgba(22, 40, 28, 0.34);
+      --text: #152018;
+      --muted: #627168;
+      --accent: #1f6a52;
+      --accent-soft: #deefe8;
+      --danger: #a33d2f;
+      --mono: 'DM Mono', monospace;
+      --ui: system-ui, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: var(--ui);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(31, 106, 82, 0.09), transparent 26%),
+        linear-gradient(180deg, #f5faf6 0%, var(--bg) 100%);
+      padding: 24px;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+    }
+
+    .panel {
+      background: rgba(252, 255, 252, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 20px;
+    }
+
+    .hero h1 {
+      font-size: clamp(30px, 5vw, 48px);
+      line-height: 0.95;
+      margin-bottom: 10px;
+    }
+
+    .hero p, .panel p, .status {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+    }
+
+    .picker {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+      max-height: 420px;
+      overflow: auto;
+    }
+
+    .pick-card, .applicant-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: white;
+      padding: 14px 16px;
+    }
+
+    .pick-card {
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .pick-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .applicant-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .pick-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .pick-sub {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
+    .approve-btn {
+      border: none;
+      border-radius: 999px;
+      background: var(--text);
+      color: white;
+      padding: 12px 16px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 16px 4px;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 0.95fr 1.15fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="panel hero">
+      <h1>Approve staff applicants.</h1>
+      <p>Choose one of your stores, review the people who applied from the staff start page, then promote them to staff.</p>
+      <p>Manager ID: <strong id="myId">Loading...</strong></p>
+    </section>
+
+    <section class="grid">
+      <section class="panel">
+        <h2>Your stores</h2>
+        <p>Select the store you manage.</p>
+        <div class="picker" id="storeList">
+          <p class="empty">Loading managed stores...</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Applicants</h2>
+        <p>Selected store: <strong id="selectedStore">None selected</strong></p>
+        <p class="status" id="status"></p>
+        <div class="picker" id="applicantList">
+          <p class="empty">Pick a store to see applicants</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="/src/pages/manager/start.js"></script>
+</body>
+</html>

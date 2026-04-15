@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Libber — Staff</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f9f9f7;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.2);
+      --text: #1a1a18;
+      --text-muted: #888780;
+      --text-hint: #b4b2a9;
+      --success-bg: #eaf3de;
+      --success-border: #639922;
+      --success-text: #3b6d11;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --font: 'DM Mono', 'Courier New', monospace;
+      --font-ui: system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1rem 1rem 6rem;
+    }
+
+    @media (min-width: 640px) {
+      .page {
+        max-width: 540px;
+        padding: 1.5rem 1rem 6rem;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .page {
+        max-width: 600px;
+        padding: 2rem 1rem 6rem;
+      }
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .store-name {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .staff-badge {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 4px 10px;
+    }
+
+    .search {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-family: var(--font-ui);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      margin-bottom: 10px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search:focus { border-color: var(--border-strong); }
+    .search::placeholder { color: var(--text-hint); }
+
+    .member-count {
+      font-size: 12px;
+      color: var(--text-hint);
+      margin-bottom: 10px;
+      padding-left: 2px;
+    }
+
+    .customer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .customer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: border-color 0.1s, background 0.1s;
+      user-select: none;
+    }
+
+    .customer-row:hover { background: #f4f4f1; border-color: var(--border-strong); }
+    .customer-row:active { transform: scale(0.99); }
+
+    .cust-id {
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font);
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    .cust-pts {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .cust-pts strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .empty {
+      font-size: 14px;
+      color: var(--text-hint);
+      text-align: center;
+      padding: 2rem 0;
+    }
+
+    /* overlay + panel */
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .overlay.open { display: flex; }
+
+    .panel {
+      background: var(--surface);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      padding: 0 1.25rem 2.5rem;
+      width: 100%;
+      max-width: 480px;
+      border: 0.5px solid var(--border);
+      border-bottom: none;
+    }
+
+    .panel-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--border-strong);
+      border-radius: 2px;
+      margin: 14px auto 1.25rem;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .panel-id {
+      font-size: 18px;
+      font-weight: 500;
+      font-family: var(--font);
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    .panel-balance {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .panel-balance strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .close-btn {
+      font-size: 22px;
+      line-height: 1;
+      color: var(--text-hint);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      transition: color 0.1s;
+    }
+
+    .close-btn:hover { color: var(--text); }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-hint);
+      margin-bottom: 8px;
+    }
+
+    .quick-btns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 1.25rem;
+    }
+
+    .quick-btn {
+      padding: 12px 6px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.1s, border-color 0.1s, transform 0.1s;
+    }
+
+    .quick-btn:hover { background: #f4f4f1; border-color: var(--border-strong); }
+    .quick-btn:active { transform: scale(0.97); }
+
+    .quick-btn .btn-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .quick-btn .btn-pts {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .quick-btn.done {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+    }
+
+    .quick-btn.done .btn-label { color: var(--success-text); }
+    .quick-btn.done .btn-pts { color: var(--success-text); }
+
+    .divider {
+      border: none;
+      border-top: 0.5px solid var(--border);
+      margin-bottom: 1.25rem;
+    }
+
+    .bonus-btns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .bonus-btn {
+      padding: 11px 8px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      font-family: var(--font-ui);
+      transition: background 0.1s, border-color 0.1s;
+    }
+
+    .bonus-btn:hover { background: #f4f4f1; border-color: var(--border-strong); }
+
+    .bonus-btn.selected {
+      border-color: var(--border-strong);
+      background: #f4f4f1;
+    }
+
+    .reason-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: var(--font-ui);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      margin-bottom: 10px;
+      resize: none;
+      height: 62px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .reason-input:focus { border-color: var(--border-strong); }
+    .reason-input::placeholder { color: var(--text-hint); }
+
+    .award-btn {
+      width: 100%;
+      padding: 13px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
+    }
+
+    .award-btn:not(:disabled):hover { background: #f4f4f1; border-color: var(--border-strong); }
+    .award-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .award-btn.success {
+      color: var(--success-text);
+      border-color: var(--success-border);
+      background: var(--success-bg);
+    }
+
+    #status {
+      font-size: 13px;
+      color: var(--text-hint);
+      text-align: center;
+      padding: 0.75rem 0 0;
+      min-height: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <span class="store-name" id="storeName">—</span>
+      <span class="staff-badge" id="staffBadge">Staff</span>
+    </div>
+
+    <input class="search" type="text" id="search" placeholder="Filter by ID..." autocomplete="off" spellcheck="false" />
+    <div class="member-count" id="memberCount"></div>
+    <div class="customer-list" id="customerList"></div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="panel" id="panel">
+      <div class="panel-handle"></div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-id" id="panelId"></div>
+          <div class="panel-balance">Balance: <strong id="panelBalance"></strong> pts</div>
+        </div>
+        <button class="close-btn" id="closeBtn">×</button>
+      </div>
+
+      <div class="section-label">Quick award</div>
+      <div class="quick-btns" id="quickBtns">
+        <button class="quick-btn" data-pts="10" data-label="1 coffee"><span class="btn-label">1 coffee</span><span class="btn-pts">+10 pts</span></button>
+        <button class="quick-btn" data-pts="20" data-label="2 coffees"><span class="btn-label">2 coffees</span><span class="btn-pts">+20 pts</span></button>
+        <button class="quick-btn" data-pts="30" data-label="3 coffees"><span class="btn-label">3 coffees</span><span class="btn-pts">+30 pts</span></button>
+      </div>
+
+      <hr class="divider" />
+
+      <div class="section-label">Bonus</div>
+      <div class="bonus-btns" id="bonusBtns">
+        <button class="bonus-btn" data-pts="10">+10</button>
+        <button class="bonus-btn" data-pts="20">+20</button>
+        <button class="bonus-btn" data-pts="50">+50</button>
+      </div>
+      <textarea class="reason-input" id="reasonInput" placeholder="Reason for bonus..."></textarea>
+      <button class="award-btn" id="awardBtn" disabled>Award bonus</button>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script type="module" src="src/staffMain.js"></script>
+</body>
+</html>

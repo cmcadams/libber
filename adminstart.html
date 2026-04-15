@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Libber Admin Start</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f6f3ea;
+      --surface: #fffdf7;
+      --surface-strong: #fff;
+      --border: rgba(55, 47, 34, 0.16);
+      --border-strong: rgba(55, 47, 34, 0.38);
+      --text: #211d16;
+      --muted: #766d60;
+      --accent: #1f6a52;
+      --accent-soft: #deefe8;
+      --danger: #a33d2f;
+      --radius: 16px;
+      --mono: 'DM Mono', 'Courier New', monospace;
+      --ui: system-ui, sans-serif;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at top left, rgba(31, 106, 82, 0.08), transparent 26%),
+        linear-gradient(180deg, #f9f6ee 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: var(--ui);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      margin-bottom: 24px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: rgba(255, 253, 247, 0.9);
+      backdrop-filter: blur(8px);
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      line-height: 0.95;
+      margin-bottom: 10px;
+    }
+
+    .sub {
+      color: var(--muted);
+      max-width: 720px;
+      font-size: 15px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 18px;
+    }
+
+    .panel h2 {
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .panel p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .picker {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 420px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .pick-card {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--border);
+      background: var(--surface-strong);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s, background 0.15s;
+    }
+
+    .pick-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-1px);
+    }
+
+    .pick-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .pick-title {
+      display: block;
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .pick-sub {
+      display: block;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .action {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .summary {
+      width: 100%;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr;
+      margin-bottom: 4px;
+    }
+
+    .summary-card {
+      border: 1px dashed var(--border-strong);
+      border-radius: 18px;
+      padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .summary-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .assign-btn {
+      border: none;
+      border-radius: 999px;
+      background: var(--text);
+      color: white;
+      padding: 14px 22px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .assign-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .status {
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 18px 4px;
+    }
+
+    @media (min-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .action {
+        grid-column: 1 / -1;
+      }
+
+      .summary {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">Admin Start</div>
+      <h1>Assign managers to stores.</h1>
+      <p class="sub">Pick any user from the full directory, choose a store, and make that user the manager for it.</p>
+    </section>
+
+    <section class="grid">
+      <section class="panel">
+        <h2>Users</h2>
+        <p>All users from `profiles`, shown through `admin_user_directory`.</p>
+        <div class="picker" id="userList">
+          <p class="empty">Loading users...</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Stores</h2>
+        <p>Select the store this user should manage.</p>
+        <div class="picker" id="storeList">
+          <p class="empty">Loading stores...</p>
+        </div>
+      </section>
+
+      <section class="panel action">
+        <div class="summary">
+          <div class="summary-card">
+            <span class="summary-label">Selected User</span>
+            <div class="summary-value" id="selectedUser">None selected</div>
+          </div>
+          <div class="summary-card">
+            <span class="summary-label">Selected Store</span>
+            <div class="summary-value" id="selectedStore">None selected</div>
+          </div>
+        </div>
+
+        <button class="assign-btn" id="assignBtn" disabled>Assign manager</button>
+        <div class="status" id="status"></div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="/src/pages/admin/start.js"></script>
+</body>
+</html>
