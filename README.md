@@ -27,9 +27,6 @@ There is also a temporary `admin` surface used to assign managers to stores duri
 - `adminstart.html`
   Temporary admin setup surface. Lets you assign a user as manager for a store.
 
-- `adminpage.html`
-  Older prototype page kept in the repo for now.
-
 ## Project Structure
 
 ```text
@@ -54,7 +51,6 @@ src/
   state/
     state.js
   ui/
-    renderAdmin.js
     renderCustomers.js
     renderStaff.js
     renderStores.js
@@ -242,7 +238,6 @@ This state is simple and mutable on purpose for the prototype.
 - Role/security rules are still prototype-oriented in places
 - Some Supabase RPCs are intentionally permissive for local testing
 - Multi-page production build config is not set up yet
-- `adminpage.html` is an older prototype and does not match the current manager-first flow
 - Some older files remain in the repo while the product direction is still settling
 
 ## Recommended Next Steps

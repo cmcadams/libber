@@ -1,5 +1,6 @@
 import { initAuth } from './services/auth.js'
 import { loadMembers } from './services/members.js'
+import { loadRewardRules } from './services/admin.js'
 import { state } from './state/state.js'
 import { loadSelectedStore } from './lib/storage.js'
 import { renderCustomers, initCustomerHandlers } from './ui/renderCustomers.js'
@@ -20,8 +21,12 @@ async function boot() {
   document.getElementById('storeName').textContent = state.selectedStoreName || 'Store'
   document.getElementById('staffBadge').textContent = `Staff: ${user.id.slice(0, 6).toUpperCase()}`
 
-  // load members for this store
-  await loadMembers(state.selectedStoreId)
+  // load members and reward rules for this store
+  const [, { data: rules }] = await Promise.all([
+    loadMembers(state.selectedStoreId),
+    loadRewardRules(state.selectedStoreId)
+  ])
+  state.rewardRules = rules || []
 
   // render list + wire all handlers
   renderCustomers()

@@ -1,8 +1,9 @@
 import { initAuth } from '../../services/auth.js'
-import { assignManager, loadAdminUsers, loadAllStores } from '../../services/admin.js'
+import { assignManager, loadAdminUsers, loadAllStores, createStore, loadRewardRules, insertRewardRule, deleteRewardRule, updateRewardRuleOrder } from '../../services/admin.js'
 
 let selectedUserId = null
 let selectedStoreId = null
+let currentRules = []
 
 const $ = id => document.getElementById(id)
 
@@ -77,11 +78,54 @@ function bindEvents() {
     document.querySelectorAll('[data-store-id]').forEach(node => {
       node.classList.toggle('selected', node === button)
     })
-    $('selectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedStoreId
+    const storeName = button.querySelector('.pick-title')?.textContent || selectedStoreId
+    $('selectedStore').textContent = storeName
     updateAssignButton()
+    loadAndRenderRules(selectedStoreId, storeName)
   })
 
+  $('createStoreBtn')?.addEventListener('click', handleCreateStore)
   $('assignBtn')?.addEventListener('click', handleAssign)
+
+  $('addRuleBtn')?.addEventListener('click', handleAddRule)
+
+  $('rulesList')?.addEventListener('click', async event => {
+    if (!selectedStoreId) return
+
+    const deleteBtn = event.target.closest('[data-delete-rule-id]')
+    if (deleteBtn) {
+      deleteBtn.disabled = true
+      const { error } = await deleteRewardRule(deleteBtn.dataset.deleteRuleId)
+      if (error) { deleteBtn.disabled = false; return }
+      loadAndRenderRules(selectedStoreId, $('rulesStoreName').textContent)
+      return
+    }
+
+    const moveBtn = event.target.closest('[data-move-rule-id]')
+    if (moveBtn) {
+      await handleMoveRule(moveBtn.dataset.moveRuleId, moveBtn.dataset.direction)
+    }
+  })
+}
+
+async function handleCreateStore() {
+  const name = $('newStoreName').value.trim()
+  if (!name) return
+
+  $('createStoreBtn').disabled = true
+  $('createStoreStatus').textContent = ''
+
+  const { data, error } = await createStore(name)
+  $('createStoreBtn').disabled = false
+
+  if (error) {
+    $('createStoreStatus').textContent = error.message || 'Could not create store.'
+    return
+  }
+
+  $('newStoreName').value = ''
+  $('createStoreStatus').textContent = `Store "${data.name}" created.`
+  await renderStores()
 }
 
 async function handleAssign() {
@@ -114,6 +158,92 @@ function updateAssignButton() {
   if (!button) return
 
   button.disabled = !(selectedUserId && selectedStoreId)
+}
+
+function renderRulesList() {
+  if (!currentRules.length) {
+    $('rulesList').innerHTML = '<p class="empty">No rules yet. Add one below.</p>'
+    return
+  }
+
+  $('rulesList').innerHTML = currentRules.map((r, i) => `
+    <div class="rule-row">
+      <div class="rule-order-btns">
+        <button class="rule-order-btn" data-move-rule-id="${r.id}" data-direction="up" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="rule-order-btn" data-move-rule-id="${r.id}" data-direction="down" ${i === currentRules.length - 1 ? 'disabled' : ''}>↓</button>
+      </div>
+      <span class="rule-badge">${r.kind}</span>
+      <span class="rule-label-text">${r.label || '—'}</span>
+      <span class="rule-pts-text">+${r.points} pts</span>
+      <button class="rule-delete-btn" data-delete-rule-id="${r.id}">Remove</button>
+    </div>
+  `).join('')
+}
+
+async function loadAndRenderRules(storeId, storeName) {
+  $('rulesPanel').style.display = 'block'
+  $('rulesStoreName').textContent = storeName
+  $('rulesList').innerHTML = '<p class="empty">Loading rules...</p>'
+
+  const { data, error } = await loadRewardRules(storeId)
+  if (error) {
+    $('rulesList').innerHTML = '<p class="empty">Could not load rules.</p>'
+    return
+  }
+
+  currentRules = data || []
+  renderRulesList()
+}
+
+async function handleMoveRule(ruleId, direction) {
+  const idx = currentRules.findIndex(r => r.id === ruleId)
+  if (idx === -1) return
+
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+  if (swapIdx < 0 || swapIdx >= currentRules.length) return
+
+  // swap in array
+  ;[currentRules[idx], currentRules[swapIdx]] = [currentRules[swapIdx], currentRules[idx]]
+
+  // normalize sort_orders to 1, 2, 3...
+  currentRules.forEach((r, i) => { r.sort_order = i + 1 })
+
+  // re-render immediately so UI feels instant
+  renderRulesList()
+
+  // persist the two affected rules sequentially to avoid conflicts
+  await updateRewardRuleOrder(currentRules[idx].id, currentRules[idx].sort_order)
+  await updateRewardRuleOrder(currentRules[swapIdx].id, currentRules[swapIdx].sort_order)
+}
+
+async function handleAddRule() {
+  const label = $('ruleLabel').value.trim()
+  const points = parseInt($('rulePoints').value)
+  const kind = $('ruleKind').value
+
+  if (!points || points < 1) {
+    $('addRuleStatus').textContent = 'Enter a valid point value.'
+    return
+  }
+  if (kind === 'award' && !label) {
+    $('addRuleStatus').textContent = 'Award rules need a label.'
+    return
+  }
+
+  $('addRuleBtn').disabled = true
+  $('addRuleStatus').textContent = ''
+
+  const { error } = await insertRewardRule(selectedStoreId, { label, points, kind }, currentRules.length + 1)
+  $('addRuleBtn').disabled = false
+
+  if (error) {
+    $('addRuleStatus').textContent = error.message || 'Could not add rule.'
+    return
+  }
+
+  $('ruleLabel').value = ''
+  $('rulePoints').value = ''
+  loadAndRenderRules(selectedStoreId, $('rulesStoreName').textContent)
 }
 
 function setStatus(message, isError = false) {

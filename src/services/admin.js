@@ -29,3 +29,42 @@ export async function assignManager(userId, storeId) {
     p_store_id: storeId
   })
 }
+
+export async function createStore(name) {
+  return supabase
+    .from('stores')
+    .insert({ name: name.trim() })
+    .select('id, name')
+    .single()
+}
+
+export async function loadRewardRules(storeId) {
+  return supabase
+    .from('store_reward_rules')
+    .select('id, label, points, kind, sort_order')
+    .eq('store_id', storeId)
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+}
+
+export async function insertRewardRule(storeId, { label, points, kind }, sortOrder) {
+  return supabase
+    .from('store_reward_rules')
+    .insert({ store_id: storeId, label, points, kind, sort_order: sortOrder, is_active: true, is_pinned: false })
+    .select('id, label, points, kind, sort_order')
+    .single()
+}
+
+export async function deleteRewardRule(id) {
+  return supabase
+    .from('store_reward_rules')
+    .delete()
+    .eq('id', id)
+}
+
+export async function updateRewardRuleOrder(id, sortOrder) {
+  return supabase
+    .from('store_reward_rules')
+    .update({ sort_order: sortOrder })
+    .eq('id', id)
+}

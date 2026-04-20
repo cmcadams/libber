@@ -206,6 +206,135 @@
       padding: 18px 4px;
     }
 
+    .create-store-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .create-store-input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 15px;
+      font-family: var(--ui);
+      background: var(--surface-strong);
+      color: var(--text);
+      outline: none;
+    }
+
+    .create-store-input:focus { border-color: var(--border-strong); }
+
+    .rules-panel {
+      margin-top: 16px;
+    }
+
+    .rule-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rule-row:last-child { border-bottom: none; }
+
+    .rule-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 6px;
+      padding: 2px 8px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .rule-label-text { flex: 1; font-size: 14px; }
+
+    .rule-pts-text {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .rule-order-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .rule-order-btn {
+      border: 1px solid var(--border-strong);
+      background: var(--surface-strong);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1.4;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .rule-order-btn:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    .rule-order-btn:disabled { opacity: 0.2; cursor: default; }
+
+    .rule-delete-btn {
+      border: none;
+      background: none;
+      color: var(--danger);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .rule-delete-btn:hover { background: rgba(163, 61, 47, 0.08); }
+
+    .add-rule-form {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rule-inputs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .rule-input {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: var(--ui);
+      background: var(--surface-strong);
+      color: var(--text);
+      outline: none;
+    }
+
+    .rule-input:focus { border-color: var(--border-strong); }
+    .rule-input-label { flex: 1; min-width: 140px; }
+    .rule-input-pts { width: 80px; }
+
+    .rule-input-kind {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: var(--ui);
+      background: var(--surface-strong);
+      color: var(--text);
+      cursor: pointer;
+    }
+
     @media (min-width: 860px) {
       .grid {
         grid-template-columns: 1fr 1fr;
@@ -227,6 +356,16 @@
       <div class="eyebrow">Admin Start</div>
       <h1>Assign managers to stores.</h1>
       <p class="sub">Pick any user from the full directory, choose a store, and make that user the manager for it.</p>
+    </section>
+
+    <section class="panel" style="margin-bottom: 16px;">
+      <h2>Create store</h2>
+      <p>Add a new store to the directory.</p>
+      <div class="create-store-form">
+        <input type="text" id="newStoreName" class="create-store-input" placeholder="Store name..." />
+        <button class="assign-btn" id="createStoreBtn">Create store</button>
+      </div>
+      <div class="status" id="createStoreStatus"></div>
     </section>
 
     <section class="grid">
@@ -261,6 +400,23 @@
         <button class="assign-btn" id="assignBtn" disabled>Assign manager</button>
         <div class="status" id="status"></div>
       </section>
+    </section>
+    <section class="panel rules-panel" id="rulesPanel" style="display:none">
+      <h2>Reward rules — <span id="rulesStoreName"></span></h2>
+      <p>Quick-award and bonus buttons shown to staff for this store.</p>
+      <div id="rulesList"></div>
+      <div class="add-rule-form">
+        <div class="rule-inputs">
+          <input type="text" id="ruleLabel" placeholder="Label (e.g. 1 coffee)" class="rule-input rule-input-label" />
+          <input type="number" id="rulePoints" placeholder="Pts" class="rule-input rule-input-pts" min="1" />
+          <select id="ruleKind" class="rule-input-kind">
+            <option value="award">Award</option>
+            <option value="redeem">Redeem</option>
+          </select>
+          <button class="assign-btn" id="addRuleBtn">Add rule</button>
+        </div>
+        <div class="status" id="addRuleStatus"></div>
+      </div>
     </section>
   </main>
 

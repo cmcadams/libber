@@ -5,5 +5,6 @@ export const state = {
   staffStores: [],
   selectedStoreId: null,
   selectedStoreName: null,
-  members: []
+  members: [],
+  rewardRules: []
 }

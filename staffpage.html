@@ -376,23 +376,19 @@
         <button class="close-btn" id="closeBtn">×</button>
       </div>
 
-      <div class="section-label">Quick award</div>
-      <div class="quick-btns" id="quickBtns">
-        <button class="quick-btn" data-pts="10" data-label="1 coffee"><span class="btn-label">1 coffee</span><span class="btn-pts">+10 pts</span></button>
-        <button class="quick-btn" data-pts="20" data-label="2 coffees"><span class="btn-label">2 coffees</span><span class="btn-pts">+20 pts</span></button>
-        <button class="quick-btn" data-pts="30" data-label="3 coffees"><span class="btn-label">3 coffees</span><span class="btn-pts">+30 pts</span></button>
+      <div id="quickSection">
+        <div class="section-label">Quick award</div>
+        <div class="quick-btns" id="quickBtns"></div>
       </div>
 
-      <hr class="divider" />
+      <hr class="divider" id="sectionDivider" />
 
-      <div class="section-label">Bonus</div>
-      <div class="bonus-btns" id="bonusBtns">
-        <button class="bonus-btn" data-pts="10">+10</button>
-        <button class="bonus-btn" data-pts="20">+20</button>
-        <button class="bonus-btn" data-pts="50">+50</button>
+      <div id="bonusSection">
+        <div class="section-label">Bonus</div>
+        <div class="bonus-btns" id="bonusBtns"></div>
+        <textarea class="reason-input" id="reasonInput" placeholder="Reason for bonus..."></textarea>
+        <button class="award-btn" id="awardBtn" disabled>Award bonus</button>
       </div>
-      <textarea class="reason-input" id="reasonInput" placeholder="Reason for bonus..."></textarea>
-      <button class="award-btn" id="awardBtn" disabled>Award bonus</button>
       <div id="status"></div>
     </div>
   </div>

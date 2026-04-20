@@ -79,6 +79,31 @@ export function initCustomerHandlers() {
   $('awardBtn')?.addEventListener('click', handleBonusAward)
 }
 
+function renderRuleButtons() {
+  const rules = state.rewardRules || []
+  const quickRules = rules.filter(r => r.kind === 'award')
+  const bonusRules = rules.filter(r => r.kind === 'redeem')
+
+  const quickSection = $('quickSection')
+  const bonusSection = $('bonusSection')
+  const divider = $('sectionDivider')
+
+  if (quickSection) quickSection.style.display = quickRules.length ? '' : 'none'
+  if (bonusSection) bonusSection.style.display = bonusRules.length ? '' : 'none'
+  if (divider) divider.style.display = (quickRules.length && bonusRules.length) ? '' : 'none'
+
+  $('quickBtns').innerHTML = quickRules.map(r => `
+    <button class="quick-btn" data-pts="${r.points}" data-label="${r.label}">
+      <span class="btn-label">${r.label}</span>
+      <span class="btn-pts">+${r.points} pts</span>
+    </button>
+  `).join('')
+
+  $('bonusBtns').innerHTML = bonusRules.map(r => `
+    <button class="bonus-btn" data-pts="${r.points}">+${r.points}</button>
+  `).join('')
+}
+
 function openPanel(member) {
   selectedMember = member
   bonusPts = null
@@ -90,12 +115,8 @@ function openPanel(member) {
   $('awardBtn').disabled = true
   $('awardBtn').textContent = 'Award bonus'
   $('awardBtn').className = 'award-btn'
-  document.querySelectorAll('.bonus-btn').forEach(b => b.classList.remove('selected'))
-  document.querySelectorAll('.quick-btn').forEach(b => {
-    b.classList.remove('done')
-    b.querySelector('.btn-label').textContent = b.dataset.label
-    b.querySelector('.btn-pts').textContent = `+${b.dataset.pts} pts`
-  })
+
+  renderRuleButtons()
 
   $('overlay').classList.add('open')
 }
