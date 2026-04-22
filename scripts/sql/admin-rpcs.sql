@@ -29,6 +29,16 @@ AS $$
   SELECT EXISTS (SELECT 1 FROM public.admins WHERE user_id = auth.uid())
 $$;
 
+-- ── Ensure RLS is enabled on all affected tables ─────────────────────────────
+
+ALTER TABLE public.stores                 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_reward_rules     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_managers         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_staff            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_memberships      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_staff_applicants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.points_ledger          ENABLE ROW LEVEL SECURITY;
+
 -- ── RLS: block direct writes to stores ───────────────────────────────────────
 
 DROP POLICY IF EXISTS "stores: no direct insert" ON public.stores;
