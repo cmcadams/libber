@@ -13,6 +13,7 @@ ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 
 -- Only service role can read or modify the admins table directly.
 -- Use the SQL editor to INSERT your own user_id after running this script.
+DROP POLICY IF EXISTS "admins: service role only" ON admins;
 CREATE POLICY "admins: service role only" ON admins
   USING (auth.role() = 'service_role');
 
@@ -66,8 +67,10 @@ CREATE POLICY "staff: no direct delete" ON store_staff FOR DELETE USING (false);
 -- ── RLS: block direct writes to store_memberships ────────────────────────────
 
 DROP POLICY IF EXISTS "memberships: no direct insert" ON store_memberships;
+DROP POLICY IF EXISTS "memberships: no direct delete" ON store_memberships;
 
 CREATE POLICY "memberships: no direct insert" ON store_memberships FOR INSERT WITH CHECK (false);
+CREATE POLICY "memberships: no direct delete" ON store_memberships FOR DELETE USING (false);
 
 -- ── RLS: block direct writes to store_staff_applicants ───────────────────────
 
