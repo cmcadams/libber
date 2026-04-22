@@ -138,6 +138,7 @@ END $$;
 
 -- ── demote_store_staff ────────────────────────────────────────────────────────
 
+DROP FUNCTION IF EXISTS public.demote_store_staff(uuid, uuid);
 CREATE OR REPLACE FUNCTION public.demote_store_staff(p_user_id uuid, p_store_id uuid)
 RETURNS json
 LANGUAGE plpgsql

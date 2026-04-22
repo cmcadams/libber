@@ -24,7 +24,7 @@ let selectedManageStoreName = null
 
 async function init() {
   try {
-    await initAuth()
+    const session = await initAuth()
     const [{ data: u, error: ue }, { data: s, error: se }] = await Promise.all([
       loadAdminUsers(),
       loadAllStores()
@@ -34,6 +34,9 @@ async function init() {
 
     users = u || []
     stores = s || []
+
+    const me = users.find(u => u.user_id === session?.id)
+    if (me?.public_id) $('adminId').textContent = `Your ID: ${me.public_id}`
 
     renderPicker('managerStoreList', stores, 'store')
     renderPicker('staffStoreList', stores, 'store')
