@@ -63,10 +63,18 @@ DROP POLICY IF EXISTS "staff: no direct delete" ON store_staff;
 CREATE POLICY "staff: no direct insert" ON store_staff FOR INSERT WITH CHECK (false);
 CREATE POLICY "staff: no direct delete" ON store_staff FOR DELETE USING (false);
 
--- ── RLS: block direct deletes from store_staff_applicants ────────────────────
+-- ── RLS: block direct writes to store_memberships ────────────────────────────
 
+DROP POLICY IF EXISTS "memberships: no direct insert" ON store_memberships;
+
+CREATE POLICY "memberships: no direct insert" ON store_memberships FOR INSERT WITH CHECK (false);
+
+-- ── RLS: block direct writes to store_staff_applicants ───────────────────────
+
+DROP POLICY IF EXISTS "applicants: no direct insert" ON store_staff_applicants;
 DROP POLICY IF EXISTS "applicants: no direct delete" ON store_staff_applicants;
 
+CREATE POLICY "applicants: no direct insert" ON store_staff_applicants FOR INSERT WITH CHECK (false);
 CREATE POLICY "applicants: no direct delete" ON store_staff_applicants FOR DELETE USING (false);
 
 -- ── Store RPCs ────────────────────────────────────────────────────────────────
@@ -209,6 +217,19 @@ AS $$
 BEGIN
   IF NOT is_admin() THEN RAISE EXCEPTION 'Not authorized'; END IF;
   DELETE FROM store_staff_applicants WHERE user_id = p_user_id AND store_id = p_store_id;
+END $$;
+
+-- ── admin_assign_manager (replace existing service-role-only version) ─────────
+
+CREATE OR REPLACE FUNCTION admin_assign_manager(p_user_id uuid, p_store_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF NOT is_admin() THEN RAISE EXCEPTION 'Not authorized'; END IF;
+  INSERT INTO store_managers (user_id, store_id) VALUES (p_user_id, p_store_id)
+  ON CONFLICT DO NOTHING;
 END $$;
 
 -- ── After running this script ─────────────────────────────────────────────────
