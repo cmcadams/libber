@@ -45,9 +45,9 @@ DROP POLICY IF EXISTS "stores: no direct insert" ON public.stores;
 DROP POLICY IF EXISTS "stores: no direct update" ON public.stores;
 DROP POLICY IF EXISTS "stores: no direct delete" ON public.stores;
 
-CREATE POLICY "stores: no direct insert" ON public.stores FOR INSERT WITH CHECK (false);
-CREATE POLICY "stores: no direct update" ON public.stores FOR UPDATE USING (false);
-CREATE POLICY "stores: no direct delete" ON public.stores FOR DELETE USING (false);
+CREATE POLICY "stores: no direct insert" ON public.stores AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "stores: no direct update" ON public.stores AS RESTRICTIVE FOR UPDATE USING (false);
+CREATE POLICY "stores: no direct delete" ON public.stores AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── RLS: block direct writes to store_reward_rules ───────────────────────────
 
@@ -55,49 +55,49 @@ DROP POLICY IF EXISTS "rules: no direct insert" ON public.store_reward_rules;
 DROP POLICY IF EXISTS "rules: no direct update" ON public.store_reward_rules;
 DROP POLICY IF EXISTS "rules: no direct delete" ON public.store_reward_rules;
 
-CREATE POLICY "rules: no direct insert" ON public.store_reward_rules FOR INSERT WITH CHECK (false);
-CREATE POLICY "rules: no direct update" ON public.store_reward_rules FOR UPDATE USING (false);
-CREATE POLICY "rules: no direct delete" ON public.store_reward_rules FOR DELETE USING (false);
+CREATE POLICY "rules: no direct insert" ON public.store_reward_rules AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "rules: no direct update" ON public.store_reward_rules AS RESTRICTIVE FOR UPDATE USING (false);
+CREATE POLICY "rules: no direct delete" ON public.store_reward_rules AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── RLS: block direct writes to store_managers ───────────────────────────────
 
 DROP POLICY IF EXISTS "managers: no direct insert" ON public.store_managers;
 DROP POLICY IF EXISTS "managers: no direct delete" ON public.store_managers;
 
-CREATE POLICY "managers: no direct insert" ON public.store_managers FOR INSERT WITH CHECK (false);
-CREATE POLICY "managers: no direct delete" ON public.store_managers FOR DELETE USING (false);
+CREATE POLICY "managers: no direct insert" ON public.store_managers AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "managers: no direct delete" ON public.store_managers AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── RLS: block direct writes to store_staff ──────────────────────────────────
 
 DROP POLICY IF EXISTS "staff: no direct insert" ON public.store_staff;
 DROP POLICY IF EXISTS "staff: no direct delete" ON public.store_staff;
 
-CREATE POLICY "staff: no direct insert" ON public.store_staff FOR INSERT WITH CHECK (false);
-CREATE POLICY "staff: no direct delete" ON public.store_staff FOR DELETE USING (false);
+CREATE POLICY "staff: no direct insert" ON public.store_staff AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "staff: no direct delete" ON public.store_staff AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── RLS: block direct writes to store_memberships ────────────────────────────
 
 DROP POLICY IF EXISTS "memberships: no direct insert" ON public.store_memberships;
 DROP POLICY IF EXISTS "memberships: no direct delete" ON public.store_memberships;
 
-CREATE POLICY "memberships: no direct insert" ON public.store_memberships FOR INSERT WITH CHECK (false);
-CREATE POLICY "memberships: no direct delete" ON public.store_memberships FOR DELETE USING (false);
+CREATE POLICY "memberships: no direct insert" ON public.store_memberships AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "memberships: no direct delete" ON public.store_memberships AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── RLS: block direct writes to store_staff_applicants ───────────────────────
 
 DROP POLICY IF EXISTS "applicants: no direct insert" ON public.store_staff_applicants;
 DROP POLICY IF EXISTS "applicants: no direct delete" ON public.store_staff_applicants;
 
-CREATE POLICY "applicants: no direct insert" ON public.store_staff_applicants FOR INSERT WITH CHECK (false);
-CREATE POLICY "applicants: no direct delete" ON public.store_staff_applicants FOR DELETE USING (false);
+CREATE POLICY "applicants: no direct insert" ON public.store_staff_applicants AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "applicants: no direct delete" ON public.store_staff_applicants AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── RLS: make points_ledger immutable ────────────────────────────────────────
 
 DROP POLICY IF EXISTS "ledger: no direct delete" ON public.points_ledger;
 DROP POLICY IF EXISTS "ledger: no direct update" ON public.points_ledger;
 
-CREATE POLICY "ledger: no direct delete" ON public.points_ledger FOR DELETE USING (false);
-CREATE POLICY "ledger: no direct update" ON public.points_ledger FOR UPDATE USING (false);
+CREATE POLICY "ledger: no direct delete" ON public.points_ledger AS RESTRICTIVE FOR DELETE USING (false);
+CREATE POLICY "ledger: no direct update" ON public.points_ledger AS RESTRICTIVE FOR UPDATE USING (false);
 
 -- ── Store RPCs ────────────────────────────────────────────────────────────────
 
