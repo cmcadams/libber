@@ -264,6 +264,73 @@ BEGIN
   ON CONFLICT DO NOTHING;
 END $$;
 
+-- ── Existing RPCs: ensure SECURITY DEFINER so they bypass RLS blocks ─────────
+-- These redefine the existing functions with SECURITY DEFINER + search_path.
+-- Auth checks are preserved — only the execution context changes.
+
+CREATE OR REPLACE FUNCTION public.join_store(p_store_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  INSERT INTO public.store_memberships (user_id, store_id)
+  VALUES (auth.uid(), p_store_id)
+  ON CONFLICT DO NOTHING;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.apply_for_staff(p_store_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  INSERT INTO public.store_staff_applicants (user_id, store_id)
+  VALUES (auth.uid(), p_store_id)
+  ON CONFLICT DO NOTHING;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.approve_staff_applicant(p_user_id uuid, p_store_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.store_managers
+    WHERE user_id = auth.uid() AND store_id = p_store_id
+  ) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+  INSERT INTO public.store_staff (user_id, store_id)
+  VALUES (p_user_id, p_store_id)
+  ON CONFLICT DO NOTHING;
+  DELETE FROM public.store_staff_applicants
+  WHERE user_id = p_user_id AND store_id = p_store_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.demote_store_staff(p_user_id uuid, p_store_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.store_managers
+    WHERE user_id = auth.uid() AND store_id = p_store_id
+  ) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+  DELETE FROM public.store_staff
+  WHERE user_id = p_user_id AND store_id = p_store_id;
+END $$;
+
 -- ── After running this script ─────────────────────────────────────────────────
 -- Insert your user_id into the admins table via the SQL editor:
 --   INSERT INTO public.admins (user_id) VALUES ('your-auth-uid-here');
