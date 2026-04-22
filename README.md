@@ -248,7 +248,18 @@ Staff page buttons are driven by `store_reward_rules` in Supabase — not hardco
 | `award_points` | Must be staff of the store | Inserts points ledger entry |
 | `apply_for_staff` | `auth.uid()` required | Creates applicant record for caller |
 | `approve_staff_applicant` | Must be manager of the store | Promotes applicant to staff, removes from applicants |
-| `admin_assign_manager` | Service role only | Assigns a user as manager of a store |
+| `admin_assign_manager` | Must be admin (`admins` table) | Assigns a user as manager of a store |
+| `admin_create_store` | Must be admin | Creates a store |
+| `admin_update_store` | Must be admin | Renames a store |
+| `admin_remove_store` | Must be admin | Deletes a store and all related data |
+| `admin_insert_reward_rule` | Must be admin | Adds a reward rule to a store |
+| `admin_delete_reward_rule` | Must be admin | Deletes a reward rule |
+| `admin_update_reward_rule_order` | Must be admin | Updates sort order of a reward rule |
+| `admin_assign_staff` | Must be admin | Directly assigns a user as staff |
+| `admin_remove_staff` | Must be admin | Removes a user from store staff |
+| `admin_remove_manager` | Must be admin | Removes a manager from a store |
+| `admin_approve_applicant` | Must be admin | Approves a staff applicant |
+| `admin_reject_applicant` | Must be admin | Rejects a staff applicant |
 | `promote_store_staff` | Must be manager of the store | Promotes a store member to staff |
 | `demote_store_staff` | Must be manager of the store | Removes a user from store staff |
 | `admin_user_directory` | View | Lists all users (used by admin tool) |
@@ -271,10 +282,16 @@ Staff page buttons are driven by `store_reward_rules` in Supabase — not hardco
 - `profiles` SELECT restricted to own row
 - Dead `renderStaff.js` (contained direct `points_ledger` insert) removed
 - XSS — all user-controlled values escaped via shared `src/lib/escape.js` utility
+- `stores` and `store_reward_rules` direct writes blocked — all admin writes go through RPCs (`admin_create_store`, `admin_update_store`, `admin_remove_store`, `admin_insert_reward_rule`, etc.)
+- `store_staff` and `store_managers` direct writes blocked — all go through RPCs
+- Admin identity enforced via `admins` table — `is_admin()` check inside every admin RPC
+
+### Setup required (run once)
+- Run `scripts/sql/admin-rpcs.sql` in the Supabase SQL Editor
+- Then insert your user_id into the `admins` table: `INSERT INTO admins (user_id) VALUES ('your-auth-uid');`
+- Find your user_id in Supabase Dashboard → Authentication → Users
 
 ### Still to do
-- **`store_reward_rules`** INSERT/DELETE — open to any authenticated user. Needs admin RPC wrappers when admin tool is hardened
-- **`stores`** INSERT — open. Needs service role restriction when admin tool is hardened
 - **Admin tool** — never deploy `adminstart.html`. Run locally only via `npm run dev`
 
 ---
