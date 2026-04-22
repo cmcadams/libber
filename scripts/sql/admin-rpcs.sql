@@ -39,6 +39,10 @@ $$;
 
 ALTER TABLE public.stores ENABLE ROW LEVEL SECURITY;
 
+-- stores has no SELECT policy — add one before enabling RLS or reads break.
+DROP POLICY IF EXISTS "stores: allow select" ON public.stores;
+CREATE POLICY "stores: allow select" ON public.stores FOR SELECT USING (true);
+
 DROP POLICY IF EXISTS "stores: no direct insert" ON public.stores;
 DROP POLICY IF EXISTS "stores: no direct update" ON public.stores;
 DROP POLICY IF EXISTS "stores: no direct delete" ON public.stores;
