@@ -286,10 +286,34 @@ Staff page buttons are driven by `store_reward_rules` in Supabase — not hardco
 - `store_staff` and `store_managers` direct writes blocked — all go through RPCs
 - Admin identity enforced via `admins` table — `is_admin()` check inside every admin RPC
 
+### Security pattern
+All write operations go through `SECURITY DEFINER` RPCs. RLS RESTRICTIVE policies block direct client writes. Auth check lives inside the RPC. This is consistent across all tables — the same pattern as `award_points` and `approve_staff_applicant`.
+
+Before adding RLS to any table, always check:
+```sql
+-- Check existing policies
+SELECT tablename, policyname, cmd
+FROM pg_policies
+WHERE tablename = 'your_table';
+
+-- Check if RLS is already enabled
+SELECT relname, relrowsecurity
+FROM pg_class
+WHERE relname = 'your_table';
+```
+If RLS is off and there is no SELECT policy, add one (`USING (true)`) before enabling RLS or reads will break.
+
 ### Setup required (run once)
-- Run `scripts/sql/admin-rpcs.sql` in the Supabase SQL Editor
-- Then insert your user_id into the `admins` table: `INSERT INTO admins (user_id) VALUES ('your-auth-uid');`
-- Find your user_id in Supabase Dashboard → Authentication → Users
+Run both scripts in order in the Supabase SQL Editor:
+
+1. `scripts/sql/admin-rpcs.sql` — secures `stores` and `store_reward_rules`, creates `admins` table and all admin RPCs
+2. `scripts/sql/staff-rpcs.sql` — secures `store_memberships`, `store_staff`, `store_staff_applicants`, `points_ledger`, rewrites staff/manager RPCs as `SECURITY DEFINER`
+
+Then insert your user_id into the `admins` table:
+```sql
+INSERT INTO public.admins (user_id) VALUES ('your-auth-uid-here');
+```
+Find your user_id in Supabase Dashboard → Authentication → Users.
 
 ### Still to do
 - **Admin tool** — never deploy `adminstart.html`. Run locally only via `npm run dev`
