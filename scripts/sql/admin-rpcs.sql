@@ -154,6 +154,7 @@ END $$;
 
 -- ── Admin RPCs for managers and staff ────────────────────────────────────────
 
+DROP FUNCTION IF EXISTS public.admin_assign_manager(uuid, uuid);
 CREATE OR REPLACE FUNCTION public.admin_assign_manager(p_user_id uuid, p_store_id uuid)
 RETURNS void
 LANGUAGE plpgsql
