@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Libber Admin Start</title>
+  <title>Libber Admin</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 
@@ -20,6 +20,7 @@
       --accent: #1f6a52;
       --accent-soft: #deefe8;
       --danger: #a33d2f;
+      --danger-soft: rgba(163, 61, 47, 0.08);
       --radius: 16px;
       --mono: 'DM Mono', 'Courier New', monospace;
       --ui: system-ui, sans-serif;
@@ -40,14 +41,8 @@
       margin: 0 auto;
     }
 
-    .hero {
-      margin-bottom: 24px;
-      padding: 24px;
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      background: rgba(255, 253, 247, 0.9);
-      backdrop-filter: blur(8px);
-    }
+    /* Header */
+    .header { margin-bottom: 28px; }
 
     .eyebrow {
       font-family: var(--mono);
@@ -55,52 +50,121 @@
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     h1 {
       font-size: clamp(32px, 5vw, 52px);
       line-height: 0.95;
-      margin-bottom: 10px;
     }
 
-    .sub {
-      color: var(--muted);
-      max-width: 720px;
-      font-size: 15px;
-    }
-
-    .grid {
+    /* Action buttons */
+    .actions {
       display: grid;
-      gap: 16px;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
     }
 
+    @media (min-width: 640px) {
+      .actions { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    @media (min-width: 900px) {
+      .actions { grid-template-columns: repeat(8, 1fr); }
+    }
+
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s, transform 0.15s;
+    }
+
+    .action-btn:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+
+    .action-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .action-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .action-btn.active .action-num { color: var(--accent); }
+
+    .action-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    /* Panels */
     .panel {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 24px;
-      padding: 18px;
+      padding: 24px;
     }
 
+    .panel.hidden { display: none; }
+    .hidden { display: none; }
+
     .panel h2 {
-      font-size: 18px;
+      font-size: 20px;
       margin-bottom: 6px;
     }
 
-    .panel p {
+    .panel > p {
       color: var(--muted);
       font-size: 14px;
-      margin-bottom: 14px;
+      margin-bottom: 20px;
+    }
+
+    /* Pickers */
+    .picker-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (min-width: 640px) {
+      .picker-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .picker-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 8px;
     }
 
     .picker {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      max-height: 420px;
-      overflow: auto;
+      gap: 8px;
+      max-height: 320px;
+      overflow-y: auto;
       padding-right: 2px;
+    }
+
+    .picker-inline {
+      max-height: 200px;
+      margin-bottom: 20px;
     }
 
     .pick-card {
@@ -109,132 +173,224 @@
       border: 1px solid var(--border);
       background: var(--surface-strong);
       border-radius: var(--radius);
-      padding: 14px 16px;
+      padding: 12px 14px;
       cursor: pointer;
-      transition: border-color 0.15s, transform 0.15s, background 0.15s;
+      transition: border-color 0.15s, background 0.15s;
     }
 
-    .pick-card:hover {
-      border-color: var(--border-strong);
-      transform: translateY(-1px);
-    }
-
-    .pick-card.selected {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-    }
+    .pick-card:hover { border-color: var(--border-strong); }
+    .pick-card.selected { border-color: var(--accent); background: var(--accent-soft); }
 
     .pick-title {
       display: block;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .pick-sub {
       display: block;
       color: var(--muted);
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: 11px;
       word-break: break-all;
     }
 
-    .action {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      align-items: flex-start;
-    }
-
-    .summary {
-      width: 100%;
-      display: grid;
-      gap: 10px;
-      grid-template-columns: 1fr;
-      margin-bottom: 4px;
-    }
-
-    .summary-card {
-      border: 1px dashed var(--border-strong);
-      border-radius: 18px;
-      padding: 14px 16px;
-      background: rgba(255, 255, 255, 0.55);
-    }
-
-    .summary-label {
-      display: block;
-      color: var(--muted);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-
-    .summary-value {
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .assign-btn {
-      border: none;
-      border-radius: 999px;
-      background: var(--text);
-      color: white;
-      padding: 14px 22px;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .assign-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
-
-    .status {
-      min-height: 24px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .status.error {
-      color: var(--danger);
-    }
-
-    .empty {
-      color: var(--muted);
-      font-size: 14px;
-      padding: 18px 4px;
-    }
-
-    .create-store-form {
+    /* Forms */
+    .form-row {
       display: flex;
       gap: 10px;
       align-items: center;
-      margin-top: 14px;
+      margin-bottom: 10px;
     }
 
-    .create-store-input {
-      flex: 1;
+    .input {
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 10px 14px;
-      font-size: 15px;
+      font-size: 14px;
       font-family: var(--ui);
       background: var(--surface-strong);
       color: var(--text);
       outline: none;
     }
 
-    .create-store-input:focus { border-color: var(--border-strong); }
+    .input:focus { border-color: var(--border-strong); }
+    .input-grow { flex: 1; }
+    .input-pts { width: 80px; }
 
-    .rules-panel {
-      margin-top: 16px;
+    /* Summary + assign row */
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .summary-text {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .summary-text strong { color: var(--text); }
+
+    /* Primary button */
+    .btn-primary {
+      border: none;
+      border-radius: 999px;
+      background: var(--text);
+      color: white;
+      padding: 12px 22px;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary:not(:disabled):hover { background: #3a3529; }
+
+    /* Small action buttons */
+    .btn-sm {
+      border: 1px solid var(--border-strong);
+      background: var(--surface-strong);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .btn-sm:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    .btn-sm:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-danger-sm {
+      border: 1px solid transparent;
+      background: none;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--danger);
+      white-space: nowrap;
+    }
+
+    .btn-danger-sm:hover { background: var(--danger-soft); }
+    .btn-danger-sm:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* Directory rows (all stores / manage store / applicants) */
+    .dir-list {
+      display: flex;
+      flex-direction: column;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
+    .dir-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dir-row:last-child { border-bottom: none; }
+
+    .dir-info { flex: 1; min-width: 0; }
+
+    .dir-name {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .dir-sub {
+      display: block;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      word-break: break-all;
+    }
+
+    .dir-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* Inline edit row */
+    .inline-edit-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .inline-edit-row:last-child { border-bottom: none; }
+
+    /* Manage store sections */
+    .manage-section { margin-bottom: 24px; }
+
+    .manage-section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 500;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+
+    /* Role badge */
+    .role-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 6px;
+      padding: 2px 8px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    /* Candidate group title */
+    .candidate-group-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      font-weight: 500;
+      padding: 6px 0 4px;
+    }
+
+    /* Applicant groups */
+    .applicant-group { margin-bottom: 20px; }
+
+    .applicant-group-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    /* Rules */
+    .rules-store-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
     }
 
     .rule-row {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       padding: 10px 0;
       border-bottom: 1px solid var(--border);
     }
@@ -271,13 +427,11 @@
     .rule-order-btn {
       border: 1px solid var(--border-strong);
       background: var(--surface-strong);
-      border-radius: 8px;
-      padding: 4px 10px;
-      font-size: 14px;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 13px;
       cursor: pointer;
-      line-height: 1.4;
       color: var(--text);
-      font-weight: 600;
     }
 
     .rule-order-btn:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
@@ -294,130 +448,188 @@
       flex-shrink: 0;
     }
 
-    .rule-delete-btn:hover { background: rgba(163, 61, 47, 0.08); }
+    .rule-delete-btn:hover { background: var(--danger-soft); }
 
     .add-rule-form {
       margin-top: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
     }
 
     .rule-inputs {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 8px;
     }
 
-    .rule-input {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 14px;
+    /* Status */
+    .status {
+      min-height: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status.error { color: var(--danger); }
+
+    .empty {
+      color: var(--muted);
       font-size: 14px;
-      font-family: var(--ui);
-      background: var(--surface-strong);
-      color: var(--text);
-      outline: none;
-    }
-
-    .rule-input:focus { border-color: var(--border-strong); }
-    .rule-input-label { flex: 1; min-width: 140px; }
-    .rule-input-pts { width: 80px; }
-
-    .rule-input-kind {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 14px;
-      font-size: 14px;
-      font-family: var(--ui);
-      background: var(--surface-strong);
-      color: var(--text);
-      cursor: pointer;
-    }
-
-    @media (min-width: 860px) {
-      .grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .action {
-        grid-column: 1 / -1;
-      }
-
-      .summary {
-        grid-template-columns: 1fr 1fr;
-      }
+      padding: 12px 4px;
     }
   </style>
 </head>
 <body>
   <main class="page">
-    <section class="hero">
-      <div class="eyebrow">Admin Start</div>
-      <h1>Assign managers to stores.</h1>
-      <p class="sub">Pick any user from the full directory, choose a store, and make that user the manager for it.</p>
-    </section>
 
-    <section class="panel" style="margin-bottom: 16px;">
-      <h2>Create store</h2>
-      <p>Add a new store to the directory.</p>
-      <div class="create-store-form">
-        <input type="text" id="newStoreName" class="create-store-input" placeholder="Store name..." />
-        <button class="assign-btn" id="createStoreBtn">Create store</button>
-      </div>
-      <div class="status" id="createStoreStatus"></div>
-    </section>
+    <header class="header">
+      <div class="eyebrow">Admin Console</div>
+      <h1>Libber</h1>
+    </header>
 
-    <section class="grid">
-      <section class="panel">
-        <h2>Users</h2>
-        <p>All users from `profiles`, shown through `admin_user_directory`.</p>
-        <div class="picker" id="userList">
-          <p class="empty">Loading users...</p>
+    <nav class="actions">
+      <button class="action-btn" data-section="createStore">
+        <span class="action-num">01</span>
+        <span class="action-label">Create Store</span>
+      </button>
+      <button class="action-btn" data-section="assignManager">
+        <span class="action-num">02</span>
+        <span class="action-label">Assign Manager</span>
+      </button>
+      <button class="action-btn" data-section="assignStaff">
+        <span class="action-num">03</span>
+        <span class="action-label">Assign Staff</span>
+      </button>
+      <button class="action-btn" data-section="rewardRules">
+        <span class="action-num">04</span>
+        <span class="action-label">Reward Rules</span>
+      </button>
+      <button class="action-btn" data-section="allStores">
+        <span class="action-num">05</span>
+        <span class="action-label">All Stores</span>
+      </button>
+      <button class="action-btn" data-section="allUsers">
+        <span class="action-num">06</span>
+        <span class="action-label">All Users</span>
+      </button>
+      <button class="action-btn" data-section="manageStore">
+        <span class="action-num">07</span>
+        <span class="action-label">Manage Store</span>
+      </button>
+      <button class="action-btn" data-section="applicants">
+        <span class="action-num">08</span>
+        <span class="action-label">Applicants</span>
+      </button>
+    </nav>
+
+    <div id="panelArea">
+
+      <section class="panel hidden" id="panel-createStore">
+        <h2>Create Store</h2>
+        <p>Add a new store to the directory.</p>
+        <div class="form-row">
+          <input type="text" id="newStoreName" class="input input-grow" placeholder="Store name..." />
+          <button class="btn-primary" id="createStoreBtn">Create</button>
         </div>
+        <div class="status" id="createStoreStatus"></div>
       </section>
 
-      <section class="panel">
-        <h2>Stores</h2>
-        <p>Select the store this user should manage.</p>
-        <div class="picker" id="storeList">
-          <p class="empty">Loading stores...</p>
-        </div>
-      </section>
-
-      <section class="panel action">
-        <div class="summary">
-          <div class="summary-card">
-            <span class="summary-label">Selected User</span>
-            <div class="summary-value" id="selectedUser">None selected</div>
+      <section class="panel hidden" id="panel-assignManager">
+        <h2>Assign Manager</h2>
+        <p>Pick a store to see its current managers and pending applicants.</p>
+        <div class="picker-grid">
+          <div>
+            <div class="picker-label">Store</div>
+            <div class="picker" id="managerStoreList"><p class="empty">Loading...</p></div>
           </div>
-          <div class="summary-card">
-            <span class="summary-label">Selected Store</span>
-            <div class="summary-value" id="selectedStore">None selected</div>
+          <div id="managerCandidatesCol">
+            <div class="picker-label">Candidates</div>
+            <div class="dir-list" id="managerCandidatesList"><p class="empty">Select a store</p></div>
           </div>
         </div>
-
-        <button class="assign-btn" id="assignBtn" disabled>Assign manager</button>
-        <div class="status" id="status"></div>
+        <div class="status" id="assignManagerStatus"></div>
       </section>
-    </section>
-    <section class="panel rules-panel" id="rulesPanel" style="display:none">
-      <h2>Reward rules — <span id="rulesStoreName"></span></h2>
-      <p>Quick-award and bonus buttons shown to staff for this store.</p>
-      <div id="rulesList"></div>
-      <div class="add-rule-form">
-        <div class="rule-inputs">
-          <input type="text" id="ruleLabel" placeholder="Label (e.g. 1 coffee)" class="rule-input rule-input-label" />
-          <input type="number" id="rulePoints" placeholder="Pts" class="rule-input rule-input-pts" min="1" />
-          <select id="ruleKind" class="rule-input-kind">
-            <option value="award">Award</option>
-            <option value="redeem">Redeem</option>
-          </select>
-          <button class="assign-btn" id="addRuleBtn">Add rule</button>
+
+      <section class="panel hidden" id="panel-assignStaff">
+        <h2>Assign Staff</h2>
+        <p>Pick a store to see its current staff and pending applicants.</p>
+        <div class="picker-grid">
+          <div>
+            <div class="picker-label">Store</div>
+            <div class="picker" id="staffStoreList"><p class="empty">Loading...</p></div>
+          </div>
+          <div id="staffCandidatesCol">
+            <div class="picker-label">Candidates</div>
+            <div class="dir-list" id="staffCandidatesList"><p class="empty">Select a store</p></div>
+          </div>
         </div>
-        <div class="status" id="addRuleStatus"></div>
-      </div>
-    </section>
+        <div class="status" id="assignStaffStatus"></div>
+      </section>
+
+      <section class="panel hidden" id="panel-rewardRules">
+        <h2>Reward Rules</h2>
+        <p>Manage quick-award and redemption buttons shown to staff.</p>
+        <div class="picker-label">Store</div>
+        <div class="picker picker-inline" id="rulesStoreList"><p class="empty">Loading...</p></div>
+        <div class="hidden" id="rulesContent">
+          <div class="rules-store-name" id="rulesStoreName"></div>
+          <div id="rulesList"></div>
+          <div class="add-rule-form">
+            <div class="rule-inputs">
+              <input type="text" id="ruleLabel" placeholder="Label (e.g. 1 coffee)" class="input input-grow" />
+              <input type="number" id="rulePoints" placeholder="Pts" class="input input-pts" min="1" />
+              <select id="ruleKind" class="input">
+                <option value="award">Award</option>
+                <option value="redeem">Redeem</option>
+              </select>
+              <button class="btn-primary" id="addRuleBtn">Add rule</button>
+            </div>
+            <div class="status" id="addRuleStatus"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel hidden" id="panel-allStores">
+        <h2>All Stores</h2>
+        <p>Every store in the directory. Edit names or remove stores.</p>
+        <div class="dir-list" id="allStoresList"><p class="empty">Loading...</p></div>
+        <div class="status" id="allStoresStatus"></div>
+      </section>
+
+      <section class="panel hidden" id="panel-allUsers">
+        <h2>All Users</h2>
+        <p>Every registered user.</p>
+        <div class="dir-list" id="allUsersList"><p class="empty">Loading...</p></div>
+      </section>
+
+      <section class="panel hidden" id="panel-manageStore">
+        <h2>Manage Store</h2>
+        <p>Pick a store to view and remove its managers and staff.</p>
+        <div class="picker-label">Store</div>
+        <div class="picker picker-inline" id="manageStoreList"><p class="empty">Loading...</p></div>
+        <div class="hidden" id="manageStoreContent">
+          <div class="rules-store-name" id="manageStoreName"></div>
+          <div class="manage-section">
+            <div class="manage-section-title">Managers</div>
+            <div class="dir-list" id="manageManagersList"></div>
+          </div>
+          <div class="manage-section">
+            <div class="manage-section-title">Staff</div>
+            <div class="dir-list" id="manageStaffList"></div>
+          </div>
+          <div class="status" id="manageStoreStatus"></div>
+        </div>
+      </section>
+
+      <section class="panel hidden" id="panel-applicants">
+        <h2>Applicants</h2>
+        <p>All pending staff applications. Approve or reject.</p>
+        <div class="dir-list" id="applicantsList"><p class="empty">Loading...</p></div>
+        <div class="status" id="applicantsStatus"></div>
+      </section>
+
+    </div>
   </main>
 
   <script type="module" src="/src/pages/admin/start.js"></script>

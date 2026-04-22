@@ -100,6 +100,16 @@ export function unsubscribeFromPointsUpdates(channel) {
   }
 }
 
+export async function loadPointsHistory(userId, storeId) {
+  return supabase
+    .from('points_ledger')
+    .select('points, reason, created_at')
+    .eq('user_id', userId)
+    .eq('store_id', storeId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+}
+
 export async function loadMembers(storeId) {
   // fetch memberships for this store
   const { data: memberships, error } = await supabase

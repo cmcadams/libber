@@ -1,5 +1,6 @@
 import { state } from '../state/state.js'
 import { awardPoints } from '../services/members.js'
+import { escapeHtml } from '../lib/escape.js'
 
 let selectedMember = null
 let bonusPts = null
@@ -25,8 +26,8 @@ export function renderCustomers() {
   }
 
   container.innerHTML = filtered.map(m => `
-    <div class="customer-row" data-user-id="${m.user_id}">
-      <span class="cust-id">${m.public_id}</span>
+    <div class="customer-row" data-user-id="${escapeHtml(m.user_id)}">
+      <span class="cust-id">${escapeHtml(m.public_id)}</span>
       <span class="cust-pts"><strong>${m.balance}</strong> pts</span>
     </div>
   `).join('')
@@ -93,8 +94,8 @@ function renderRuleButtons() {
   if (divider) divider.style.display = (quickRules.length && bonusRules.length) ? '' : 'none'
 
   $('quickBtns').innerHTML = quickRules.map(r => `
-    <button class="quick-btn" data-pts="${r.points}" data-label="${r.label}">
-      <span class="btn-label">${r.label}</span>
+    <button class="quick-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}">
+      <span class="btn-label">${escapeHtml(r.label)}</span>
       <span class="btn-pts">+${r.points} pts</span>
     </button>
   `).join('')

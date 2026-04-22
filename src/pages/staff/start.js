@@ -1,14 +1,16 @@
 import { initAuth } from '../../services/auth.js'
 import { getStores } from '../../services/stores.js'
-import { applyForStaff } from '../../services/applicants.js'
+import { applyForStaff, loadMyApplications } from '../../services/applicants.js'
 import { loadUserProfile } from '../../services/members.js'
 import { loadStaffStores } from '../../services/staff.js'
 import { saveSelectedStore } from '../../lib/storage.js'
+import { escapeHtml } from '../../lib/escape.js'
 import { state } from '../../state/state.js'
 
 let selectedStoreId = null
 let selectedStoreName = null
-let isApprovedForSelectedStore = false
+let isPendingForSelectedStore = false
+let pendingStoreIds = new Set()
 
 const $ = id => document.getElementById(id)
 const toHumanId = (publicId, userId) => publicId || `USR-${String(userId || '').slice(0, 6).toUpperCase()}`
@@ -19,18 +21,42 @@ async function init() {
     const profile = user?.id ? await loadUserProfile(user.id) : null
     $('myId').textContent = toHumanId(profile?.public_id, user?.id)
     if (user?.id) {
-      await loadStaffStores(user.id)
+      const [, { data: applications }] = await Promise.all([
+        loadStaffStores(user.id),
+        loadMyApplications(user.id)
+      ])
+      pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
     }
-    await renderStores()
+    renderStaffStores()
+    await renderApplyStores()
     bindEvents()
-    updateActionButton()
+    updateApplyButton()
   } catch (err) {
     console.error(err)
-    setStatus(err.message || 'Could not load staff apply page.', true)
+    setStatus(err.message || 'Could not load page.', true)
   }
 }
 
-async function renderStores() {
+function renderStaffStores() {
+  const list = $('staffStoreList')
+  const section = $('staffStoresSection')
+  const stores = state.staffStores || []
+
+  if (!stores.length) {
+    section.style.display = 'none'
+    return
+  }
+
+  section.style.display = ''
+  list.innerHTML = stores.map(store => `
+    <button class="pick-card" data-open-store-id="${escapeHtml(store.store_id)}" data-open-store-name="${escapeHtml(store.stores?.name || 'Store')}">
+      <span class="pick-title">${escapeHtml(store.stores?.name || 'Untitled store')}</span>
+      <span class="pick-sub">${escapeHtml(store.store_id)}</span>
+    </button>
+  `).join('')
+}
+
+async function renderApplyStores() {
   const list = $('storeList')
   const { data, error } = await getStores()
 
@@ -42,40 +68,37 @@ async function renderStores() {
   }
 
   list.innerHTML = data.map(store => `
-    <button class="pick-card" data-store-id="${store.id}">
-      <span class="pick-title">${store.name || 'Untitled store'}</span>
-      <span class="pick-sub">${store.id}</span>
+    <button class="pick-card" data-store-id="${escapeHtml(store.id)}">
+      <span class="pick-title">${escapeHtml(store.name || 'Untitled store')}</span>
+      <span class="pick-sub">${escapeHtml(store.id)}</span>
     </button>
   `).join('')
 }
 
 function bindEvents() {
+  $('staffStoreList')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-open-store-id]')
+    if (!button) return
+    saveSelectedStore(button.dataset.openStoreId, button.dataset.openStoreName)
+    window.location.href = '/apps/staff/page.html'
+  })
+
   $('storeList')?.addEventListener('click', event => {
     const button = event.target.closest('[data-store-id]')
     if (!button) return
 
     selectedStoreId = button.dataset.storeId
     selectedStoreName = button.querySelector('.pick-title')?.textContent || 'Store'
-    isApprovedForSelectedStore = (state.staffStores || []).some(store => store.store_id === selectedStoreId)
+    isPendingForSelectedStore = pendingStoreIds.has(selectedStoreId)
     document.querySelectorAll('[data-store-id]').forEach(node => {
       node.classList.toggle('selected', node === button)
     })
     $('selectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedStoreId
     setStatus('')
-    updateActionButton()
+    updateApplyButton()
   })
 
-  $('applyBtn')?.addEventListener('click', handlePrimaryAction)
-}
-
-async function handlePrimaryAction() {
-  if (isApprovedForSelectedStore) {
-    saveSelectedStore(selectedStoreId, selectedStoreName || 'Store')
-    window.location.href = '/staffpage.html'
-    return
-  }
-
-  await handleApply()
+  $('applyBtn')?.addEventListener('click', handleApply)
 }
 
 async function handleApply() {
@@ -89,12 +112,13 @@ async function handleApply() {
     const { error } = await applyForStaff(selectedStoreId)
     if (error) throw error
 
+    pendingStoreIds.add(selectedStoreId)
+    isPendingForSelectedStore = true
+    updateApplyButton()
     setStatus('Applied. Ask the manager to approve you on their screen.')
-    button.textContent = 'Applied'
   } catch (err) {
     console.error(err)
     setStatus(err.message || 'Could not apply.', true)
-    button.textContent = 'Apply for staff'
     updateApplyButton()
   }
 }
@@ -103,23 +127,16 @@ function updateApplyButton() {
   const button = $('applyBtn')
   if (!button) return
 
-  button.disabled = !selectedStoreId
-}
-
-function updateActionButton() {
-  const button = $('applyBtn')
-  if (!button) return
-
   if (!selectedStoreId) {
     button.textContent = 'Apply for staff'
-    updateApplyButton()
+    button.disabled = true
     return
   }
 
-  if (isApprovedForSelectedStore) {
-    button.textContent = 'Open staff tools'
-    button.disabled = false
-    setStatus('You are approved for this store. Open staff tools to continue.')
+  if (isPendingForSelectedStore) {
+    button.textContent = 'Pending approval'
+    button.disabled = true
+    setStatus('Your application is waiting for manager approval.')
     return
   }
 

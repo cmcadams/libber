@@ -122,6 +122,16 @@
       white-space: nowrap;
     }
 
+    .staff-link {
+      display: inline-block;
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .staff-link:hover { text-decoration: underline; }
+
     .status.error {
       color: var(--danger);
     }
@@ -129,6 +139,39 @@
     .empty {
       color: var(--muted);
       padding: 16px 4px;
+    }
+
+    .staff-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      max-height: none;
+    }
+
+    .staff-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: white;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .remove-btn {
+      border: 1px solid var(--danger);
+      border-radius: 999px;
+      background: white;
+      color: var(--danger);
+      padding: 8px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .remove-btn:hover {
+      background: var(--danger);
+      color: white;
     }
 
     @media (min-width: 900px) {
@@ -144,6 +187,7 @@
       <h1>Approve staff applicants.</h1>
       <p>Choose one of your stores, review the people who applied from the staff start page, then promote them to staff.</p>
       <p>Manager ID: <strong id="myId">Loading...</strong></p>
+      <a href="/apps/staff/page.html" class="staff-link">Go to staff tools →</a>
     </section>
 
     <section class="grid">
@@ -163,6 +207,14 @@
           <p class="empty">Pick a store to see applicants</p>
         </div>
       </section>
+    </section>
+
+    <section class="panel">
+      <h2>Current staff</h2>
+      <p>Selected store: <strong id="selectedStoreStaff">None selected</strong></p>
+      <div class="picker staff-grid" id="staffList">
+        <p class="empty">Pick a store to see staff</p>
+      </div>
     </section>
   </main>
 

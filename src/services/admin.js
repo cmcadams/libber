@@ -1,13 +1,4 @@
 import { supabase } from '../lib/supabase.js'
-import { state } from '../state/state.js'
-
-export async function loadAllStaff() {
-  const { data, error } = await supabase
-    .from('store_staff')
-    .select('id, user_id, store_id, stores(name)')
-  state.allStaff = data || []
-  return { data, error }
-}
 
 export async function loadAdminUsers() {
   return supabase
@@ -30,12 +21,34 @@ export async function assignManager(userId, storeId) {
   })
 }
 
+export async function assignStaff(userId, storeId) {
+  return supabase
+    .from('store_staff')
+    .insert({ user_id: userId, store_id: storeId })
+}
+
 export async function createStore(name) {
   return supabase
     .from('stores')
     .insert({ name: name.trim() })
     .select('id, name')
     .single()
+}
+
+export async function updateStoreName(id, name) {
+  return supabase
+    .from('stores')
+    .update({ name: name.trim() })
+    .eq('id', id)
+    .select('id, name')
+    .single()
+}
+
+export async function removeStore(id) {
+  return supabase
+    .from('stores')
+    .delete()
+    .eq('id', id)
 }
 
 export async function loadRewardRules(storeId) {
@@ -67,4 +80,69 @@ export async function updateRewardRuleOrder(id, sortOrder) {
     .from('store_reward_rules')
     .update({ sort_order: sortOrder })
     .eq('id', id)
+}
+
+export async function loadStoreManagers(storeId) {
+  return supabase
+    .from('store_managers')
+    .select('user_id')
+    .eq('store_id', storeId)
+}
+
+export async function removeManager(userId, storeId) {
+  return supabase
+    .from('store_managers')
+    .delete()
+    .eq('user_id', userId)
+    .eq('store_id', storeId)
+}
+
+export async function loadStoreStaff(storeId) {
+  return supabase
+    .from('store_staff')
+    .select('user_id')
+    .eq('store_id', storeId)
+}
+
+export async function removeStaffAdmin(userId, storeId) {
+  return supabase
+    .from('store_staff')
+    .delete()
+    .eq('user_id', userId)
+    .eq('store_id', storeId)
+}
+
+export async function loadStoreApplicants(storeId) {
+  return supabase
+    .from('store_staff_applicants')
+    .select('user_id, store_id')
+    .eq('store_id', storeId)
+    .order('created_at', { ascending: false })
+}
+
+export async function loadAllApplicants() {
+  return supabase
+    .from('store_staff_applicants')
+    .select('user_id, store_id')
+    .order('created_at', { ascending: false })
+}
+
+export async function approveApplicantAdmin(userId, storeId) {
+  const { error: insertError } = await supabase
+    .from('store_staff')
+    .insert({ user_id: userId, store_id: storeId })
+  if (insertError) return { error: insertError }
+  return supabase
+    .from('store_staff_applicants')
+    .delete()
+    .eq('user_id', userId)
+    .eq('store_id', storeId)
+}
+
+export async function rejectApplicant(userId, storeId) {
+  return supabase
+    .from('store_staff_applicants')
+    .delete()
+    .eq('user_id', userId)
+    .eq('store_id', storeId)
 }

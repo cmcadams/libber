@@ -1,9 +1,9 @@
-import { initAuth } from './services/auth.js'
-import { loadMembers } from './services/members.js'
-import { loadRewardRules } from './services/admin.js'
-import { state } from './state/state.js'
-import { loadSelectedStore } from './lib/storage.js'
-import { renderCustomers, initCustomerHandlers } from './ui/renderCustomers.js'
+import { initAuth } from '../../services/auth.js'
+import { loadMembers } from '../../services/members.js'
+import { loadRewardRules } from '../../services/admin.js'
+import { state } from '../../state/state.js'
+import { loadSelectedStore } from '../../lib/storage.js'
+import { renderCustomers, initCustomerHandlers } from '../../ui/renderCustomers.js'
 
 async function boot() {
   const user = await initAuth()

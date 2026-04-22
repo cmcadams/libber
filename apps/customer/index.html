@@ -8,6 +8,7 @@
     @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    button { touch-action: manipulation; }
 
     :root {
       --bg: #f9f9f7;
@@ -58,6 +59,15 @@
       margin-bottom: 2rem;
       padding-bottom: 1.5rem;
       border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      width: 100%;
+    }
+
+    .header-id {
+      flex: 1;
+      min-width: 0;
     }
 
     .user-id {
@@ -78,16 +88,18 @@
     }
 
     .refresh-btn {
-      padding: 6px 10px;
+      padding: 10px 14px;
       background: var(--surface);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-md);
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 16px;
+      font-size: 18px;
       line-height: 1;
       transition: color 0.2s, transform 0.2s;
       margin-left: auto;
+      min-width: 44px;
+      min-height: 44px;
     }
 
     .refresh-btn:hover {
@@ -108,37 +120,6 @@
       to { transform: rotate(360deg); }
     }
 
-    .points-summary {
-      background: var(--success-bg);
-      border: 0.5px solid var(--success-border);
-      border-radius: var(--radius-lg);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      text-align: center;
-    }
-
-    .total-points {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .total-points .label {
-      font-size: 12px;
-      color: var(--success-text);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-weight: 500;
-    }
-
-    .total-points .amount {
-      font-size: 42px;
-      font-weight: 500;
-      color: var(--success-text);
-      font-family: var(--font);
-    }
-
     .section-title {
       font-size: 12px;
       color: var(--text-hint);
@@ -151,19 +132,21 @@
     .store-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
       margin-bottom: 2rem;
     }
 
     .store-card {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 16px;
+      flex-direction: column;
+      padding: 16px;
       background: var(--surface);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-lg);
       transition: border-color 0.1s, background 0.1s;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
     .store-card:hover {
@@ -171,17 +154,122 @@
       border-color: var(--border-strong);
     }
 
+    .store-card-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .store-card-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chevron {
+      color: var(--text-hint);
+      font-size: 18px;
+      line-height: 1;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    .store-card.open .chevron {
+      transform: rotate(90deg);
+    }
+
     .store-name {
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 500;
       color: var(--text);
     }
 
     .store-points {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
       color: var(--success-text);
       font-family: var(--font);
+    }
+
+    .store-history {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 0.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rules-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-hint);
+      font-weight: 500;
+      margin-top: 4px;
+      margin-bottom: 6px;
+    }
+
+    .rule-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 3px 0;
+    }
+
+    .rule-label {
+      color: var(--text);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 8px;
+    }
+
+    .rule-pts {
+      font-family: var(--font);
+      color: var(--success-text);
+      white-space: nowrap;
+    }
+
+    .rules-divider {
+      border-top: 0.5px solid var(--border);
+      margin: 10px 0;
+    }
+
+    .history-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .history-reason {
+      flex: 1;
+      color: var(--text);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-pts {
+      font-family: var(--font);
+      color: var(--success-text);
+      white-space: nowrap;
+    }
+
+    .history-date {
+      color: var(--text-hint);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .history-empty {
+      font-size: 14px;
+      color: var(--text-hint);
     }
 
     .empty {
@@ -192,25 +280,26 @@
     }
 
     #stores-section {
-      margin-top: 2rem;
+      margin-top: 1rem;
     }
 
     .available-stores {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .store-join-card {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 16px;
+      padding: 16px;
       background: var(--surface);
       border: 0.5px solid var(--border);
       border-radius: var(--radius-lg);
       cursor: pointer;
       transition: border-color 0.1s, background 0.1s;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .store-join-card:hover {
@@ -225,14 +314,15 @@
     }
 
     .join-btn {
-      font-size: 13px;
-      padding: 6px 12px;
+      font-size: 14px;
+      padding: 10px 16px;
       border: 0.5px solid var(--border);
       border-radius: var(--radius-md);
       background: var(--surface);
       color: var(--text);
       cursor: pointer;
       transition: background 0.1s, border-color 0.1s;
+      min-height: 44px;
     }
 
     .join-btn:hover {
@@ -243,29 +333,24 @@
 </head>
 <body>
   <div class="page">
-    <!-- HEADER -->
     <div class="header">
-      <div style="display: flex; align-items: center; gap: 1rem; width: 100%;">
-        <div>
-          <span class="user-id">Your ID</span>
-          <span id="user-id">Loading...</span>
-        </div>
-        <button id="refresh-btn" class="refresh-btn" title="Refresh points">↻</button>
+      <div class="header-id">
+        <span class="user-id">Your ID</span>
+        <span id="user-id">Loading...</span>
       </div>
+      <button id="refresh-btn" class="refresh-btn" title="Refresh points">↻</button>
     </div>
 
-    <!-- YOUR POINTS -->
     <div id="user-stores">
       <p class="empty">Loading your points...</p>
     </div>
 
-    <!-- AVAILABLE STORES -->
     <div id="stores-section">
       <h2 class="section-title">Join a store</h2>
       <div id="stores-list">Loading...</div>
     </div>
   </div>
 
-  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/pages/customer/main.js"></script>
 </body>
 </html>

@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local only
+memory/
+libber-dev.sh
+backups/
+gkeys.txt*

@@ -13,6 +13,15 @@ export async function loadManagedStores() {
     .order('created_at', { ascending: true })
 }
 
+export async function loadMyApplications(userId) {
+  const { data, error } = await supabase
+    .from('store_staff_applicants')
+    .select('store_id')
+    .eq('user_id', userId)
+
+  return { data: data ?? [], error }
+}
+
 export async function loadApplicants(storeId) {
   return supabase
     .from('staff_applicant_directory')
@@ -26,4 +35,34 @@ export async function approveApplicant(userId, storeId) {
     p_user_id: userId,
     p_store_id: storeId
   })
+}
+
+export async function demoteStaff(userId, storeId) {
+  return supabase.rpc('demote_store_staff', {
+    p_user_id: userId,
+    p_store_id: storeId
+  })
+}
+
+export async function loadStaff(storeId) {
+  const { data: staff, error } = await supabase
+    .from('store_staff')
+    .select('user_id, created_at')
+    .eq('store_id', storeId)
+    .order('created_at', { ascending: true })
+
+  if (error || !staff?.length) return { data: staff ?? [], error }
+
+  const userIds = staff.map(s => s.user_id)
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('user_id, public_id')
+    .in('user_id', userIds)
+
+  const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.user_id, p.public_id]))
+
+  return {
+    data: staff.map(s => ({ ...s, public_id: profileMap[s.user_id] ?? null })),
+    error: null
+  }
 }

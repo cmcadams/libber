@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Libber Staff Start</title>
+  <title>Libber Staff</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 
@@ -53,6 +53,12 @@
       margin-bottom: 10px;
     }
 
+    h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
     .sub, .panel p, .status {
       color: var(--muted);
       font-size: 14px;
@@ -86,6 +92,11 @@
       border-radius: 16px;
       padding: 14px 16px;
       cursor: pointer;
+    }
+
+    .pick-card:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
     }
 
     .pick-card.selected {
@@ -141,15 +152,23 @@
 <body>
   <main class="page">
     <section class="panel">
-      <h1>Apply for staff access.</h1>
-      <p class="sub">Pick the store you’re standing in, apply, then hand the screen to the manager for approval.</p>
+      <h1>Staff.</h1>
+      <p class="sub">Open a store you work at, or apply for access to a new one.</p>
       <div class="my-id">Your ID: <span id="myId">Loading...</span></div>
     </section>
 
+    <section class="panel" id="staffStoresSection">
+      <h2>Your stores</h2>
+      <p>Stores you're approved to work at.</p>
+      <div class="picker" id="staffStoreList"></div>
+    </section>
+
     <section class="panel">
-      <div class="summary">Selected store: <strong id="selectedStore">None selected</strong></div>
+      <h2>Apply for a new store</h2>
+      <p>Pick a store and apply. The manager will approve you.</p>
+      <div class="summary" style="margin-top: 14px;">Selected: <strong id="selectedStore">None</strong></div>
       <button class="apply-btn" id="applyBtn" disabled>Apply for staff</button>
-      <p class="status" id="status"></p>
+      <p class="status" id="status" style="margin-top: 10px;"></p>
       <div class="picker" id="storeList">
         <p class="empty">Loading stores...</p>
       </div>

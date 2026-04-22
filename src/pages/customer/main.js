@@ -1,8 +1,8 @@
-import { initAuth } from './services/auth.js'
-import { getStores } from './services/stores.js'
-import { loadUserStoresWithPoints, loadUserProfile } from './services/members.js'
-import { renderUser, renderUserStores } from './ui/renderUser.js'
-import { renderStores } from './ui/renderStores.js'
+import { initAuth } from '../../services/auth.js'
+import { getStores } from '../../services/stores.js'
+import { loadUserStoresWithPoints, loadUserProfile } from '../../services/members.js'
+import { renderUser, renderUserStores } from '../../ui/renderUser.js'
+import { renderStores } from '../../ui/renderStores.js'
 
 async function init() {
   try {

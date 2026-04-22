@@ -1,69 +1,106 @@
 # Libber
 
-Libber is a small multi-surface loyalty app prototype built with Vite and Supabase.
+Libber is a loyalty points app built with Vite and Supabase.
 
-Right now the project is organized around three user-facing surfaces on the same site:
+---
 
-- `customer`: joins stores and views points
-- `staff`: applies for staff access, then awards points after approval
-- `manager`: reviews staff applicants and promotes them
+## Restructure Audit (2026-04-22)
 
-There is also a temporary `admin` surface used to assign managers to stores during setup.
+Full import/export audit across all 24 source files — zero broken references found.
 
-## Current Pages
+| Check | Result |
+|---|---|
+| All imports resolve to real files | ✓ |
+| All named exports match imports | ✓ |
+| All DOM element IDs referenced in JS exist in HTML | ✓ |
+| All data attributes wired correctly | ✓ |
+| State flows (localStorage → cross-page nav) | ✓ |
 
-- `index.html`
-  Customer surface. Shows the current user's ID, joined stores, balances, and available stores to join.
+All 5 pages verified end-to-end: customer, staff apply, staff tools, manager, admin.
 
-- `staffstart.html`
-  Staff onboarding surface. A user picks a store and applies for staff access.
+`adminstart.html` intentionally excluded from `vite.config.js` — local-only tool, not deployed.
 
-- `managerstart.html`
-  Manager onboarding/approval surface. A manager sees their stores and approves staff applicants.
+---
 
-- `staffpage.html`
-  Existing staff operations surface. Used to load members for a selected store and award points.
+## Two-App Architecture
 
-- `adminstart.html`
-  Temporary admin setup surface. Lets you assign a user as manager for a store.
+The project builds two separate web apps from one codebase:
+
+| App | Audience | Entry |
+|---|---|---|
+| **Customer** | End users joining stores and viewing points | `apps/customer/` |
+| **Staff** | Staff applying, staff awarding points, managers approving | `apps/staff/` |
+
+The **admin tool** (`adminstart.html`) lives at the repo root and is run locally only by the repo owner — it is not deployed and is not intended for other users. It is used to create stores, configure reward rules, and assign managers.
+
+---
+
+## Pages
+
+### Customer app (`apps/customer/`)
+- `index.html` — shows the user's ID, joined stores, balances, and available stores to join
+
+### Staff app (`apps/staff/`)
+- `index.html` — staff apply page: pick a store, apply for staff access, or open staff tools if already approved
+- `page.html` — staff tools: load members, award points via store-configured buttons
+- `manager.html` — manager tools: see managed stores, approve applicants, view current staff
+
+### Admin (local only)
+- `adminstart.html` — create stores, configure reward rules (with ordering), assign managers
+
+---
 
 ## Project Structure
 
-```text
+```
+apps/
+  customer/
+    index.html
+  staff/
+    index.html
+    page.html
+    manager.html
 src/
   lib/
-    storage.js
-    supabase.js
+    escape.js         shared escapeHtml utility
+    storage.js        shared localStorage helpers
+    supabase.js       Supabase client
   pages/
     admin/
-      start.js
+      start.js        admin page controller
+    customer/
+      main.js         customer page controller
     manager/
-      start.js
+      start.js        manager page controller
     staff/
-      start.js
+      start.js        staff apply page controller
+      page.js         staff tools page controller
   services/
-    admin.js
-    applicants.js
-    auth.js
-    members.js
-    staff.js
-    stores.js
+    admin.js          store creation, reward rules, admin_assign_manager
+    applicants.js     apply_for_staff, loadApplicants, loadMyApplications, loadStaff, approveApplicant, demoteStaff
+    auth.js           anonymous auth bootstrap
+    members.js        loadMembers, loadUserProfile, awardPoints, loadPointsHistory
+    staff.js          loadStaffStores
+    stores.js         getStores, joinStore
   state/
-    state.js
+    state.js          shared in-memory state
   ui/
     renderCustomers.js
-    renderStaff.js
     renderStores.js
     renderUser.js
-  main.js
-  staffMain.js
+adminstart.html         local admin tool (not deployed)
+vite.config.js          multi-page build config
 ```
+
+---
 
 ## Stack
 
 - Vite
 - Vanilla JavaScript
 - Supabase (`@supabase/supabase-js`)
+
+---
 
 ## Local Setup
 
@@ -73,14 +110,12 @@ src/
 npm install
 ```
 
-2. Create environment variables for Vite:
+2. Create a `.env` file with your Supabase credentials:
 
 ```bash
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
-
-These are required by [src/lib/supabase.js](/home/cormac/Documents/code/first/libber/src/lib/supabase.js:1).
 
 3. Start the dev server:
 
@@ -88,77 +123,113 @@ These are required by [src/lib/supabase.js](/home/cormac/Documents/code/first/li
 npm run dev
 ```
 
-4. Open the pages you want to test in the browser:
+4. Open pages in the browser:
 
-- `/`
-- `/adminstart.html`
-- `/staffstart.html`
-- `/managerstart.html`
-- `/staffpage.html`
+| Page | URL |
+|---|---|
+| Customer app | `http://localhost:5173/apps/customer/` |
+| Staff apply | `http://localhost:5173/apps/staff/` |
+| Staff tools | `http://localhost:5173/apps/staff/page.html` (navigated to automatically from staff apply) |
+| Manager tools | `http://localhost:5173/apps/staff/manager.html` |
+| Admin (local) | `http://localhost:5173/adminstart.html` |
 
-## Important Build Note
+---
 
-`npm run build` currently succeeds, but the project is still effectively using Vite as a single-page build. Extra HTML entrypoints exist and work well in local/dev usage, but they are not yet configured as a full multi-page production build.
+## Build
 
-For now, treat this repo as a local prototype first.
+```bash
+npm run build
+```
 
-## Auth Model Right Now
+Vite builds four separate bundles defined in `vite.config.js`:
 
-The app currently uses anonymous Supabase auth through [src/services/auth.js](/home/cormac/Documents/code/first/libber/src/services/auth.js:1).
+```
+dist/
+  apps/customer/index.html    ← deploy to customer domain
+  apps/staff/index.html       ← deploy to staff domain
+  apps/staff/page.html
+  apps/staff/manager.html
+```
 
-That means:
+Deploy the `apps/customer/` output to one domain and `apps/staff/` output to another. The admin tool is never built for deployment — run it locally from dev only.
 
-- a visitor gets or restores an anonymous Supabase user
-- all role assignment is tied to that current Supabase `auth.uid()`
-- because all current surfaces are on one site, that shared anonymous identity is workable for prototype use
+---
 
-Long term, staff and manager flows should move to real sign-in such as Google, magic link, or email auth.
+## Deployment Plan (two separate static sites)
+
+- **Customer app** → e.g. `app.libber.com` — serve from `dist/apps/customer/`
+- **Staff app** → e.g. `staff.libber.com` — serve from `dist/apps/staff/`
+- Both can be deployed from the same repo via Netlify or Vercel using the build output directories above
+
+---
+
+## Auth Model
+
+The app currently uses anonymous Supabase auth (`src/services/auth.js`):
+
+- A visitor gets or restores an anonymous Supabase user
+- All role assignment is tied to that Supabase `auth.uid()`
+- Anonymous auth is fine for customers (nothing sensitive)
+- Staff and managers also use anonymous auth — their identity is tied to the device/browser. If a staff member loses their token (cleared browser data, new device), they re-apply via the staff page and send their new `public_id` to the manager to approve again. This is an acceptable edge case — no real sign-in required.
+
+---
 
 ## Current Product Flow
 
 ### Customer
-
-1. Open `index.html`
-2. Anonymous auth is initialized
-3. User profile is loaded from Supabase
-4. Joined stores and balances are loaded
-5. User can join additional stores
+1. Open `apps/customer/`
+2. Anonymous auth initialises
+3. Profile and joined stores with balances load
+4. Tap a store card to expand:
+   - **How to earn** — the store's award rules (e.g. "1 coffee → +5 pts")
+   - **Rewards** — the store's redeem options and their point costs
+   - **Transaction history** — last 20 entries
+5. User can join additional stores — "Join a store" section is hidden once all stores are joined
 
 ### Staff Applicant
-
-1. Open `staffstart.html`
-2. Anonymous auth is initialized
-3. Pick a store
-4. Click `Apply for staff`
-5. This creates an applicant record for that user/store
+1. Open `apps/staff/`
+2. Top section shows stores you're already approved for — click one to go straight to staff tools
+3. Bottom section: pick a store and apply
+4. If already applied but not yet approved: button shows "Pending approval"
+5. On approval by manager: store appears in your approved list
 
 ### Manager
+1. Open `apps/staff/manager.html`
+2. Pick a managed store
+3. Review applicants → approve to promote to staff
+4. View current staff — remove a staff member if needed
+5. Use "Go to staff tools →" to jump directly to the staff tools page
 
-1. Open `managerstart.html`
-2. Anonymous auth is initialized
-3. Managed stores are loaded
-4. Pick a store
-5. Review applicants
-6. Approve an applicant to promote them to staff
+### Staff (awarding points)
+1. Open `apps/staff/page.html` (navigated to from the apply page)
+2. Selected store loaded from localStorage
+3. Members and reward rules load
+4. Award points using quick-award or bonus buttons
 
-### Staff
+### Admin (local)
+1. Open `adminstart.html` in dev (`http://localhost:5173/adminstart.html`)
+2. Create stores
+3. Configure reward rules per store (label, points, kind, ordering)
+4. Assign managers to stores
 
-1. Open `staffpage.html`
-2. Auth is initialized
-3. Selected store is loaded from local storage
-4. Store members are loaded
-5. Staff can award points
+---
 
-### Admin
+## Points Model
 
-1. Open `adminstart.html`
-2. Anonymous auth is initialized
-3. Browse all users and all stores
-4. Assign a user as manager for a store
+Points are **not fungible across stores**. 50 pts at Store A cannot be combined with or used at Store B. Each store's balance is independent. Do not display a combined total.
 
-## Supabase Concepts In Use
+---
 
-Based on the current repo and SQL work so far, the app relies on these main database concepts:
+## Reward Rules
+
+Staff page buttons are driven by `store_reward_rules` in Supabase — not hardcoded. Configured per store in the admin tool.
+
+- `kind = 'award'` — quick-award buttons (label + points, reason auto-set to label)
+- `kind = 'redeem'` — bonus buttons (points only, staff enters reason manually)
+
+---
+
+## Supabase Tables
 
 - `profiles`
 - `stores`
@@ -167,86 +238,75 @@ Based on the current repo and SQL work so far, the app relies on these main data
 - `store_managers`
 - `store_staff_applicants`
 - `points_ledger`
+- `store_reward_rules`
 
-Known RPCs/views used by the frontend:
+## Supabase RPCs / Views
 
-- `join_store`
-- `award_points`
-- `admin_assign_manager`
-- `apply_for_staff`
-- `approve_staff_applicant`
-- `admin_user_directory`
-- `staff_applicant_directory`
+| Name | Auth check | What it does |
+|---|---|---|
+| `join_store` | `auth.uid()` required | Creates store membership for caller |
+| `award_points` | Must be staff of the store | Inserts points ledger entry |
+| `apply_for_staff` | `auth.uid()` required | Creates applicant record for caller |
+| `approve_staff_applicant` | Must be manager of the store | Promotes applicant to staff, removes from applicants |
+| `admin_assign_manager` | Service role only | Assigns a user as manager of a store |
+| `promote_store_staff` | Must be manager of the store | Promotes a store member to staff |
+| `demote_store_staff` | Must be manager of the store | Removes a user from store staff |
+| `admin_user_directory` | View | Lists all users (used by admin tool) |
+| `staff_applicant_directory` | View | Lists applicants per store |
+| `create_profile` | Trigger | Auto-creates a profile with public_id on new auth user |
 
-## Frontend Entry Logic
+---
 
-### Customer
+## Security Status
 
-- [src/main.js](/home/cormac/Documents/code/first/libber/src/main.js:1)
+### Done
+- `award_points` — verifies caller is staff for the store
+- `approve_staff_applicant` — verifies caller is manager for the store
+- `apply_for_staff` — uses `auth.uid()`, enforces caller identity
+- `admin_assign_manager` — restricted to service role only
+- `points_ledger` direct INSERT blocked — only writable via RPC
+- `points_ledger` SELECT restricted to own rows + staff of that store
+- `store_staff` SELECT — open policy removed, manager-scoped policy added
+- `store_staff_applicants` RLS enabled, policies added
+- `profiles` SELECT restricted to own row
+- Dead `renderStaff.js` (contained direct `points_ledger` insert) removed
+- XSS — all user-controlled values escaped via shared `src/lib/escape.js` utility
 
-### Staff Apply
+### Still to do
+- **`store_reward_rules`** INSERT/DELETE — open to any authenticated user. Needs admin RPC wrappers when admin tool is hardened
+- **`stores`** INSERT — open. Needs service role restriction when admin tool is hardened
+- **Admin tool** — never deploy `adminstart.html`. Run locally only via `npm run dev`
 
-- [src/pages/staff/start.js](/home/cormac/Documents/code/first/libber/src/pages/staff/start.js:1)
+---
 
-### Manager Approvals
+## Safe Cleanup Workflow
 
-- [src/pages/manager/start.js](/home/cormac/Documents/code/first/libber/src/pages/manager/start.js:1)
+Before deleting users or test data:
 
-### Admin Manager Assignment
+```bash
+# Preview counts (non-destructive)
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cleanup:preview
 
-- [src/pages/admin/start.js](/home/cormac/Documents/code/first/libber/src/pages/admin/start.js:1)
+# Export backup JSON files
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cleanup:export
+```
 
-### Existing Staff Operations
+Backups are written to a timestamped folder under `backups/cleanup-...`.
 
-- [src/staffMain.js](/home/cormac/Documents/code/first/libber/src/staffMain.js:1)
+### SQL scripts (run in Supabase SQL Editor)
 
-## Service Layer
+Three scripts in `scripts/sql/` — paste into Dashboard → SQL Editor and run.
 
-- [src/services/auth.js](/home/cormac/Documents/code/first/libber/src/services/auth.js:1)
-  Handles anonymous auth bootstrap and stores the current user in shared state.
+| Script | What it does |
+|---|---|
+| `delete-store.sql` | Deletes one store and all its memberships, staff, rules, and ledger entries. Set `v_store_id` at the top. |
+| `delete-user.sql` | Deletes one user and all their data across every table including `auth.users`. Set `v_user_id` at the top. |
+| `delete-all-users.sql` | Deletes all users and their data (ledger, memberships, staff, profiles, auth). Leaves stores and reward rules intact. |
+| `reset-all.sql` | Full wipe — every row in every table including all auth users. No undo. |
 
-- [src/services/stores.js](/home/cormac/Documents/code/first/libber/src/services/stores.js:1)
-  Loads stores and handles store joining.
+Each script prints a row count per table so you can see exactly what was deleted. `delete-store` and `delete-user` warn if the ID wasn't found.
 
-- [src/services/members.js](/home/cormac/Documents/code/first/libber/src/services/members.js:1)
-  Loads customer balances, profiles, members, and calls `award_points`.
-
-- [src/services/admin.js](/home/cormac/Documents/code/first/libber/src/services/admin.js:1)
-  Loads admin-facing users and stores, and calls `admin_assign_manager`.
-
-- [src/services/applicants.js](/home/cormac/Documents/code/first/libber/src/services/applicants.js:1)
-  Handles staff applications, manager store loading, applicant loading, and applicant approval.
-
-## Shared State
-
-Shared in-memory state lives in [src/state/state.js](/home/cormac/Documents/code/first/libber/src/state/state.js:1).
-
-It currently tracks values such as:
-
-- `user`
-- `stores`
-- `userStores`
-- `staffStores`
-- `selectedStoreId`
-- `selectedStoreName`
-- `members`
-
-This state is simple and mutable on purpose for the prototype.
-
-## Known Limitations
-
-- Role/security rules are still prototype-oriented in places
-- Some Supabase RPCs are intentionally permissive for local testing
-- Multi-page production build config is not set up yet
-- Some older files remain in the repo while the product direction is still settling
-
-## Recommended Next Steps
-
-1. Add proper authorization checks around staff and manager RPCs.
-2. Decide whether to keep or remove the old prototype admin/staff pages.
-3. Add multi-page Vite build configuration if these separate HTML files will ship.
-4. Move staff and manager flows from anonymous auth to real sign-in when ready.
-5. Add tests or at least a repeatable Supabase seed/setup document.
+---
 
 ## Commands
 
@@ -254,32 +314,6 @@ This state is simple and mutable on purpose for the prototype.
 npm run dev
 npm run build
 npm run preview
+npm run cleanup:preview
+npm run cleanup:export
 ```
-
-## Safe Cleanup Workflow
-
-Before deleting users or test data, use these scripts:
-
-1. Preview current counts (non-destructive):
-
-```bash
-SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cleanup:preview
-```
-
-2. Export backup JSON files:
-
-```bash
-SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cleanup:export
-```
-
-Backups are written to a timestamped folder under `backups/cleanup-...`.
-
-## Status
-
-This repo is currently best understood as an actively evolving local prototype. The main shape is now:
-
-- customer joins stores
-- staff applicant applies from the staff start page
-- manager approves applicants
-- staff uses the staff tools
-- admin assigns managers

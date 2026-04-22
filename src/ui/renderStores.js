@@ -5,25 +5,26 @@ import { renderUserStores } from './renderUser.js'
 
 export function renderStores(stores) {
   const container = document.getElementById('stores-list')
+  const section = document.getElementById('stores-section')
 
   if (!container) return
 
   container.innerHTML = ''
 
-  if (!stores || stores.length === 0) {
-    container.innerHTML = '<p class="empty">No stores available</p>'
+  const joinedStoreIds = new Set((state.userStores || []).map(s => s.store_id))
+  const unjoinedStores = (stores || []).filter(s => !joinedStoreIds.has(s.id))
+
+  if (!unjoinedStores.length) {
+    if (section) section.style.display = 'none'
     return
   }
 
-  // Get already-joined store IDs
-  const joinedStoreIds = new Set((state.userStores || []).map(s => s.store_id))
+  if (section) section.style.display = ''
 
   const listDiv = document.createElement('div')
   listDiv.className = 'available-stores'
 
-  stores.forEach(store => {
-    const isJoined = joinedStoreIds.has(store.id)
-    
+  unjoinedStores.forEach(store => {
     const card = document.createElement('div')
     card.className = 'store-join-card'
 
@@ -33,42 +34,35 @@ export function renderStores(stores) {
 
     const button = document.createElement('button')
     button.className = 'join-btn'
-    
-    if (isJoined) {
-      button.textContent = 'Joined'
+    button.textContent = 'Join'
+
+    button.addEventListener('click', async () => {
       button.disabled = true
-    } else {
-      button.textContent = 'Join'
+      button.textContent = '...'
 
-      button.addEventListener('click', async () => {
-        button.disabled = true
-        button.textContent = '...'
+      if (!state.user) {
+        alert('User not ready')
+        button.disabled = false
+        button.textContent = 'Join'
+        return
+      }
 
-        if (!state.user) {
-          alert('User not ready')
-          button.disabled = false
-          button.textContent = 'Join'
-          return
-        }
+      const { error } = await joinStore(store.id)
 
-        const { error } = await joinStore(store.id)
+      if (error) {
+        console.error(error)
+        alert('Failed to join')
+        button.disabled = false
+        button.textContent = 'Join'
+        return
+      }
 
-        if (error) {
-          console.error(error)
-          alert('Failed to join')
-          button.disabled = false
-          button.textContent = 'Join'
-          return
-        }
+      await loadUserStoresWithPoints(state.user.id)
+      renderUserStores()
 
-        button.textContent = 'Joined'
-        button.disabled = true
-
-        // Refresh user's stores to show newly joined store
-        await loadUserStoresWithPoints(state.user.id)
-        renderUserStores()
-      })
-    }
+      card.remove()
+      if (!listDiv.children.length && section) section.style.display = 'none'
+    })
 
     card.appendChild(nameSpan)
     card.appendChild(button)

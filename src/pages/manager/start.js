@@ -1,16 +1,11 @@
 import { initAuth } from '../../services/auth.js'
-import { approveApplicant, loadApplicants, loadManagedStores } from '../../services/applicants.js'
+import { approveApplicant, demoteStaff, loadApplicants, loadManagedStores, loadStaff } from '../../services/applicants.js'
 import { loadUserProfile } from '../../services/members.js'
+import { escapeHtml } from '../../lib/escape.js'
 
 let selectedStoreId = null
 
 const $ = id => document.getElementById(id)
-const escapeHtml = value => String(value ?? '')
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#39;')
 const toHumanId = (publicId, userId) => publicId || `USR-${String(userId || '').slice(0, 6).toUpperCase()}`
 
 async function init() {
@@ -49,6 +44,37 @@ async function renderStores() {
       <span class="pick-title">${escapeHtml(store.stores?.name || 'Untitled store')}</span>
       <span class="pick-sub">${escapeHtml(store.store_id)}</span>
     </button>
+  `).join('')
+}
+
+async function renderStaff() {
+  const list = $('staffList')
+  const label = $('selectedStoreStaff')
+
+  if (!selectedStoreId) {
+    list.innerHTML = '<p class="empty">Pick a store to see staff</p>'
+    if (label) label.textContent = 'None selected'
+    return
+  }
+
+  if (label) label.textContent = $('selectedStore').textContent
+
+  const { data, error } = await loadStaff(selectedStoreId)
+  if (error) throw error
+
+  if (!data?.length) {
+    list.innerHTML = '<p class="empty">No staff yet</p>'
+    return
+  }
+
+  list.innerHTML = data.map(member => `
+    <div class="staff-card">
+      <div>
+        <div class="pick-title">${escapeHtml(toHumanId(member.public_id, member.user_id))}</div>
+        <div class="pick-sub">${escapeHtml(member.user_id)}</div>
+      </div>
+      <button class="remove-btn" data-remove-user-id="${escapeHtml(member.user_id)}">Remove</button>
+    </div>
   `).join('')
 }
 
@@ -91,10 +117,32 @@ function bindEvents() {
     $('selectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedStoreId
     setStatus('')
     try {
-      await renderApplicants()
+      await Promise.all([renderApplicants(), renderStaff()])
     } catch (err) {
       console.error(err)
       setStatus(err.message || 'Could not load applicants.', true)
+    }
+  })
+
+  $('staffList')?.addEventListener('click', async event => {
+    const button = event.target.closest('[data-remove-user-id]')
+    if (!button || !selectedStoreId) return
+
+    const userId = button.dataset.removeUserId
+    button.disabled = true
+    button.textContent = 'Removing...'
+
+    try {
+      const { error } = await demoteStaff(userId, selectedStoreId)
+      if (error) throw error
+
+      setStatus('Staff member removed.')
+      await renderStaff()
+    } catch (err) {
+      console.error(err)
+      setStatus(err.message || 'Could not remove staff member.', true)
+      button.disabled = false
+      button.textContent = 'Remove'
     }
   })
 
@@ -111,7 +159,7 @@ function bindEvents() {
       if (error) throw error
 
       setStatus('Applicant promoted to staff.')
-      await renderApplicants()
+      await Promise.all([renderApplicants(), renderStaff()])
     } catch (err) {
       console.error(err)
       setStatus(err.message || 'Could not approve applicant.', true)
