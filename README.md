@@ -149,7 +149,12 @@ The admin tool is never built for deployment — run it locally from dev only.
 
 ## Deployment (Vercel)
 
-Live at: https://libber.vercel.app
+| Page | URL |
+|---|---|
+| Customer app | https://libber.vercel.app |
+| Staff apply | https://libber.vercel.app/apps/staff/ |
+| Staff tools | https://libber.vercel.app/apps/staff/page.html |
+| Manager | https://libber.vercel.app/apps/staff/manager.html |
 
 Deployed via Vercel — auto-deploys on push to `main`.
 
