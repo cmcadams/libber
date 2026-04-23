@@ -149,11 +149,9 @@ async function init() {
       refreshBtn.addEventListener('click', async () => {
         refreshBtn.classList.add('loading')
         refreshBtn.disabled = true
-        const stores = readStoresCache()
-        const fresh  = await loadCustomerHome(!stores)
+        const fresh = await loadCustomerHome(true)   // always include stores on manual refresh
         if (fresh) {
-          if (stores) fresh.stores = stores
-          else writeStoresCache(fresh.stores)
+          writeStoresCache(fresh.stores)
           writeHomeCache(user.id, fresh)
           applyHomeData(fresh, user.id)
         }
