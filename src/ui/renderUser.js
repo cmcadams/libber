@@ -75,7 +75,16 @@ async function toggleHistory(card) {
   const awardRules = (rules || []).filter(r => r.kind === 'award')
   const redeemRules = (rules || []).filter(r => r.kind === 'redeem')
 
+  const historyHtml = (history || []).length ? history.map(row => `
+    <div class="history-row">
+      <span class="history-reason">${escapeHtml(row.reason || '—')}</span>
+      <span class="history-pts${row.points < 0 ? ' history-pts-redeem' : ''}">${row.points > 0 ? '+' : ''}${row.points} pts</span>
+      <span class="history-date">${formatDate(row.created_at)}</span>
+    </div>
+  `).join('') : '<p class="history-empty">No transactions yet</p>'
+
   const rulesHtml = (awardRules.length || redeemRules.length) ? `
+    <div class="rules-divider"></div>
     ${awardRules.length ? `
       <p class="rules-title">How to earn</p>
       ${awardRules.map(r => `
@@ -89,21 +98,12 @@ async function toggleHistory(card) {
       <p class="rules-title">Rewards</p>
       ${redeemRules.map(r => `
         <div class="rule-row">
-          <span class="rule-label">${escapeHtml(r.label || 'Bonus')}</span>
-          <span class="rule-pts">${r.points} pts</span>
+          <span class="rule-label">${escapeHtml(r.label || 'Reward')}</span>
+          <span class="rule-pts">−${r.points} pts</span>
         </div>
       `).join('')}
     ` : ''}
-    <div class="rules-divider"></div>
   ` : ''
 
-  const historyHtml = (history || []).length ? history.map(row => `
-    <div class="history-row">
-      <span class="history-reason">${escapeHtml(row.reason || '—')}</span>
-      <span class="history-pts">+${row.points} pts</span>
-      <span class="history-date">${formatDate(row.created_at)}</span>
-    </div>
-  `).join('') : '<p class="history-empty">No transactions yet</p>'
-
-  historyEl.innerHTML = rulesHtml + historyHtml
+  historyEl.innerHTML = historyHtml + rulesHtml
 }
