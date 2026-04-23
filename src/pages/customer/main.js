@@ -4,6 +4,37 @@ import { loadUserStoresWithPoints, loadUserProfile } from '../../services/member
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
 
+function initShowStaff() {
+  const btn = document.getElementById('show-staff-btn')
+  const overlay = document.getElementById('staff-overlay')
+  const overlayId = document.getElementById('staff-overlay-id')
+  const doneBtn = document.getElementById('staff-overlay-done')
+
+  if (!btn || !overlay) return
+
+  function exitStaffView() {
+    overlay.classList.remove('active')
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    screen.orientation?.unlock()
+  }
+
+  btn.addEventListener('click', () => {
+    overlayId.textContent = document.getElementById('user-id').textContent
+    overlay.classList.add('active')
+    document.documentElement.requestFullscreen?.().catch(() => {})
+    screen.orientation?.lock('landscape').catch(() => {})
+  })
+
+  doneBtn.addEventListener('click', exitStaffView)
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      overlay.classList.remove('active')
+      screen.orientation?.unlock()
+    }
+  })
+}
+
 async function init() {
   try {
     // 1. Auth
@@ -15,6 +46,7 @@ async function init() {
     const publicId = profile?.public_id || null
 
     renderUser(publicId, user.id)
+    initShowStaff()
 
     // 3. Load user's stores with points
     await loadUserStoresWithPoints(user.id)
