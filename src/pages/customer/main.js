@@ -26,6 +26,7 @@ function initShowStaff() {
   })
 
   doneBtn.addEventListener('click', exitStaffView)
+  overlay.addEventListener('click', e => { if (e.target !== doneBtn) exitStaffView() })
 
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement) {
