@@ -4,24 +4,6 @@ Libber is a loyalty points app built with Vite and Supabase.
 
 ---
 
-## Restructure Audit (2026-04-22)
-
-Full import/export audit across all 24 source files — zero broken references found.
-
-| Check | Result |
-|---|---|
-| All imports resolve to real files | ✓ |
-| All named exports match imports | ✓ |
-| All DOM element IDs referenced in JS exist in HTML | ✓ |
-| All data attributes wired correctly | ✓ |
-| State flows (localStorage → cross-page nav) | ✓ |
-
-All 5 pages verified end-to-end: customer, staff apply, staff tools, manager, admin.
-
-`adminstart.html` intentionally excluded from `vite.config.js` — local-only tool, not deployed.
-
----
-
 ## Two-App Architecture
 
 The project builds two separate web apps from one codebase:
@@ -46,7 +28,7 @@ The **admin tool** (`adminstart.html`) lives at the repo root and is run locally
 - `manager.html` — manager tools: see managed stores, approve applicants, view current staff
 
 ### Admin (local only)
-- `adminstart.html` — create stores, configure reward rules (with ordering), assign managers
+- `adminstart.html` — create stores, configure reward rules (with ordering), assign managers. Your public ID is shown at the top of the page — used when running `assign-admin.sql`.
 
 ---
 
@@ -60,6 +42,15 @@ apps/
     index.html
     page.html
     manager.html
+scripts/
+  sql/
+    admin-rpcs.sql       one-time RLS + RPC setup (stores, reward rules, admin RPCs)
+    staff-rpcs.sql       one-time RLS + RPC setup (memberships, staff, ledger)
+    assign-admin.sql     grant admin access by public ID
+    delete-store.sql     delete one store and all its data
+    delete-user.sql      delete one user by public ID
+    delete-all-users.sql delete all users, preserve stores and rules
+    reset-all.sql        full wipe of all data
 src/
   lib/
     escape.js         shared escapeHtml utility
@@ -76,7 +67,7 @@ src/
       start.js        staff apply page controller
       page.js         staff tools page controller
   services/
-    admin.js          store creation, reward rules, admin_assign_manager
+    admin.js          store creation, reward rules, admin RPCs
     applicants.js     apply_for_staff, loadApplicants, loadMyApplications, loadStaff, approveApplicant, demoteStaff
     auth.js           anonymous auth bootstrap
     members.js        loadMembers, loadUserProfile, awardPoints, loadPointsHistory
@@ -90,6 +81,7 @@ src/
     renderUser.js
 adminstart.html         local admin tool (not deployed)
 vite.config.js          multi-page build config
+netlify.toml            build config + root redirect to customer app
 ```
 
 ---
@@ -151,21 +143,45 @@ dist/
   apps/staff/manager.html
 ```
 
-Deploy the `apps/customer/` output to one domain and `apps/staff/` output to another. The admin tool is never built for deployment — run it locally from dev only.
+The admin tool is never built for deployment — run it locally from dev only.
 
 ---
 
-## Deployment Plan (two separate static sites)
+## Deployment (Vercel)
 
-- **Customer app** → e.g. `app.libber.com` — serve from `dist/apps/customer/`
-- **Staff app** → e.g. `staff.libber.com` — serve from `dist/apps/staff/`
-- Both can be deployed from the same repo via Netlify or Vercel using the build output directories above
+Live at: https://libber.vercel.app
+
+Deployed via Vercel — auto-deploys on push to `main`.
+
+- Framework preset: **Vite** (auto-detected)
+- Build command: `npm run build`
+- Output directory: `dist` (auto-detected)
+- Root directory: `./`
+
+### Environment variables (set in Vercel dashboard → Settings → Environment Variables)
+
+| Variable | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://flghcbrwqtburdywgcvk.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Supabase publishable key (Dashboard → Project Settings → API) |
+
+The root redirect (`/` → `/apps/customer/`) is handled by `vercel.json`:
+
+```json
+{
+  "rewrites": [
+    { "source": "/", "destination": "/apps/customer/index.html" }
+  ]
+}
+```
+
+`netlify.toml` and `public/_redirects` are kept in the repo but not used by Vercel.
 
 ---
 
 ## Auth Model
 
-The app currently uses anonymous Supabase auth (`src/services/auth.js`):
+The app uses anonymous Supabase auth (`src/services/auth.js`):
 
 - A visitor gets or restores an anonymous Supabase user
 - All role assignment is tied to that Supabase `auth.uid()`
@@ -208,9 +224,10 @@ The app currently uses anonymous Supabase auth (`src/services/auth.js`):
 
 ### Admin (local)
 1. Open `adminstart.html` in dev (`http://localhost:5173/adminstart.html`)
-2. Create stores
-3. Configure reward rules per store (label, points, kind, ordering)
-4. Assign managers to stores
+2. Your public ID is shown at the top — copy it for `assign-admin.sql`
+3. Create stores
+4. Configure reward rules per store (label, points, kind, ordering)
+5. Assign managers to stores
 
 ---
 
@@ -225,7 +242,7 @@ Points are **not fungible across stores**. 50 pts at Store A cannot be combined 
 Staff page buttons are driven by `store_reward_rules` in Supabase — not hardcoded. Configured per store in the admin tool.
 
 - `kind = 'award'` — quick-award buttons (label + points, reason auto-set to label)
-- `kind = 'redeem'` — bonus buttons (points only, staff enters reason manually)
+- `kind = 'redeem'` — redemption buttons (points only, staff enters reason manually)
 
 ---
 
@@ -239,6 +256,7 @@ Staff page buttons are driven by `store_reward_rules` in Supabase — not hardco
 - `store_staff_applicants`
 - `points_ledger`
 - `store_reward_rules`
+- `admins`
 
 ## Supabase RPCs / Views
 
@@ -248,48 +266,58 @@ Staff page buttons are driven by `store_reward_rules` in Supabase — not hardco
 | `award_points` | Must be staff of the store | Inserts points ledger entry |
 | `apply_for_staff` | `auth.uid()` required | Creates applicant record for caller |
 | `approve_staff_applicant` | Must be manager of the store | Promotes applicant to staff, removes from applicants |
-| `admin_assign_manager` | Must be admin (`admins` table) | Assigns a user as manager of a store |
-| `admin_create_store` | Must be admin | Creates a store |
-| `admin_update_store` | Must be admin | Renames a store |
-| `admin_remove_store` | Must be admin | Deletes a store and all related data |
-| `admin_insert_reward_rule` | Must be admin | Adds a reward rule to a store |
-| `admin_delete_reward_rule` | Must be admin | Deletes a reward rule |
-| `admin_update_reward_rule_order` | Must be admin | Updates sort order of a reward rule |
-| `admin_assign_staff` | Must be admin | Directly assigns a user as staff |
-| `admin_remove_staff` | Must be admin | Removes a user from store staff |
-| `admin_remove_manager` | Must be admin | Removes a manager from a store |
-| `admin_approve_applicant` | Must be admin | Approves a staff applicant |
-| `admin_reject_applicant` | Must be admin | Rejects a staff applicant |
-| `promote_store_staff` | Must be manager of the store | Promotes a store member to staff |
 | `demote_store_staff` | Must be manager of the store | Removes a user from store staff |
+| `admin_assign_manager` | Must be in `admins` table | Assigns a user as manager of a store |
+| `admin_create_store` | Must be in `admins` table | Creates a store |
+| `admin_update_store` | Must be in `admins` table | Renames a store |
+| `admin_remove_store` | Must be in `admins` table | Deletes a store and all related data |
+| `admin_insert_reward_rule` | Must be in `admins` table | Adds a reward rule to a store |
+| `admin_delete_reward_rule` | Must be in `admins` table | Deletes a reward rule |
+| `admin_update_reward_rule_order` | Must be in `admins` table | Updates sort order of a reward rule |
+| `admin_assign_staff` | Must be in `admins` table | Directly assigns a user as staff |
+| `admin_remove_staff` | Must be in `admins` table | Removes a user from store staff |
+| `admin_remove_manager` | Must be in `admins` table | Removes a manager from a store |
+| `admin_approve_applicant` | Must be in `admins` table | Approves a staff applicant |
+| `admin_reject_applicant` | Must be in `admins` table | Rejects a staff applicant |
 | `admin_user_directory` | View | Lists all users (used by admin tool) |
 | `staff_applicant_directory` | View | Lists applicants per store |
 | `create_profile` | Trigger | Auto-creates a profile with public_id on new auth user |
 
 ---
 
-## Security Status
+## Security
 
-### Done
-- `award_points` — verifies caller is staff for the store
-- `approve_staff_applicant` — verifies caller is manager for the store
-- `apply_for_staff` — uses `auth.uid()`, enforces caller identity
-- `admin_assign_manager` — restricted to service role only
-- `points_ledger` direct INSERT blocked — only writable via RPC
-- `points_ledger` SELECT restricted to own rows + staff of that store
-- `store_staff` SELECT — open policy removed, manager-scoped policy added
-- `store_staff_applicants` RLS enabled, policies added
-- `profiles` SELECT restricted to own row
-- Dead `renderStaff.js` (contained direct `points_ledger` insert) removed
-- XSS — all user-controlled values escaped via shared `src/lib/escape.js` utility
-- `stores` and `store_reward_rules` direct writes blocked — all admin writes go through RPCs (`admin_create_store`, `admin_update_store`, `admin_remove_store`, `admin_insert_reward_rule`, etc.)
-- `store_staff` and `store_managers` direct writes blocked — all go through RPCs
-- Admin identity enforced via `admins` table — `is_admin()` check inside every admin RPC
+### Pattern
 
-### Security pattern
-All write operations go through `SECURITY DEFINER` RPCs. RLS RESTRICTIVE policies block direct client writes. Auth check lives inside the RPC. This is consistent across all tables — the same pattern as `award_points` and `approve_staff_applicant`.
+All write operations go through `SECURITY DEFINER` RPCs. RESTRICTIVE RLS policies block direct client writes to every table. The auth/permission check lives inside the RPC. No service role key is ever used in the browser.
 
-Before adding RLS to any table, always check:
+- Client calls RPC → RPC checks `auth.uid()` / `is_admin()` → writes to table
+- Direct client INSERT/UPDATE/DELETE → blocked by RESTRICTIVE RLS policy
+
+### What is secured
+
+| Table | Direct writes | Via RPC |
+|---|---|---|
+| `stores` | Blocked (RESTRICTIVE) | `admin_create_store`, `admin_update_store`, `admin_remove_store` |
+| `store_reward_rules` | Blocked (RESTRICTIVE) | `admin_insert_reward_rule`, `admin_delete_reward_rule`, `admin_update_reward_rule_order` |
+| `store_memberships` | Blocked (RESTRICTIVE) | `join_store` |
+| `store_staff` | Blocked (RESTRICTIVE) | `approve_staff_applicant`, `demote_store_staff`, `admin_assign_staff`, `admin_remove_staff` |
+| `store_managers` | Blocked (RESTRICTIVE) | `admin_assign_manager`, `admin_remove_manager` |
+| `store_staff_applicants` | Blocked (RESTRICTIVE) | `apply_for_staff`, `approve_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` |
+| `points_ledger` | Blocked (RESTRICTIVE) | `award_points` |
+
+### Admin identity
+
+Admin RPCs check `is_admin()` — a `SECURITY DEFINER` helper that looks up `auth.uid()` in the `admins` table. To grant admin access, run `scripts/sql/assign-admin.sql` with the target user's public ID.
+
+### XSS
+
+All user-controlled values are escaped via `src/lib/escape.js` before being written to the DOM.
+
+### Pre-RLS checklist
+
+Before adding RLS to any table:
+
 ```sql
 -- Check existing policies
 SELECT tablename, policyname, cmd
@@ -301,51 +329,50 @@ SELECT relname, relrowsecurity
 FROM pg_class
 WHERE relname = 'your_table';
 ```
+
 If RLS is off and there is no SELECT policy, add one (`USING (true)`) before enabling RLS or reads will break.
-
-### Setup required (run once)
-Run both scripts in order in the Supabase SQL Editor:
-
-1. `scripts/sql/admin-rpcs.sql` — secures `stores` and `store_reward_rules`, creates `admins` table and all admin RPCs
-2. `scripts/sql/staff-rpcs.sql` — secures `store_memberships`, `store_staff`, `store_staff_applicants`, `points_ledger`, rewrites staff/manager RPCs as `SECURITY DEFINER`
-
-Then insert your user_id into the `admins` table:
-```sql
-INSERT INTO public.admins (user_id) VALUES ('your-auth-uid-here');
-```
-Find your user_id in Supabase Dashboard → Authentication → Users.
-
-### Still to do
-- **Admin tool** — never deploy `adminstart.html`. Run locally only via `npm run dev`
 
 ---
 
-## Safe Cleanup Workflow
+## SQL Scripts
 
-Before deleting users or test data:
-
-```bash
-# Preview counts (non-destructive)
-SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cleanup:preview
-
-# Export backup JSON files
-SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npm run cleanup:export
-```
-
-Backups are written to a timestamped folder under `backups/cleanup-...`.
-
-### SQL scripts (run in Supabase SQL Editor)
-
-Three scripts in `scripts/sql/` — paste into Dashboard → SQL Editor and run.
+All scripts in `scripts/sql/` — paste into Supabase Dashboard → SQL Editor and run.
 
 | Script | What it does |
 |---|---|
+| `admin-rpcs.sql` | One-time setup: creates `admins` table, `is_admin()` helper, RESTRICTIVE RLS on `stores` and `store_reward_rules`, all admin RPCs. Safe to re-run. |
+| `staff-rpcs.sql` | One-time setup: RESTRICTIVE RLS on `store_memberships`, `store_staff`, `store_staff_applicants`, `points_ledger`. Rewrites staff/manager RPCs as SECURITY DEFINER. Safe to re-run. |
+| `assign-admin.sql` | Grants admin access to a user by their human-readable public ID. Run after reset or on a fresh project. |
 | `delete-store.sql` | Deletes one store and all its memberships, staff, rules, and ledger entries. Set `v_store_id` at the top. |
-| `delete-user.sql` | Deletes one user and all their data across every table including `auth.users`. Set `v_user_id` at the top. |
+| `delete-user.sql` | Deletes one user and all their data. Set `v_public_id` to their human-readable ID (shown in admin tool). |
 | `delete-all-users.sql` | Deletes all users and their data (ledger, memberships, staff, profiles, auth). Leaves stores and reward rules intact. |
-| `reset-all.sql` | Full wipe — every row in every table including all auth users. No undo. |
+| `reset-all.sql` | Full wipe — every row in every table including stores, rules, and all auth users. No undo. |
 
-Each script prints a row count per table so you can see exactly what was deleted. `delete-store` and `delete-user` warn if the ID wasn't found.
+Each script prints a row count per table so you can see exactly what was deleted.
+
+---
+
+## Fresh Setup / Reset Workflow
+
+### First time (new Supabase project)
+
+1. Run `scripts/sql/admin-rpcs.sql` in the SQL Editor
+2. Run `scripts/sql/staff-rpcs.sql` in the SQL Editor
+3. Open the admin tool locally: `http://localhost:5173/adminstart.html`
+4. Your public ID is shown at the top of the page — copy it
+5. Paste it into `scripts/sql/assign-admin.sql` and run it
+6. Reload the admin tool — you now have admin access
+7. Create stores, configure reward rules, assign managers
+
+### After a full reset (`reset-all.sql`)
+
+The RPC and RLS setup survives a reset — it lives in the database schema, not the data. Only steps 3–7 above are needed:
+
+1. Open the admin tool — you'll get a new anonymous session with a new public ID
+2. Copy your new public ID from the header
+3. Run `assign-admin.sql` with the new public ID
+4. Reload — admin access restored
+5. Re-create stores and reward rules
 
 ---
 
