@@ -1,8 +1,32 @@
 import { initAuth } from '../../services/auth.js'
-import { getStores } from '../../services/stores.js'
-import { loadUserStoresWithPoints, loadUserProfile } from '../../services/members.js'
+import { loadCustomerHome } from '../../services/members.js'
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
+import { state } from '../../state/state.js'
+
+const cacheKey = id => `libber_home_${id}`
+
+function readCache(userId) {
+  try {
+    const raw = localStorage.getItem(cacheKey(userId))
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function writeCache(userId, data) {
+  try { localStorage.setItem(cacheKey(userId), JSON.stringify(data)) } catch {}
+}
+
+function applyHomeData(data, uuid) {
+  renderUser(data.public_id, uuid)
+  state.userStores = (data.memberships || []).map(m => ({
+    store_id: m.store_id,
+    store_name: m.store_name,
+    balance: m.balance
+  }))
+  renderUserStores()
+  renderStores(data.stores || [])
+}
 
 function initShowStaff() {
   const btn = document.getElementById('show-staff-btn')
@@ -38,41 +62,36 @@ function initShowStaff() {
 
 async function init() {
   try {
-    // 1. Auth
     const user = await initAuth()
     if (!user) return
 
-    // 2. Load user's profile (public_id from Supabase)
-    const profile = await loadUserProfile(user.id)
-    const publicId = profile?.public_id || null
+    // Render from cache immediately so the page feels instant on return visits
+    const cached = readCache(user.id)
+    if (cached) applyHomeData(cached, user.id)
 
-    renderUser(publicId, user.id)
+    // Single RPC: profile + memberships + balances + stores in one round trip
+    const data = await loadCustomerHome()
+    if (data) {
+      writeCache(user.id, data)
+      applyHomeData(data, user.id)
+    }
+
     initShowStaff()
 
-    // 3. Load user's stores with points
-    await loadUserStoresWithPoints(user.id)
-    renderUserStores()
-
-    // 4. Setup refresh button
     const refreshBtn = document.getElementById('refresh-btn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
         refreshBtn.classList.add('loading')
         refreshBtn.disabled = true
-        await loadUserStoresWithPoints(user.id)
-        renderUserStores()
+        const fresh = await loadCustomerHome()
+        if (fresh) {
+          writeCache(user.id, fresh)
+          applyHomeData(fresh, user.id)
+        }
         refreshBtn.classList.remove('loading')
         refreshBtn.disabled = false
       })
     }
-
-    // 5. Load available stores to join
-    const { data: stores, error } = await getStores()
-
-    if (error) throw error
-
-    // 6. Render
-    renderStores(stores)
 
   } catch (err) {
     console.error(err)

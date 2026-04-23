@@ -110,6 +110,15 @@ export async function loadPointsHistory(userId, storeId) {
     .limit(20)
 }
 
+export async function loadCustomerHome() {
+  const { data, error } = await supabase.rpc('load_customer_home')
+  if (error) {
+    console.error('loadCustomerHome error', error)
+    return null
+  }
+  return data
+}
+
 export async function loadMembers(storeId) {
   const { data, error } = await supabase.rpc('load_store_members', { p_store_id: storeId })
 
