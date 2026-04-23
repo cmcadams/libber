@@ -111,63 +111,18 @@ export async function loadPointsHistory(userId, storeId) {
 }
 
 export async function loadMembers(storeId) {
-  // fetch memberships for this store
-  const { data: memberships, error } = await supabase
-    .from('store_memberships')
-    .select('user_id')
-    .eq('store_id', storeId)
+  const { data, error } = await supabase.rpc('load_store_members', { p_store_id: storeId })
 
   if (error) {
-    console.error('loadMembers: memberships error', error)
+    console.error('loadMembers error', error)
     state.members = []
     return
   }
 
-  const userIds = memberships.map(m => m.user_id)
-  if (!userIds.length) {
-    state.members = []
-    return
-  }
-
-  // fetch latest running_balance per user from ledger
-  const { data: ledger, error: ledgerError } = await supabase
-    .from('points_ledger')
-    .select('user_id, running_balance, created_at')
-    .eq('store_id', storeId)
-    .in('user_id', userIds)
-    .order('created_at', { ascending: false })
-
-  if (ledgerError) {
-    console.error('loadMembers: ledger error', ledgerError)
-  }
-
-  // latest balance per user — ledger is ordered desc so first hit wins
-  const balanceMap = {}
-  for (const row of (ledger || [])) {
-    if (!(row.user_id in balanceMap)) {
-      balanceMap[row.user_id] = row.running_balance
-    }
-  }
-
-  // fetch public_ids from profiles
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('user_id, public_id')
-    .in('user_id', userIds)
-
-  if (profilesError) {
-    console.error('loadMembers: profiles error', profilesError)
-  }
-
-  const profileMap = {}
-  for (const p of (profiles || [])) {
-    profileMap[p.user_id] = p.public_id
-  }
-
-  state.members = userIds.map(uid => ({
-    user_id: uid,
-    public_id: profileMap[uid] || `USR-${uid.slice(0, 6).toUpperCase()}`,
-    balance: balanceMap[uid] ?? 0,
+  state.members = (data || []).map(m => ({
+    user_id: m.user_id,
+    public_id: m.public_id || `USR-${m.user_id.slice(0, 6).toUpperCase()}`,
+    balance: m.balance ?? 0
   }))
 }
 
