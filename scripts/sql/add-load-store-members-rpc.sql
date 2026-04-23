@@ -14,8 +14,11 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.store_staff
     WHERE user_id = auth.uid() AND store_id = p_store_id
+    UNION
+    SELECT 1 FROM public.store_managers
+    WHERE user_id = auth.uid() AND store_id = p_store_id
   ) THEN
-    RAISE EXCEPTION 'not authorized: not staff for this store';
+    RAISE EXCEPTION 'not authorized: not staff or manager for this store';
   END IF;
 
   RETURN (
