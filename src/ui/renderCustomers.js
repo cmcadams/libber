@@ -73,6 +73,13 @@ export function initCustomerHandlers() {
     updateAwardBtn()
   })
 
+  // redeem (delegated)
+  $('redeemBtns')?.addEventListener('click', e => {
+    const btn = e.target.closest('.redeem-btn')
+    if (!btn || !selectedMember) return
+    handleRedeem(btn)
+  })
+
   // reason input
   $('reasonInput')?.addEventListener('input', updateAwardBtn)
 
@@ -80,18 +87,18 @@ export function initCustomerHandlers() {
   $('awardBtn')?.addEventListener('click', handleBonusAward)
 }
 
+const BONUS_AMOUNTS = [1, 5, 10, 25]
+
 function renderRuleButtons() {
   const rules = state.rewardRules || []
   const quickRules = rules.filter(r => r.kind === 'award')
-  const bonusRules = rules.filter(r => r.kind === 'redeem')
+  const redeemRules = rules.filter(r => r.kind === 'redeem')
+  const balance = selectedMember?.balance ?? 0
 
-  const quickSection = $('quickSection')
-  const bonusSection = $('bonusSection')
-  const divider = $('sectionDivider')
-
-  if (quickSection) quickSection.style.display = quickRules.length ? '' : 'none'
-  if (bonusSection) bonusSection.style.display = bonusRules.length ? '' : 'none'
-  if (divider) divider.style.display = (quickRules.length && bonusRules.length) ? '' : 'none'
+  if ($('quickSection')) $('quickSection').style.display = quickRules.length ? '' : 'none'
+  if ($('sectionDivider')) $('sectionDivider').style.display = quickRules.length ? '' : 'none'
+  if ($('redeemSection')) $('redeemSection').style.display = redeemRules.length ? '' : 'none'
+  if ($('redeemDivider')) $('redeemDivider').style.display = redeemRules.length ? '' : 'none'
 
   $('quickBtns').innerHTML = quickRules.map(r => `
     <button class="quick-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}">
@@ -100,8 +107,16 @@ function renderRuleButtons() {
     </button>
   `).join('')
 
-  $('bonusBtns').innerHTML = bonusRules.map(r => `
-    <button class="bonus-btn" data-pts="${r.points}">+${r.points}</button>
+  $('bonusBtns').innerHTML = BONUS_AMOUNTS.map(pts => `
+    <button class="bonus-btn" data-pts="${pts}">+${pts}</button>
+  `).join('')
+
+  $('redeemBtns').innerHTML = redeemRules.map(r => `
+    <button class="redeem-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}"
+      ${r.points > balance ? 'disabled' : ''}>
+      <span class="redeem-btn-label">${escapeHtml(r.label)}</span>
+      <span class="redeem-btn-cost">−${r.points} pts</span>
+    </button>
   `).join('')
 }
 
@@ -177,6 +192,37 @@ async function handleBonusAward() {
   } catch (err) {
     $('awardBtn').disabled = false
     setStatus('Could not award bonus. Try again.')
+  }
+}
+
+async function handleRedeem(btn) {
+  if (!selectedMember || !state.selectedStoreId) return
+  const pts = parseInt(btn.dataset.pts)
+  const label = btn.dataset.label
+
+  if (selectedMember.balance < pts) {
+    setStatus('Not enough points.')
+    return
+  }
+
+  btn.disabled = true
+  try {
+    await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label)
+    selectedMember.balance -= pts
+    $('panelBalance').textContent = selectedMember.balance
+    btn.classList.add('done')
+    btn.querySelector('.redeem-btn-label').textContent = 'Redeemed'
+    btn.querySelector('.redeem-btn-cost').textContent = `−${pts} pts`
+    setTimeout(() => {
+      btn.classList.remove('done')
+      btn.querySelector('.redeem-btn-label').textContent = label
+      btn.querySelector('.redeem-btn-cost').textContent = `−${pts} pts`
+      btn.disabled = selectedMember.balance < pts
+      renderCustomers()
+    }, 1500)
+  } catch (err) {
+    btn.disabled = false
+    setStatus('Could not redeem. Try again.')
   }
 }
 

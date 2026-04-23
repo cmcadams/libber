@@ -342,6 +342,50 @@
       background: var(--success-bg);
     }
 
+    .redeem-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .redeem-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      cursor: pointer;
+      font-family: var(--font-ui);
+      transition: background 0.1s, border-color 0.1s;
+      width: 100%;
+    }
+
+    .redeem-btn:hover:not(:disabled) { background: #f4f4f1; border-color: var(--border-strong); }
+    .redeem-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .redeem-btn-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .redeem-btn-cost {
+      font-size: 13px;
+      font-family: var(--font);
+      color: var(--text-muted);
+    }
+
+    .redeem-btn.done {
+      border-color: var(--success-border);
+      background: var(--success-bg);
+    }
+
+    .redeem-btn.done .redeem-btn-label,
+    .redeem-btn.done .redeem-btn-cost { color: var(--success-text); }
+
     .back-link {
       display: inline-block;
       font-size: 13px;
@@ -398,6 +442,14 @@
         <textarea class="reason-input" id="reasonInput" placeholder="Reason for bonus..."></textarea>
         <button class="award-btn" id="awardBtn" disabled>Award bonus</button>
       </div>
+
+      <hr class="divider" id="redeemDivider" style="display:none" />
+
+      <div id="redeemSection" style="display:none">
+        <div class="section-label">Redeem</div>
+        <div class="redeem-btns" id="redeemBtns"></div>
+      </div>
+
       <div id="status"></div>
     </div>
   </div>
