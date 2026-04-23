@@ -1,6 +1,6 @@
 import { initAuth } from '../../services/auth.js'
 import { getStores } from '../../services/stores.js'
-import { applyForStaff, loadMyApplications } from '../../services/applicants.js'
+import { applyForStaff, loadMyApplications, loadManagedStores } from '../../services/applicants.js'
 import { loadUserProfile } from '../../services/members.js'
 import { loadStaffStores } from '../../services/staff.js'
 import { saveSelectedStore } from '../../lib/storage.js'
@@ -21,11 +21,13 @@ async function init() {
     const profile = user?.id ? await loadUserProfile(user.id) : null
     $('myId').textContent = toHumanId(profile?.public_id, user?.id)
     if (user?.id) {
-      const [, { data: applications }] = await Promise.all([
+      const [, { data: applications }, { data: managedStores }] = await Promise.all([
         loadStaffStores(user.id),
-        loadMyApplications(user.id)
+        loadMyApplications(user.id),
+        loadManagedStores()
       ])
       pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
+      if (managedStores?.length) $('managerLink').style.display = ''
     }
     renderStaffStores()
     await renderApplyStores()

@@ -147,6 +147,16 @@
       color: var(--muted);
       padding: 16px 4px;
     }
+
+    .manager-link {
+      display: inline-block;
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .manager-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -155,6 +165,7 @@
       <h1>Staff.</h1>
       <p class="sub">Open a store you work at, or apply for access to a new one.</p>
       <div class="my-id">Your ID: <span id="myId">Loading...</span></div>
+      <a href="/apps/staff/manager.html" class="manager-link" id="managerLink" style="display:none">Go to manager tools →</a>
     </section>
 
     <section class="panel" id="staffStoresSection">

@@ -342,6 +342,16 @@
       background: var(--success-bg);
     }
 
+    .back-link {
+      display: inline-block;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 0.5rem 0;
+    }
+
+    .back-link:hover { color: var(--text); }
+
     #status {
       font-size: 13px;
       color: var(--text-hint);
@@ -353,6 +363,7 @@
 </head>
 <body>
   <div class="page">
+    <a href="/apps/staff/" class="back-link">← Back</a>
     <div class="header">
       <span class="store-name" id="storeName">—</span>
       <span class="staff-badge" id="staffBadge">Staff</span>

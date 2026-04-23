@@ -1,12 +1,13 @@
 import { initAuth } from '../../services/auth.js'
 import {
-  assignManager,
+  assignManager, assignStaff,
   loadAdminUsers, loadAllStores,
   createStore, updateStoreName, removeStore,
   loadRewardRules, insertRewardRule, deleteRewardRule, updateRewardRuleOrder,
   loadStoreManagers, removeManager,
   loadStoreStaff, removeStaffAdmin,
-  loadStoreApplicants, loadAllApplicants, approveApplicantAdmin, rejectApplicant
+  loadStoreApplicants, loadManagerApplicants, rejectManagerApplicant,
+  loadAllApplicants, approveApplicantAdmin, rejectApplicant
 } from '../../services/admin.js'
 import { escapeHtml } from '../../lib/escape.js'
 
@@ -163,7 +164,7 @@ function bindEvents() {
     const userId = btn.dataset.makeManagerId
     const { error } = await assignManager(userId, selectedManagerStoreId)
     if (error) { btn.disabled = false; setStatus('assignManagerStatus', error.message || 'Could not assign.', true); return }
-    await rejectApplicant(userId, selectedManagerStoreId)
+    await rejectManagerApplicant(userId, selectedManagerStoreId)
     setStatus('assignManagerStatus', 'Manager assigned.')
     await loadAndRenderManagerCandidates(selectedManagerStoreId)
   })
@@ -184,8 +185,9 @@ function bindEvents() {
     if (!btn) return
     btn.disabled = true
     const userId = btn.dataset.makeStaffId
-    const { error } = await approveApplicantAdmin(userId, selectedStaffStoreId)
+    const { error } = await assignStaff(userId, selectedStaffStoreId)
     if (error) { btn.disabled = false; setStatus('assignStaffStatus', error.message || 'Could not assign.', true); return }
+    await rejectApplicant(userId, selectedStaffStoreId)
     setStatus('assignStaffStatus', 'Staff assigned.')
     await loadAndRenderStaffCandidates(selectedStaffStoreId)
   })
@@ -307,7 +309,7 @@ async function loadAndRenderManagerCandidates(storeId) {
 
   const [{ data: managers, error: me }, { data: applicants, error: ae }] = await Promise.all([
     loadStoreManagers(storeId),
-    loadStoreApplicants(storeId)
+    loadManagerApplicants(storeId)
   ])
 
   if (me || ae) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }

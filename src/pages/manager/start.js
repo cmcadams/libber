@@ -1,9 +1,13 @@
 import { initAuth } from '../../services/auth.js'
-import { approveApplicant, demoteStaff, loadApplicants, loadManagedStores, loadStaff } from '../../services/applicants.js'
+import { approveApplicant, demoteStaff, loadApplicants, loadManagedStores, loadStaff, rejectApplicant, applyForManager, loadMyManagerApplications } from '../../services/applicants.js'
 import { loadUserProfile } from '../../services/members.js'
+import { getStores } from '../../services/stores.js'
 import { escapeHtml } from '../../lib/escape.js'
 
 let selectedStoreId = null
+let selectedApplyStoreId = null
+let pendingManagerStoreIds = new Set()
+let managedStoreIds = new Set()
 
 const $ = id => document.getElementById(id)
 const toHumanId = (publicId, userId) => publicId || `USR-${String(userId || '').slice(0, 6).toUpperCase()}`
@@ -12,7 +16,18 @@ async function init() {
   try {
     const user = await initAuth()
     await renderManagerId(user?.id)
-    await renderStores()
+
+    const [{ data: managed }, { data: allStores }, { data: myApps }] = await Promise.all([
+      loadManagedStores(),
+      getStores(),
+      loadMyManagerApplications(user?.id)
+    ])
+
+    managedStoreIds = new Set((managed ?? []).map(m => m.store_id))
+    pendingManagerStoreIds = new Set((myApps ?? []).map(a => a.store_id))
+
+    renderStores(managed ?? [])
+    renderApplyStores(allStores ?? [])
     bindEvents()
   } catch (err) {
     console.error(err)
@@ -23,26 +38,35 @@ async function init() {
 async function renderManagerId(userId) {
   const idEl = $('myId')
   if (!idEl || !userId) return
-
   const profile = await loadUserProfile(userId)
   idEl.textContent = toHumanId(profile?.public_id, userId)
 }
 
-async function renderStores() {
+function renderStores(data) {
   const list = $('storeList')
-  const { data, error } = await loadManagedStores()
-
-  if (error) throw error
-
   if (!data?.length) {
     list.innerHTML = '<p class="empty">No managed stores found</p>'
     return
   }
-
   list.innerHTML = data.map(store => `
     <button class="pick-card" data-store-id="${escapeHtml(store.store_id)}">
       <span class="pick-title">${escapeHtml(store.stores?.name || 'Untitled store')}</span>
       <span class="pick-sub">${escapeHtml(store.store_id)}</span>
+    </button>
+  `).join('')
+}
+
+function renderApplyStores(allStores) {
+  const list = $('applyStoreList')
+  const available = allStores.filter(s => !managedStoreIds.has(s.id))
+  if (!available.length) {
+    list.innerHTML = '<p class="empty">No stores available</p>'
+    return
+  }
+  list.innerHTML = available.map(store => `
+    <button class="pick-card" data-apply-store-id="${escapeHtml(store.id)}">
+      <span class="pick-title">${escapeHtml(store.name || 'Untitled store')}</span>
+      <span class="pick-sub">${escapeHtml(store.id)}</span>
     </button>
   `).join('')
 }
@@ -100,9 +124,33 @@ async function renderApplicants() {
         <div class="pick-title">${escapeHtml(toHumanId(applicant.public_id, applicant.user_id))}</div>
         <div class="pick-sub">Internal: ${escapeHtml(applicant.user_id)}</div>
       </div>
-      <button class="approve-btn" data-approve-user-id="${escapeHtml(applicant.user_id)}">Approve</button>
+      <div class="applicant-actions">
+        <button class="approve-btn" data-approve-user-id="${escapeHtml(applicant.user_id)}">Approve</button>
+        <button class="reject-btn" data-reject-user-id="${escapeHtml(applicant.user_id)}">Reject</button>
+      </div>
     </div>
   `).join('')
+}
+
+function updateApplyButton() {
+  const button = $('applyManagerBtn')
+  if (!button) return
+
+  if (!selectedApplyStoreId) {
+    button.textContent = 'Apply'
+    button.disabled = true
+    return
+  }
+
+  if (pendingManagerStoreIds.has(selectedApplyStoreId)) {
+    button.textContent = 'Pending approval'
+    button.disabled = true
+    setApplyStatus('Your application is waiting for admin approval.')
+    return
+  }
+
+  button.textContent = 'Apply'
+  button.disabled = false
 }
 
 function bindEvents() {
@@ -120,7 +168,7 @@ function bindEvents() {
       await Promise.all([renderApplicants(), renderStaff()])
     } catch (err) {
       console.error(err)
-      setStatus(err.message || 'Could not load applicants.', true)
+      setStatus(err.message || 'Could not load store data.', true)
     }
   })
 
@@ -135,7 +183,6 @@ function bindEvents() {
     try {
       const { error } = await demoteStaff(userId, selectedStoreId)
       if (error) throw error
-
       setStatus('Staff member removed.')
       await renderStaff()
     } catch (err) {
@@ -147,32 +194,91 @@ function bindEvents() {
   })
 
   $('applicantList')?.addEventListener('click', async event => {
-    const button = event.target.closest('[data-approve-user-id]')
-    if (!button || !selectedStoreId) return
+    const approveBtn = event.target.closest('[data-approve-user-id]')
+    if (approveBtn && selectedStoreId) {
+      const userId = approveBtn.dataset.approveUserId
+      approveBtn.disabled = true
+      approveBtn.textContent = 'Approving...'
+      try {
+        const { error } = await approveApplicant(userId, selectedStoreId)
+        if (error) throw error
+        setStatus('Applicant promoted to staff.')
+        await Promise.all([renderApplicants(), renderStaff()])
+      } catch (err) {
+        console.error(err)
+        setStatus(err.message || 'Could not approve applicant.', true)
+        approveBtn.disabled = false
+        approveBtn.textContent = 'Approve'
+      }
+      return
+    }
 
-    const userId = button.dataset.approveUserId
-    button.disabled = true
-    button.textContent = 'Approving...'
-
-    try {
-      const { error } = await approveApplicant(userId, selectedStoreId)
-      if (error) throw error
-
-      setStatus('Applicant promoted to staff.')
-      await Promise.all([renderApplicants(), renderStaff()])
-    } catch (err) {
-      console.error(err)
-      setStatus(err.message || 'Could not approve applicant.', true)
-      button.disabled = false
-      button.textContent = 'Approve'
+    const rejectBtn = event.target.closest('[data-reject-user-id]')
+    if (rejectBtn && selectedStoreId) {
+      const userId = rejectBtn.dataset.rejectUserId
+      rejectBtn.disabled = true
+      rejectBtn.textContent = 'Rejecting...'
+      try {
+        const { error } = await rejectApplicant(userId, selectedStoreId)
+        if (error) throw error
+        setStatus('Applicant rejected.')
+        await renderApplicants()
+      } catch (err) {
+        console.error(err)
+        setStatus(err.message || 'Could not reject applicant.', true)
+        rejectBtn.disabled = false
+        rejectBtn.textContent = 'Reject'
+      }
     }
   })
+
+  $('applyStoreList')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-apply-store-id]')
+    if (!button) return
+
+    selectedApplyStoreId = button.dataset.applyStoreId
+    document.querySelectorAll('[data-apply-store-id]').forEach(node => {
+      node.classList.toggle('selected', node === button)
+    })
+    $('applySelectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedApplyStoreId
+    setApplyStatus('')
+    updateApplyButton()
+  })
+
+  $('applyManagerBtn')?.addEventListener('click', handleApply)
+}
+
+async function handleApply() {
+  if (!selectedApplyStoreId) return
+
+  const button = $('applyManagerBtn')
+  button.disabled = true
+  button.textContent = 'Applying...'
+
+  try {
+    const { error } = await applyForManager(selectedApplyStoreId)
+    if (error) throw error
+
+    pendingManagerStoreIds.add(selectedApplyStoreId)
+    updateApplyButton()
+    setApplyStatus('Applied. Ask the admin to approve you.')
+  } catch (err) {
+    console.error(err)
+    setApplyStatus(err.message || 'Could not apply.', true)
+    updateApplyButton()
+  }
 }
 
 function setStatus(message, isError = false) {
   const status = $('status')
   if (!status) return
+  status.textContent = message
+  status.classList.toggle('error', isError)
+}
 
+function setApplyStatus(message, isError = false) {
+  const status = $('applyStatus')
+  if (!status) return
   status.textContent = message
   status.classList.toggle('error', isError)
 }

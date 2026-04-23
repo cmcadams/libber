@@ -10,10 +10,12 @@ BEGIN
   DELETE FROM store_memberships;      GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_memberships:      %', n;
   DELETE FROM store_staff;            GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff:            %', n;
   DELETE FROM store_managers;         GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_managers:         %', n;
-  DELETE FROM store_staff_applicants; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff_applicants: %', n;
+  DELETE FROM store_staff_applicants;    GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff_applicants:    %', n;
+  DELETE FROM store_manager_applicants;  GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_manager_applicants:  %', n;
   DELETE FROM store_reward_rules;     GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_reward_rules:     %', n;
   DELETE FROM stores;                 GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'stores:                 %', n;
   DELETE FROM profiles;               GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'profiles:               %', n;
+  DELETE FROM admins;                 GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'admins:                 %', n;
   DELETE FROM auth.users;             GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'auth.users:             %', n;
 
   RAISE NOTICE 'Done. System is clean.';

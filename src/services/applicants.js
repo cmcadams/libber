@@ -44,6 +44,25 @@ export async function demoteStaff(userId, storeId) {
   })
 }
 
+export async function applyForManager(storeId) {
+  return supabase.rpc('apply_for_manager', { p_store_id: storeId })
+}
+
+export async function loadMyManagerApplications(userId) {
+  const { data, error } = await supabase
+    .from('store_manager_applicants')
+    .select('store_id')
+    .eq('user_id', userId)
+  return { data: data ?? [], error }
+}
+
+export async function rejectApplicant(userId, storeId) {
+  return supabase.rpc('reject_staff_applicant', {
+    p_user_id: userId,
+    p_store_id: storeId
+  })
+}
+
 export async function loadStaff(storeId) {
   const { data: staff, error } = await supabase
     .from('store_staff')
