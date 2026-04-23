@@ -1,0 +1,16 @@
+{
+  "name": "Libber",
+  "short_name": "Libber",
+  "description": "Your loyalty points",
+  "start_url": "/apps/customer/",
+  "display": "standalone",
+  "background_color": "#f9f9f7",
+  "theme_color": "#1a1a18",
+  "icons": [
+    {
+      "src": "/apps/customer/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

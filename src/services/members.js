@@ -110,13 +110,27 @@ export async function loadPointsHistory(userId, storeId) {
     .limit(20)
 }
 
-export async function loadCustomerHome() {
-  const { data, error } = await supabase.rpc('load_customer_home')
+export async function loadCustomerHome(includeStores = true) {
+  const { data, error } = await supabase.rpc('load_customer_home', {
+    p_include_stores: includeStores
+  })
   if (error) {
     console.error('loadCustomerHome error', error)
     return null
   }
   return data
+}
+
+export function subscribeToPointsInserts(userId, onInsert) {
+  return supabase
+    .channel(`points-inserts-${userId}`)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'points_ledger',
+      filter: `user_id=eq.${userId}`
+    }, payload => onInsert(payload.new))
+    .subscribe()
 }
 
 export async function loadMembers(storeId) {

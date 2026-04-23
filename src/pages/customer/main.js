@@ -1,39 +1,76 @@
 import { initAuth } from '../../services/auth.js'
-import { loadCustomerHome } from '../../services/members.js'
+import { loadCustomerHome, subscribeToPointsInserts } from '../../services/members.js'
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
 import { state } from '../../state/state.js'
 
-const cacheKey = id => `libber_home_${id}`
+// ── Cache helpers ─────────────────────────────────────────────────────────────
 
-function readCache(userId) {
-  try {
-    const raw = localStorage.getItem(cacheKey(userId))
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
-}
+const homeKey  = id => `libber_home_${id}`
+const STORES_KEY = 'libber_stores'
+const STORES_TTL = 24 * 60 * 60 * 1000
 
-function writeCache(userId, data) {
-  try { localStorage.setItem(cacheKey(userId), JSON.stringify(data)) } catch {}
+function readJson(key)       { try { return JSON.parse(localStorage.getItem(key)) } catch { return null } }
+function writeJson(key, val) { try { localStorage.setItem(key, JSON.stringify(val)) } catch {} }
+
+function readHomeCache(userId)  { return readJson(homeKey(userId)) }
+function writeHomeCache(userId, data) { writeJson(homeKey(userId), data) }
+
+function readStoresCache() {
+  const entry = readJson(STORES_KEY)
+  if (!entry) return null
+  return (Date.now() - entry.ts < STORES_TTL) ? entry.stores : null
 }
+function writeStoresCache(stores) { writeJson(STORES_KEY, { stores, ts: Date.now() }) }
+
+// ── Apply data to state + DOM ─────────────────────────────────────────────────
 
 function applyHomeData(data, uuid) {
   renderUser(data.public_id, uuid)
+
   state.userStores = (data.memberships || []).map(m => ({
-    store_id: m.store_id,
+    store_id:   m.store_id,
     store_name: m.store_name,
-    balance: m.balance
+    balance:    m.balance
   }))
+
+  // Cache per-store rules + history for instant card opens
+  state.storeData = state.storeData || {}
+  for (const m of (data.memberships || [])) {
+    state.storeData[m.store_id] = { rules: m.rules || [], history: m.history || [] }
+  }
+
   renderUserStores()
-  renderStores(data.stores || [])
+  if (data.stores != null) renderStores(data.stores)
 }
 
-function initShowStaff() {
-  const btn = document.getElementById('show-staff-btn')
-  const overlay = document.getElementById('staff-overlay')
-  const overlayId = document.getElementById('staff-overlay-id')
-  const doneBtn = document.getElementById('staff-overlay-done')
+// ── Notifications ─────────────────────────────────────────────────────────────
 
+function maybeNotify(row) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
+  if (document.visibilityState === 'visible') return
+  const store = (state.userStores || []).find(s => s.store_id === row.store_id)
+  const name  = store?.store_name || 'a store'
+  const pts   = row.points
+  new Notification('Libber', {
+    body: pts > 0 ? `+${pts} pts at ${name}` : `${pts} pts redeemed at ${name}`,
+    icon: '/apps/customer/icon.svg'
+  })
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission()
+  }
+}
+
+// ── Show Staff overlay ────────────────────────────────────────────────────────
+
+function initShowStaff() {
+  const btn      = document.getElementById('show-staff-btn')
+  const overlay  = document.getElementById('staff-overlay')
+  const overlayId = document.getElementById('staff-overlay-id')
+  const doneBtn  = document.getElementById('staff-overlay-done')
   if (!btn || !overlay) return
 
   function exitStaffView() {
@@ -60,32 +97,64 @@ function initShowStaff() {
   })
 }
 
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
 async function init() {
   try {
     const user = await initAuth()
     if (!user) return
 
-    // Render from cache immediately so the page feels instant on return visits
-    const cached = readCache(user.id)
-    if (cached) applyHomeData(cached, user.id)
+    // 1. Render from home cache immediately (instant on return visits)
+    const cached = readHomeCache(user.id)
+    if (cached) {
+      const cachedStores = readStoresCache()
+      if (cached.stores == null && cachedStores) cached.stores = cachedStores
+      applyHomeData(cached, user.id)
+    }
 
-    // Single RPC: profile + memberships + balances + stores in one round trip
-    const data = await loadCustomerHome()
+    // 2. Fetch fresh data — skip stores query if cache is still fresh
+    const cachedStores = readStoresCache()
+    const data = await loadCustomerHome(!cachedStores)
     if (data) {
-      writeCache(user.id, data)
+      if (cachedStores) {
+        data.stores = cachedStores        // inject cached stores so renderStores fires
+      } else {
+        writeStoresCache(data.stores)     // fresh stores — update cache
+      }
+      writeHomeCache(user.id, data)
       applyHomeData(data, user.id)
     }
 
     initShowStaff()
 
+    // 3. Ask for notification permission after a short delay
+    setTimeout(requestNotificationPermission, 4000)
+
+    // 4. Real-time: refresh home data when points change
+    subscribeToPointsInserts(user.id, async row => {
+      const stores = readStoresCache()
+      const fresh  = await loadCustomerHome(!stores)
+      if (fresh) {
+        if (stores) fresh.stores = stores
+        else writeStoresCache(fresh.stores)
+        writeHomeCache(user.id, fresh)
+        applyHomeData(fresh, user.id)
+        maybeNotify(row)
+      }
+    })
+
+    // 5. Refresh button
     const refreshBtn = document.getElementById('refresh-btn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
         refreshBtn.classList.add('loading')
         refreshBtn.disabled = true
-        const fresh = await loadCustomerHome()
+        const stores = readStoresCache()
+        const fresh  = await loadCustomerHome(!stores)
         if (fresh) {
-          writeCache(user.id, fresh)
+          if (stores) fresh.stores = stores
+          else writeStoresCache(fresh.stores)
+          writeHomeCache(user.id, fresh)
           applyHomeData(fresh, user.id)
         }
         refreshBtn.classList.remove('loading')
@@ -97,6 +166,11 @@ async function init() {
     console.error(err)
     alert('Something went wrong')
   }
+}
+
+// 6. Register service worker for PWA installability
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/apps/customer/sw.js').catch(() => {})
 }
 
 init()

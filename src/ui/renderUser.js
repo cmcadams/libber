@@ -52,36 +52,19 @@ export function renderUserStores() {
   })
 }
 
-async function toggleHistory(card) {
-  const historyEl = card.querySelector('.store-history')
-  if (!historyEl) return
-
-  if (historyEl.style.display !== 'none') {
-    historyEl.style.display = 'none'
-    card.classList.remove('open')
-    return
-  }
-
-  historyEl.style.display = 'block'
-  card.classList.add('open')
-  historyEl.innerHTML = '<p class="history-empty">Loading...</p>'
-
-  const storeId = card.dataset.storeId
-  const [{ data: rules }, { data: history }] = await Promise.all([
-    loadRewardRules(storeId),
-    loadPointsHistory(state.user?.id, storeId)
-  ])
-
-  const awardRules = (rules || []).filter(r => r.kind === 'award')
+function renderStoreDetail(el, history, rules) {
+  const awardRules  = (rules || []).filter(r => r.kind === 'award')
   const redeemRules = (rules || []).filter(r => r.kind === 'redeem')
 
-  const historyHtml = (history || []).length ? history.map(row => `
-    <div class="history-row">
-      <span class="history-reason">${escapeHtml(row.reason || '—')}</span>
-      <span class="history-pts${row.points < 0 ? ' history-pts-redeem' : ''}">${row.points > 0 ? '+' : ''}${row.points} pts</span>
-      <span class="history-date">${formatDate(row.created_at)}</span>
-    </div>
-  `).join('') : '<p class="history-empty">No transactions yet</p>'
+  const historyHtml = (history || []).length
+    ? history.map(row => `
+        <div class="history-row">
+          <span class="history-reason">${escapeHtml(row.reason || '—')}</span>
+          <span class="history-pts${row.points < 0 ? ' history-pts-redeem' : ''}">${row.points > 0 ? '+' : ''}${row.points} pts</span>
+          <span class="history-date">${formatDate(row.created_at)}</span>
+        </div>
+      `).join('')
+    : '<p class="history-empty">No transactions yet</p>'
 
   const rulesHtml = (awardRules.length || redeemRules.length) ? `
     <div class="rules-divider"></div>
@@ -105,5 +88,41 @@ async function toggleHistory(card) {
     ` : ''}
   ` : ''
 
-  historyEl.innerHTML = historyHtml + rulesHtml
+  el.innerHTML = historyHtml + rulesHtml
+}
+
+async function toggleHistory(card) {
+  const historyEl = card.querySelector('.store-history')
+  if (!historyEl) return
+
+  if (historyEl.style.display !== 'none') {
+    historyEl.style.display = 'none'
+    card.classList.remove('open')
+    return
+  }
+
+  historyEl.style.display = 'block'
+  card.classList.add('open')
+
+  const storeId = card.dataset.storeId
+  const cached  = state.storeData?.[storeId]
+
+  // Render from cache immediately — no loading flicker on return visits
+  if (cached) {
+    renderStoreDetail(historyEl, cached.history, cached.rules)
+  } else {
+    historyEl.innerHTML = '<p class="history-empty">Loading...</p>'
+  }
+
+  // Always refresh in background
+  const [{ data: rules }, { data: history }] = await Promise.all([
+    loadRewardRules(storeId),
+    loadPointsHistory(state.user?.id, storeId)
+  ])
+
+  if (state.storeData) {
+    state.storeData[storeId] = { rules: rules || [], history: history || [] }
+  }
+
+  renderStoreDetail(historyEl, history, rules)
 }
