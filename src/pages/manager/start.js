@@ -2,6 +2,7 @@ import { initAuth } from '../../services/auth.js'
 import { approveApplicant, demoteStaff, loadApplicants, loadManagedStores, loadStaff, rejectApplicant, applyForManager, loadMyManagerApplications } from '../../services/applicants.js'
 import { loadUserProfile } from '../../services/members.js'
 import { getStores } from '../../services/stores.js'
+import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
 
 let selectedStoreId = null
@@ -159,10 +160,12 @@ function bindEvents() {
     if (!button) return
 
     selectedStoreId = button.dataset.storeId
+    const storeName = button.querySelector('.pick-title')?.textContent || selectedStoreId
+    saveSelectedStore(selectedStoreId, storeName)
     document.querySelectorAll('[data-store-id]').forEach(node => {
       node.classList.toggle('selected', node === button)
     })
-    $('selectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedStoreId
+    $('selectedStore').textContent = storeName
     setStatus('')
     try {
       await Promise.all([renderApplicants(), renderStaff()])
