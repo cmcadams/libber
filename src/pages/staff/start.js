@@ -8,7 +8,6 @@ import { escapeHtml } from '../../lib/escape.js'
 import { state } from '../../state/state.js'
 
 let selectedStoreId = null
-let selectedStoreName = null
 let isPendingForSelectedStore = false
 let pendingStoreIds = new Set()
 
@@ -90,7 +89,6 @@ function bindEvents() {
     if (!button) return
 
     selectedStoreId = button.dataset.storeId
-    selectedStoreName = button.querySelector('.pick-title')?.textContent || 'Store'
     isPendingForSelectedStore = pendingStoreIds.has(selectedStoreId)
     document.querySelectorAll('[data-store-id]').forEach(node => {
       node.classList.toggle('selected', node === button)

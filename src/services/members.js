@@ -63,7 +63,6 @@ export async function loadUserStoresWithPoints(userId) {
   }))
 }
 
-
 export async function loadPointsHistory(userId, storeId) {
   return supabase
     .from('points_ledger')
@@ -71,7 +70,7 @@ export async function loadPointsHistory(userId, storeId) {
     .eq('user_id', userId)
     .eq('store_id', storeId)
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(10)
 }
 
 export async function loadCustomerHome(includeStores = true) {

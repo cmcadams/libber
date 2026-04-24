@@ -62,7 +62,6 @@ SET search_path = ''
 AS $$
 DECLARE
   v_user_id uuid;
-  v_result  json;
 BEGIN
   v_user_id := auth.uid();
 
@@ -73,10 +72,7 @@ BEGIN
   VALUES (v_user_id, p_store_id)
   ON CONFLICT (user_id, store_id) DO NOTHING;
 
-  SELECT json_build_object('success', true, 'user_id', v_user_id, 'store_id', p_store_id)
-  INTO v_result;
-
-  RETURN v_result;
+  RETURN json_build_object('success', true, 'user_id', v_user_id, 'store_id', p_store_id);
 END $$;
 
 -- ── apply_for_staff ───────────────────────────────────────────────────────────

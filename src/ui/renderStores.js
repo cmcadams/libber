@@ -59,6 +59,7 @@ export function renderStores(stores) {
 
       await loadUserStoresWithPoints(state.user.id)
       renderUserStores()
+      try { localStorage.removeItem(`libber_home_${state.user.id}`) } catch {}
 
       card.remove()
       if (!listDiv.children.length && section) section.style.display = 'none'

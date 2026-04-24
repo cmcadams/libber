@@ -1,6 +1,5 @@
 export const state = {
   user: null,
-  stores: [],
   userStores: [],
   staffStores: [],
   selectedStoreId: null,

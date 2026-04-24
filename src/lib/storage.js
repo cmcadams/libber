@@ -11,10 +11,3 @@ export function loadSelectedStore() {
   state.selectedStoreId = localStorage.getItem('selectedStoreId')
   state.selectedStoreName = localStorage.getItem('selectedStoreName')
 }
-
-export function clearSelectedStore() {
-  state.selectedStoreId = null
-  state.selectedStoreName = null
-  localStorage.removeItem('selectedStoreId')
-  localStorage.removeItem('selectedStoreName')
-}

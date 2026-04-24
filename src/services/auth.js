@@ -7,7 +7,6 @@ export async function initAuth() {
     if (error) {
       throw new Error(`Anonymous sign-in failed: ${error.message}`)
     }
-    console.log('ANON RESULT:', data)
   }
 
   const { data: { session } } = await supabase.auth.getSession()
@@ -33,7 +32,6 @@ export async function initAuth() {
   if (!userData?.user) {
     throw new Error('Auth succeeded but no user was returned.')
   }
-  console.log('USER DATA:', userData)
   state.user = userData.user
   return state.user
 }
