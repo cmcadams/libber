@@ -5,5 +5,6 @@ export const state = {
   selectedStoreId: null,
   selectedStoreName: null,
   members: [],
-  rewardRules: []
+  rewardRules: [],
+  bonusCap: null
 }

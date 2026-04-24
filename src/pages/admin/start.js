@@ -575,7 +575,7 @@ async function loadAndRenderRules(storeId, storeName) {
   currentRules = data || []
   renderRulesList()
 
-  const cap = capData?.max_bonus_points ?? null
+  const cap = capData ?? null
   $('bonusCapInput').value = cap !== null ? cap : ''
   $('bonusCapInput').placeholder = cap !== null ? String(cap) : 'No cap'
 }
