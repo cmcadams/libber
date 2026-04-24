@@ -120,10 +120,15 @@ async function toggleHistory(card) {
   }
 
   // Always refresh in background
-  const [{ data: rules }, { data: history }] = await Promise.all([
+  const [{ data: rules, error: rulesErr }, { data: history, error: histErr }] = await Promise.all([
     loadRewardRules(storeId),
     loadPointsHistory(state.user?.id, storeId)
   ])
+
+  if (rulesErr || histErr) {
+    if (!cached) historyEl.innerHTML = '<p class="history-empty">Could not load.</p>'
+    return
+  }
 
   if (state.storeData) {
     state.storeData[storeId] = { rules: rules || [], history: history || [] }

@@ -158,10 +158,7 @@ async function handleQuickAward(btn) {
     btn.querySelector('.btn-label').textContent = 'awarded'
     btn.querySelector('.btn-pts').textContent = `+${pts} pts`
     setTimeout(() => {
-      btn.classList.remove('done')
-      btn.querySelector('.btn-label').textContent = btn.dataset.label
-      btn.querySelector('.btn-pts').textContent = `+${pts} pts`
-      btn.disabled = false
+      renderRuleButtons()
       renderCustomers()
     }, 1500)
   } catch (err) {
@@ -189,6 +186,7 @@ async function handleBonusAward() {
       $('awardBtn').textContent = 'Award bonus'
       $('awardBtn').className = 'award-btn'
       $('awardBtn').disabled = true
+      renderRuleButtons()
       renderCustomers()
     }, 1500)
   } catch (err) {
@@ -216,10 +214,7 @@ async function handleRedeem(btn) {
     btn.querySelector('.redeem-btn-label').textContent = 'Redeemed'
     btn.querySelector('.redeem-btn-cost').textContent = `−${pts} pts`
     setTimeout(() => {
-      btn.classList.remove('done')
-      btn.querySelector('.redeem-btn-label').textContent = label
-      btn.querySelector('.redeem-btn-cost').textContent = `−${pts} pts`
-      btn.disabled = selectedMember.balance < pts
+      renderRuleButtons()
       renderCustomers()
     }, 1500)
   } catch (err) {
