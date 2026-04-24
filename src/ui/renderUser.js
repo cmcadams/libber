@@ -29,6 +29,10 @@ export function renderUserStores() {
     return
   }
 
+  const openIds = new Set(
+    [...el.querySelectorAll('.store-card.open')].map(c => c.dataset.storeId)
+  )
+
   el.innerHTML = `
     <h2 class="section-title">Your stores</h2>
     <div class="store-list">
@@ -49,6 +53,7 @@ export function renderUserStores() {
 
   el.querySelectorAll('.store-card').forEach(card => {
     card.addEventListener('click', () => toggleHistory(card))
+    if (openIds.has(card.dataset.storeId)) toggleHistory(card)
   })
 }
 
