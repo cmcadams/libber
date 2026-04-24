@@ -204,7 +204,7 @@ The app uses anonymous Supabase auth (`src/services/auth.js`):
 4. Tap a store card to expand:
    - **How to earn** — the store's award rules (e.g. "1 coffee → +5 pts")
    - **Rewards** — the store's redeem options and their point costs
-   - **Transaction history** — last 20 entries
+   - **Transaction history** — last 10 entries
 5. User can join additional stores — "Join a store" section is hidden once all stores are joined
 
 ### Staff Applicant
