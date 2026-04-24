@@ -16,8 +16,8 @@ CREATE POLICY "profiles: allow select" ON public.profiles
 
 -- ── store_managers ────────────────────────────────────────────────────────────
 -- RLS not previously enabled on this table.
--- Manager identity is not sensitive — required for manager dashboard and
--- approve_staff_applicant auth check inside RPCs.
+-- Managers see only their own records; admins see all.
+-- SECURITY DEFINER RPCs (approve_staff_applicant etc.) bypass this via superuser role.
 
 ALTER TABLE public.store_managers ENABLE ROW LEVEL SECURITY;
 
@@ -30,7 +30,7 @@ CREATE POLICY "managers: no direct insert" ON public.store_managers
 CREATE POLICY "managers: no direct delete" ON public.store_managers
   AS RESTRICTIVE FOR DELETE USING (false);
 CREATE POLICY "managers: allow select" ON public.store_managers
-  FOR SELECT USING (true);
+  FOR SELECT USING (user_id = auth.uid() OR public.is_admin());
 
 -- ── store_memberships ─────────────────────────────────────────────────────────
 -- Each user can only read their own memberships.
