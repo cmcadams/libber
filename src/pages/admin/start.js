@@ -4,12 +4,13 @@ import {
   loadAdminUsers, loadAllStores,
   createStore, updateStoreName, removeStore,
   loadRewardRules, insertRewardRule, deleteRewardRule, updateRewardRuleOrder,
-  loadStoreBonusCap, setBonusCap,
+  setBonusCap,
   loadStoreManagers, removeManager,
   loadStoreStaff, removeStaffAdmin,
   loadStoreApplicants, loadManagerApplicants, rejectManagerApplicant,
   loadAllApplicants, approveApplicantAdmin, rejectApplicant
 } from '../../services/admin.js'
+import { getStoreBonusCap } from '../../services/stores.js'
 import { escapeHtml } from '../../lib/escape.js'
 
 const $ = id => document.getElementById(id)
@@ -563,7 +564,7 @@ async function loadAndRenderRules(storeId, storeName) {
 
   const [{ data, error }, { data: capData }] = await Promise.all([
     loadRewardRules(storeId),
-    loadStoreBonusCap(storeId)
+    getStoreBonusCap(storeId)
   ])
 
   if (error) {

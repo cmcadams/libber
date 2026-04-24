@@ -14,14 +14,6 @@ export async function loadAllStores() {
     .order('name', { ascending: true })
 }
 
-export async function loadStoreBonusCap(storeId) {
-  return supabase
-    .from('stores')
-    .select('max_bonus_points')
-    .eq('id', storeId)
-    .single()
-}
-
 export async function setBonusCap(storeId, maxBonus) {
   return supabase.rpc('admin_set_bonus_cap', {
     p_store_id: storeId,

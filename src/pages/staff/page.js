@@ -22,7 +22,7 @@ async function boot() {
   document.getElementById('storeName').textContent = state.selectedStoreName || 'Store'
 
   const profile = await loadUserProfile(user.id)
-  const publicId = profile?.public_id || user.id.slice(0, 6).toUpperCase()
+  const publicId = profile?.public_id || `USR-${user.id.slice(0, 6).toUpperCase()}`
   document.getElementById('staffBadge').textContent = `Staff: ${publicId}`
 
   // load members and reward rules for this store
