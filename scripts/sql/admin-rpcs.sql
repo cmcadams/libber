@@ -93,22 +93,7 @@ BEGIN
   RETURN row_to_json(v_store);
 END $$;
 
-CREATE OR REPLACE FUNCTION public.admin_remove_store(p_store_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-  IF NOT public.is_admin() THEN RAISE EXCEPTION 'Not authorized'; END IF;
-  DELETE FROM public.points_ledger          WHERE store_id = p_store_id;
-  DELETE FROM public.store_memberships      WHERE store_id = p_store_id;
-  DELETE FROM public.store_staff            WHERE store_id = p_store_id;
-  DELETE FROM public.store_managers         WHERE store_id = p_store_id;
-  DELETE FROM public.store_staff_applicants WHERE store_id = p_store_id;
-  DELETE FROM public.store_reward_rules     WHERE store_id = p_store_id;
-  DELETE FROM public.stores                 WHERE id        = p_store_id;
-END $$;
+-- admin_remove_store is defined in add-manager-applicants.sql (authoritative version).
 
 -- ── Admin RPCs for reward rules ───────────────────────────────────────────────
 
@@ -157,19 +142,7 @@ BEGIN
 END $$;
 
 -- ── Admin RPCs for managers and staff ────────────────────────────────────────
-
-DROP FUNCTION IF EXISTS public.admin_assign_manager(uuid, uuid);
-CREATE OR REPLACE FUNCTION public.admin_assign_manager(p_user_id uuid, p_store_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-BEGIN
-  IF NOT public.is_admin() THEN RAISE EXCEPTION 'Not authorized'; END IF;
-  INSERT INTO public.store_managers (user_id, store_id) VALUES (p_user_id, p_store_id)
-  ON CONFLICT DO NOTHING;
-END $$;
+-- admin_assign_manager is defined in add-manager-applicants.sql (authoritative version).
 
 CREATE OR REPLACE FUNCTION public.admin_assign_staff(p_user_id uuid, p_store_id uuid)
 RETURNS void
