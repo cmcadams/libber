@@ -249,6 +249,21 @@ function bindEvents() {
   })
 
   $('applyManagerBtn')?.addEventListener('click', handleApply)
+
+  $('refreshBtn')?.addEventListener('click', async () => {
+    if (!selectedStoreId) return
+    const btn = $('refreshBtn')
+    btn.classList.add('loading')
+    btn.disabled = true
+    try {
+      await Promise.all([renderApplicants(), renderStaff()])
+    } catch (err) {
+      console.error(err)
+      setStatus(err.message || 'Could not refresh.', true)
+    }
+    btn.classList.remove('loading')
+    btn.disabled = false
+  })
 }
 
 async function handleApply() {

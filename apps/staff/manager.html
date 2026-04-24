@@ -147,6 +147,39 @@
       color: var(--danger);
     }
 
+    .staff-link {
+      display: inline-block;
+      margin-top: 14px;
+      font-size: 14px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .staff-link:hover { text-decoration: underline; }
+
+    .panel-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .refresh-btn {
+      font-size: 16px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      transition: color 0.15s, transform 0.3s;
+    }
+
+    .refresh-btn:hover { color: var(--text); }
+    .refresh-btn.loading { animation: spin 0.7s linear infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .empty {
       color: var(--muted);
       padding: 16px 4px;
@@ -218,6 +251,7 @@
       <h1>Approve staff applicants.</h1>
       <p>Choose one of your stores, review the people who applied from the staff start page, then promote them to staff.</p>
       <p>Manager ID: <strong id="myId">Loading...</strong></p>
+      <a href="/apps/staff/" class="staff-link">Go to staff page →</a>
     </section>
 
     <section class="grid">
@@ -230,7 +264,10 @@
       </section>
 
       <section class="panel">
-        <h2>Applicants</h2>
+        <div class="panel-header-row">
+          <h2>Applicants</h2>
+          <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
+        </div>
         <p>Selected store: <strong id="selectedStore">None selected</strong></p>
         <p class="status" id="status"></p>
         <div class="picker" id="applicantList">
