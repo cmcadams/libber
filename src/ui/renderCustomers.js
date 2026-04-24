@@ -101,7 +101,7 @@ function renderRuleButtons() {
   if ($('redeemDivider')) $('redeemDivider').style.display = redeemRules.length ? '' : 'none'
 
   $('quickBtns').innerHTML = quickRules.map(r => `
-    <button class="quick-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}">
+    <button class="quick-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}" data-rule-id="${escapeHtml(r.id)}">
       <span class="btn-label">${escapeHtml(r.label)}</span>
       <span class="btn-pts">+${r.points} pts</span>
     </button>
@@ -151,7 +151,7 @@ async function handleQuickAward(btn) {
 
   btn.disabled = true
   try {
-    await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, btn.dataset.label)
+    await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, btn.dataset.label, btn.dataset.ruleId)
     selectedMember.balance += pts
     $('panelBalance').textContent = selectedMember.balance
     btn.classList.add('done')
@@ -166,7 +166,7 @@ async function handleQuickAward(btn) {
     }, 1500)
   } catch (err) {
     btn.disabled = false
-    setStatus('Could not award points. Try again.')
+    setStatus(err.message || 'Could not award points.')
   }
 }
 
@@ -193,7 +193,7 @@ async function handleBonusAward() {
     }, 1500)
   } catch (err) {
     $('awardBtn').disabled = false
-    setStatus('Could not award bonus. Try again.')
+    setStatus(err.message || 'Could not award bonus.')
   }
 }
 
@@ -224,7 +224,7 @@ async function handleRedeem(btn) {
     }, 1500)
   } catch (err) {
     btn.disabled = false
-    setStatus('Could not redeem. Try again.')
+    setStatus(err.message || 'Could not redeem.')
   }
 }
 

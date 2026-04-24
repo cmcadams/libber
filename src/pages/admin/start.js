@@ -593,7 +593,7 @@ function renderRulesList() {
       </div>
       <span class="rule-badge">${escapeHtml(r.kind)}</span>
       <span class="rule-label-text">${escapeHtml(r.label || '—')}</span>
-      <span class="rule-pts-text">+${r.points} pts</span>
+      <span class="rule-pts-text">${r.kind === 'redeem' ? '−' : '+'}${r.points} pts</span>
       <button class="rule-delete-btn" data-delete-rule-id="${r.id}">Remove</button>
     </div>
   `).join('')

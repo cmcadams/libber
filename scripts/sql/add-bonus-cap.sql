@@ -1,4 +1,4 @@
--- Bonus cap: per-store limit on positive point awards.
+-- Bonus cap: per-store limit on bonus (free-form) point awards.
 -- Safe to re-run — ALTER TABLE uses IF NOT EXISTS, functions use CREATE OR REPLACE.
 -- Run in the Supabase SQL Editor (Dashboard → SQL Editor).
 
@@ -7,7 +7,7 @@
 ALTER TABLE public.stores ADD COLUMN IF NOT EXISTS max_bonus_points integer;
 
 -- ── admin_set_bonus_cap ───────────────────────────────────────────────────────
--- Pass NULL as p_max_bonus_points to remove the cap.
+-- Pass NULL as p_max_bonus_points to remove the cap entirely.
 
 CREATE OR REPLACE FUNCTION public.admin_set_bonus_cap(
   p_store_id         uuid,
@@ -32,13 +32,18 @@ BEGIN
   UPDATE public.stores SET max_bonus_points = p_max_bonus_points WHERE id = p_store_id;
 END $$;
 
--- ── award_points (updated with cap check) ─────────────────────────────────────
+-- ── award_points (updated with cap check + rule validation) ───────────────────
+--
+-- p_rule_id: pass the store_reward_rules.id when awarding from a predefined rule.
+-- Rule-based awards are validated against the rule and exempt from the bonus cap.
+-- Leave NULL for free-form bonus awards — those are subject to max_bonus_points.
 
 CREATE OR REPLACE FUNCTION public.award_points(
   p_user_id  uuid,
   p_store_id uuid,
   p_points   integer,
-  p_reason   text
+  p_reason   text,
+  p_rule_id  uuid DEFAULT NULL
 )
 RETURNS integer
 LANGUAGE plpgsql
@@ -68,9 +73,24 @@ BEGIN
   IF p_points = 0 THEN RAISE EXCEPTION 'points cannot be zero'; END IF;
 
   IF p_points > 0 THEN
-    SELECT max_bonus_points INTO v_max_bonus FROM public.stores WHERE id = p_store_id;
-    IF v_max_bonus IS NOT NULL AND p_points > v_max_bonus THEN
-      RAISE EXCEPTION 'exceeds bonus cap of % points for this store', v_max_bonus;
+    IF p_rule_id IS NOT NULL THEN
+      -- Validate the rule belongs to this store, is active, is an award, and points match
+      IF NOT EXISTS (
+        SELECT 1 FROM public.store_reward_rules
+        WHERE id = p_rule_id
+          AND store_id = p_store_id
+          AND is_active = true
+          AND kind = 'award'
+          AND points = p_points
+      ) THEN
+        RAISE EXCEPTION 'invalid rule for this award';
+      END IF;
+    ELSE
+      -- Free-form bonus award: check cap
+      SELECT max_bonus_points INTO v_max_bonus FROM public.stores WHERE id = p_store_id;
+      IF v_max_bonus IS NOT NULL AND p_points > v_max_bonus THEN
+        RAISE EXCEPTION 'exceeds bonus cap of % points for this store', v_max_bonus;
+      END IF;
     END IF;
   END IF;
 

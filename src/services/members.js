@@ -149,13 +149,10 @@ export async function loadMembers(storeId) {
   }))
 }
 
-export async function awardPoints(userId, storeId, points, reason) {
-  const { error } = await supabase.rpc('award_points', {
-    p_user_id: userId,
-    p_store_id: storeId,
-    p_points: points,
-    p_reason: reason,
-  })
+export async function awardPoints(userId, storeId, points, reason, ruleId = null) {
+  const params = { p_user_id: userId, p_store_id: storeId, p_points: points, p_reason: reason }
+  if (ruleId) params.p_rule_id = ruleId
 
+  const { error } = await supabase.rpc('award_points', params)
   if (error) throw error
 }
