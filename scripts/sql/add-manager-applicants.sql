@@ -18,7 +18,7 @@ DROP POLICY IF EXISTS "manager_applicants: no direct insert" ON public.store_man
 DROP POLICY IF EXISTS "manager_applicants: no direct delete" ON public.store_manager_applicants;
 
 CREATE POLICY "manager_applicants: select" ON public.store_manager_applicants
-  FOR SELECT USING (true);
+  FOR SELECT USING (user_id = auth.uid() OR public.is_admin());
 CREATE POLICY "manager_applicants: no direct insert" ON public.store_manager_applicants
   AS RESTRICTIVE FOR INSERT WITH CHECK (false);
 CREATE POLICY "manager_applicants: no direct delete" ON public.store_manager_applicants
