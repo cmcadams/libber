@@ -37,6 +37,18 @@ async function boot() {
   // render list + wire all handlers
   renderCustomers()
   initCustomerHandlers()
+
+  const refreshBtn = document.getElementById('refreshBtn')
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      refreshBtn.classList.add('loading')
+      refreshBtn.disabled = true
+      await loadMembers(state.selectedStoreId)
+      renderCustomers()
+      refreshBtn.classList.remove('loading')
+      refreshBtn.disabled = false
+    })
+  }
 }
 
 boot()
