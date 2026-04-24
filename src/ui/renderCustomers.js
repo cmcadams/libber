@@ -113,6 +113,12 @@ function renderRuleButtons() {
     ? allowed.map(pts => `<button class="bonus-btn" data-pts="${pts}">+${pts}</button>`).join('')
     : `<p style="font-size:13px;color:var(--text-hint);padding:4px 0">No bonus amounts within cap (${cap} pts)</p>`
 
+  if (bonusPts !== null) {
+    $('bonusBtns').querySelectorAll('.bonus-btn').forEach(b => {
+      if (parseInt(b.dataset.pts) === bonusPts) b.classList.add('selected')
+    })
+  }
+
   $('redeemBtns').innerHTML = redeemRules.map(r => `
     <button class="redeem-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}"
       ${r.points > balance ? 'disabled' : ''}>

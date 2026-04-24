@@ -44,7 +44,7 @@ BEGIN
               'reason',     h.reason,
               'points',     h.points,
               'created_at', h.created_at
-            )), '[]'::json)
+            ) ORDER BY h.created_at DESC), '[]'::json)
             FROM (
               SELECT reason, points, created_at
               FROM public.points_ledger
