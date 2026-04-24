@@ -168,12 +168,16 @@ BEGIN
 END $$;
 
 -- ── award_points ──────────────────────────────────────────────────────────────
+-- NOTE: also maintained in add-bonus-cap.sql — keep both in sync.
+-- p_rule_id: pass store_reward_rules.id for quick awards (validated, cap-exempt).
+-- Leave NULL for free-form bonus awards (subject to stores.max_bonus_points).
 
 CREATE OR REPLACE FUNCTION public.award_points(
   p_user_id  uuid,
   p_store_id uuid,
   p_points   integer,
-  p_reason   text
+  p_reason   text,
+  p_rule_id  uuid DEFAULT NULL
 )
 RETURNS integer
 LANGUAGE plpgsql
@@ -182,6 +186,7 @@ SET search_path = ''
 AS $$
 DECLARE
   v_staff_id        uuid;
+  v_max_bonus       integer;
   v_current_balance integer;
   v_new_balance     integer;
 BEGIN
@@ -200,6 +205,26 @@ BEGIN
   END IF;
 
   IF p_points = 0 THEN RAISE EXCEPTION 'points cannot be zero'; END IF;
+
+  IF p_points > 0 THEN
+    IF p_rule_id IS NOT NULL THEN
+      IF NOT EXISTS (
+        SELECT 1 FROM public.store_reward_rules
+        WHERE id = p_rule_id
+          AND store_id = p_store_id
+          AND is_active = true
+          AND kind = 'award'
+          AND points = p_points
+      ) THEN
+        RAISE EXCEPTION 'invalid rule for this award';
+      END IF;
+    ELSE
+      SELECT max_bonus_points INTO v_max_bonus FROM public.stores WHERE id = p_store_id;
+      IF v_max_bonus IS NOT NULL AND p_points > v_max_bonus THEN
+        RAISE EXCEPTION 'exceeds bonus cap of % points for this store', v_max_bonus;
+      END IF;
+    END IF;
+  END IF;
 
   SELECT running_balance INTO v_current_balance
   FROM public.points_ledger
