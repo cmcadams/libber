@@ -63,42 +63,6 @@ export async function loadUserStoresWithPoints(userId) {
   }))
 }
 
-export function subscribeToUserPointsUpdates(userId, onUpdate) {
-  console.log('Setting up real-time subscription for user:', userId)
-  
-  const channel = supabase
-    .channel(`user-points-${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'points_ledger',
-        filter: `user_id=eq.${userId}`
-      },
-      async (payload) => {
-        console.log('🔔 Points update received:', payload)
-        await loadUserStoresWithPoints(userId)
-        onUpdate()
-      }
-    )
-    .subscribe((status) => {
-      console.log('Subscription status:', status)
-      if (status === 'SUBSCRIBED') {
-        console.log('✅ Real-time points subscription ACTIVE')
-      } else {
-        console.log('❌ Real-time subscription failed:', status)
-      }
-    })
-
-  return channel
-}
-
-export function unsubscribeFromPointsUpdates(channel) {
-  if (channel) {
-    supabase.removeChannel(channel)
-  }
-}
 
 export async function loadPointsHistory(userId, storeId) {
   return supabase

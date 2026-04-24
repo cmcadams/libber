@@ -53,7 +53,7 @@ function maybeNotify(row) {
   const name  = store?.store_name || 'a store'
   const pts   = row.points
   new Notification('Libber', {
-    body: pts > 0 ? `+${pts} pts at ${name}` : `${pts} pts redeemed at ${name}`,
+    body: pts > 0 ? `+${pts} pts at ${name}` : `${Math.abs(pts)} pts redeemed at ${name}`,
     icon: '/apps/customer/icon.svg'
   })
 }
@@ -112,6 +112,9 @@ async function init() {
       applyHomeData(cached, user.id)
     }
 
+    // Wire up Show Staff now — button is visible from page load, don't wait for network
+    initShowStaff()
+
     // 2. Fetch fresh data — skip stores query if cache is still fresh
     const cachedStores = readStoresCache()
     const data = await loadCustomerHome(!cachedStores)
@@ -124,8 +127,6 @@ async function init() {
       writeHomeCache(user.id, data)
       applyHomeData(data, user.id)
     }
-
-    initShowStaff()
 
     // 3. Ask for notification permission after a short delay
     setTimeout(requestNotificationPermission, 4000)
