@@ -4,6 +4,7 @@ import {
   loadAdminUsers, loadAllStores,
   createStore, updateStoreName, removeStore,
   loadRewardRules, insertRewardRule, deleteRewardRule, updateRewardRuleOrder,
+  loadStoreBonusCap, setBonusCap,
   loadStoreManagers, removeManager,
   loadStoreStaff, removeStaffAdmin,
   loadStoreApplicants, loadManagerApplicants, rejectManagerApplicant,
@@ -220,6 +221,27 @@ function bindEvents() {
   })
 
   $('addRuleBtn')?.addEventListener('click', handleAddRule)
+
+  $('saveBonusCapBtn')?.addEventListener('click', async () => {
+    const val = parseInt($('bonusCapInput').value)
+    if (!val || val < 1) { setStatus('bonusCapStatus', 'Enter a value of 1 or more.', true); return }
+    const btn = $('saveBonusCapBtn')
+    btn.disabled = true
+    const { error } = await setBonusCap(selectedRulesStoreId, val)
+    btn.disabled = false
+    if (error) { setStatus('bonusCapStatus', error.message || 'Could not save.', true); return }
+    setStatus('bonusCapStatus', `Cap set to ${val} pts.`)
+  })
+
+  $('removeBonusCapBtn')?.addEventListener('click', async () => {
+    const btn = $('removeBonusCapBtn')
+    btn.disabled = true
+    const { error } = await setBonusCap(selectedRulesStoreId, null)
+    btn.disabled = false
+    if (error) { setStatus('bonusCapStatus', error.message || 'Could not remove.', true); return }
+    $('bonusCapInput').value = ''
+    setStatus('bonusCapStatus', 'Cap removed.')
+  })
 
   // All stores: edit + remove
   $('allStoresList')?.addEventListener('click', async e => {
@@ -537,8 +559,13 @@ async function loadAndRenderRules(storeId, storeName) {
   $('rulesStoreName').textContent = storeName
   $('rulesContent').classList.remove('hidden')
   $('rulesList').innerHTML = '<p class="empty">Loading...</p>'
+  $('bonusCapStatus').textContent = ''
 
-  const { data, error } = await loadRewardRules(storeId)
+  const [{ data, error }, { data: capData }] = await Promise.all([
+    loadRewardRules(storeId),
+    loadStoreBonusCap(storeId)
+  ])
+
   if (error) {
     $('rulesList').innerHTML = '<p class="empty">Could not load rules.</p>'
     return
@@ -546,6 +573,10 @@ async function loadAndRenderRules(storeId, storeName) {
 
   currentRules = data || []
   renderRulesList()
+
+  const cap = capData?.max_bonus_points ?? null
+  $('bonusCapInput').value = cap !== null ? cap : ''
+  $('bonusCapInput').placeholder = cap !== null ? String(cap) : 'No cap'
 }
 
 function renderRulesList() {

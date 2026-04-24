@@ -575,6 +575,15 @@
         <div class="picker picker-inline" id="rulesStoreList"><p class="empty">Loading...</p></div>
         <div class="hidden" id="rulesContent">
           <div class="rules-store-name" id="rulesStoreName"></div>
+          <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+            <div class="picker-label" style="margin-bottom:8px">Bonus cap</div>
+            <div class="form-row">
+              <input type="number" id="bonusCapInput" class="input input-pts" placeholder="No cap" min="1" style="width:100px" />
+              <button class="btn-sm" id="saveBonusCapBtn">Save</button>
+              <button class="btn-danger-sm" id="removeBonusCapBtn">Remove cap</button>
+            </div>
+            <div class="status" id="bonusCapStatus"></div>
+          </div>
           <div id="rulesList"></div>
           <div class="add-rule-form">
             <div class="rule-inputs">

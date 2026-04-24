@@ -107,9 +107,11 @@ function renderRuleButtons() {
     </button>
   `).join('')
 
-  $('bonusBtns').innerHTML = BONUS_AMOUNTS.map(pts => `
-    <button class="bonus-btn" data-pts="${pts}">+${pts}</button>
-  `).join('')
+  const cap = state.bonusCap
+  const allowed = cap != null ? BONUS_AMOUNTS.filter(p => p <= cap) : BONUS_AMOUNTS
+  $('bonusBtns').innerHTML = allowed.length
+    ? allowed.map(pts => `<button class="bonus-btn" data-pts="${pts}">+${pts}</button>`).join('')
+    : `<p style="font-size:13px;color:var(--text-hint);padding:4px 0">No bonus amounts within cap (${cap} pts)</p>`
 
   $('redeemBtns').innerHTML = redeemRules.map(r => `
     <button class="redeem-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}"
