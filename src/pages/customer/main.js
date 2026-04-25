@@ -127,7 +127,8 @@ function initDevSection() {
     timer = setTimeout(() => { count = 0 }, 1500)
     if (count >= 7) {
       count = 0
-      section.hidden = false
+      clearTimeout(timer)
+      section.classList.add('visible')
     }
   })
 

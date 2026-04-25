@@ -442,14 +442,16 @@
     }
 
     .dev-section {
+      display: none;
       margin-top: 0.5rem;
       padding: 12px;
       border: 1px dashed var(--border-strong);
       border-radius: var(--radius-md);
-      display: flex;
       align-items: center;
       gap: 10px;
     }
+
+    .dev-section.visible { display: flex; }
 
     .dev-title {
       font-size: 11px;
@@ -514,7 +516,7 @@
       <div id="stores-list">Loading...</div>
     </div>
 
-    <div id="dev-section" class="dev-section" hidden>
+    <div id="dev-section" class="dev-section">
       <div class="dev-title">Dev</div>
       <a class="dev-btn" href="/apps/staff/">Staff page</a>
       <button class="dev-btn dev-btn-danger" id="dev-reset">Reset session</button>
