@@ -412,10 +412,8 @@
       color: #fff;
     }
 
-    .save-prompt {
-      margin-bottom: 1.25rem;
-      display: none;
-    }
+    .save-prompt           { margin-bottom: 1.25rem; display: none; }
+    .save-prompt.is-visible { display: block; }
 
     .save-prompt-btn {
       width: 100%;
@@ -436,9 +434,11 @@
       border-color: var(--border-strong);
     }
 
+    /* Glow animates box-shadow only — no conflict with the hover transition
+       which handles color and border-color separately. */
     @keyframes save-glow {
-      0%, 100% { box-shadow: none; border-color: var(--border); color: var(--text-muted); }
-      50% { box-shadow: 0 0 0 3px rgba(99, 153, 34, 0.2); border-color: var(--success-border); color: var(--success-text); }
+      0%, 100% { box-shadow: none; }
+      50%       { box-shadow: 0 0 0 3px rgba(99, 153, 34, 0.25), 0 0 8px rgba(99, 153, 34, 0.12); }
     }
 
     .save-prompt-btn.glowing {

@@ -2,43 +2,31 @@ import { initAuth } from '../../services/auth.js'
 import { loadCustomerHome, subscribeToPointsInserts } from '../../services/members.js'
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
+import * as savePrompt from '../../ui/savePrompt.js'
 import { state } from '../../state/state.js'
 
-// ── Save prompt ───────────────────────────────────────────────────────────────
+// ── Balance helpers ───────────────────────────────────────────────────────────
 
 function getTotalBalance(data) {
   return (data?.memberships || []).reduce((sum, m) => sum + (m.balance || 0), 0)
 }
 
-function renderSavePrompt(data) {
-  const el = document.getElementById('save-prompt')
-  const btn = document.getElementById('save-prompt-btn')
-  if (!el || !btn) return
-  if (data.email_saved || !data.save_prompt) return
-  btn.textContent = data.save_prompt.text
-  el.style.display = ''
-}
-
-function glowSavePrompt() {
-  const btn = document.getElementById('save-prompt-btn')
-  const el = document.getElementById('save-prompt')
-  if (!btn || !el || el.style.display === 'none') return
-  btn.classList.remove('glowing')
-  void btn.offsetWidth
-  btn.classList.add('glowing')
-  btn.addEventListener('animationend', () => btn.classList.remove('glowing'), { once: true })
+// Returns true only when there was a previous cache to compare against and
+// fresh data shows a higher total balance — i.e. new points were actually awarded.
+function hasNewPoints(prevBal, freshData, hadCache) {
+  return hadCache && getTotalBalance(freshData) > prevBal
 }
 
 // ── Cache helpers ─────────────────────────────────────────────────────────────
 
-const homeKey  = id => `libber_home_${id}`
+const homeKey    = id => `libber_home_${id}`
 const STORES_KEY = 'libber_stores'
 const STORES_TTL = 24 * 60 * 60 * 1000
 
-function readJson(key)       { try { return JSON.parse(localStorage.getItem(key)) } catch { return null } }
-function writeJson(key, val) { try { localStorage.setItem(key, JSON.stringify(val)) } catch {} }
+function readJson(key)        { try { return JSON.parse(localStorage.getItem(key)) } catch { return null } }
+function writeJson(key, val)  { try { localStorage.setItem(key, JSON.stringify(val)) } catch {} }
 
-function readHomeCache(userId)  { return readJson(homeKey(userId)) }
+function readHomeCache(userId)        { return readJson(homeKey(userId)) }
 function writeHomeCache(userId, data) { writeJson(homeKey(userId), data) }
 
 function readStoresCache() {
@@ -51,7 +39,7 @@ function writeStoresCache(stores) { writeJson(STORES_KEY, { stores, ts: Date.now
 // ── Apply data to state + DOM ─────────────────────────────────────────────────
 
 function applyHomeData(data, uuid) {
-  renderSavePrompt(data)
+  savePrompt.render(data)
   renderUser(data.public_id, uuid)
 
   state.userStores = (data.memberships || []).map(m => ({
@@ -60,7 +48,6 @@ function applyHomeData(data, uuid) {
     balance:    m.balance
   }))
 
-  // Cache per-store rules + history for instant card opens
   state.storeData = state.storeData || {}
   for (const m of (data.memberships || [])) {
     state.storeData[m.store_id] = { rules: m.rules || [], history: m.history || [] }
@@ -93,10 +80,10 @@ function requestNotificationPermission() {
 // ── Show Staff overlay ────────────────────────────────────────────────────────
 
 function initShowStaff() {
-  const btn      = document.getElementById('show-staff-btn')
-  const overlay  = document.getElementById('staff-overlay')
+  const btn       = document.getElementById('show-staff-btn')
+  const overlay   = document.getElementById('staff-overlay')
   const overlayId = document.getElementById('staff-overlay-id')
-  const doneBtn  = document.getElementById('staff-overlay-done')
+  const doneBtn   = document.getElementById('staff-overlay-done')
   if (!btn || !overlay) return
 
   function exitStaffView() {
@@ -130,66 +117,77 @@ async function init() {
     const user = await initAuth()
     if (!user) return
 
-    // 1. Render from home cache immediately (instant on return visits)
-    const cached = readHomeCache(user.id)
-    const cachedBalance = getTotalBalance(cached)
+    // 1. Render from cache immediately — instant on return visits.
+    //    Capture balance before render so we can detect new points after
+    //    fresh data arrives.
+    const cached    = readHomeCache(user.id)
+    const hadCache  = cached !== null
+    const prevBal   = getTotalBalance(cached)
+
     if (cached) {
       const cachedStores = readStoresCache()
       if (cached.stores == null && cachedStores) cached.stores = cachedStores
       applyHomeData(cached, user.id)
     }
 
-    // Wire up Show Staff now — button is visible from page load, don't wait for network
+    // Wire up Show Staff before the network round-trip.
     initShowStaff()
 
-    // 2. Fetch fresh data — skip stores query if cache is still fresh
+    // 2. Fetch fresh data. Skip the stores query when the cache is still valid.
     const cachedStores = readStoresCache()
     const data = await loadCustomerHome(!cachedStores)
     if (data) {
       if (cachedStores) {
-        data.stores = cachedStores        // inject cached stores so renderStores fires
+        data.stores = cachedStores
       } else {
-        writeStoresCache(data.stores)     // fresh stores — update cache
+        writeStoresCache(data.stores)
       }
       writeHomeCache(user.id, data)
       applyHomeData(data, user.id)
-      if (getTotalBalance(data) > cachedBalance) glowSavePrompt()
+      if (hasNewPoints(prevBal, data, hadCache)) savePrompt.glow()
     }
 
-    // 3. Ask for notification permission after a short delay
+    // 3. Request notification permission after a brief delay.
     setTimeout(requestNotificationPermission, 4000)
 
-    // 4. Real-time: refresh home data when points change
+    // 4. Real-time: re-fetch when a points row is inserted.
     subscribeToPointsInserts(user.id, async row => {
       const stores = readStoresCache()
       const fresh  = await loadCustomerHome(!stores)
-      if (fresh) {
-        if (stores) fresh.stores = stores
-        else writeStoresCache(fresh.stores)
-        const prevBalance = getTotalBalance(readHomeCache(user.id))
-        writeHomeCache(user.id, fresh)
-        applyHomeData(fresh, user.id)
-        if (getTotalBalance(fresh) > prevBalance) glowSavePrompt()
-        maybeNotify(row)
-      }
+      if (!fresh) return
+
+      if (stores) fresh.stores = stores
+      else writeStoresCache(fresh.stores)
+
+      // Read previous balance from cache before overwriting it.
+      const prevRtBal = getTotalBalance(readHomeCache(user.id))
+      writeHomeCache(user.id, fresh)
+      applyHomeData(fresh, user.id)
+      if (hasNewPoints(prevRtBal, fresh, true)) savePrompt.glow()
+      maybeNotify(row)
     })
 
-    // 5. Refresh button
+    // 5. Refresh button.
     const refreshBtn = document.getElementById('refresh-btn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
         refreshBtn.classList.add('loading')
         refreshBtn.disabled = true
-        const prevBalance = getTotalBalance(readHomeCache(user.id))
-        const fresh = await loadCustomerHome(true)
-        if (fresh) {
-          writeStoresCache(fresh.stores)
-          writeHomeCache(user.id, fresh)
-          applyHomeData(fresh, user.id)
-          if (getTotalBalance(fresh) > prevBalance) glowSavePrompt()
+        try {
+          const prevRefBal = getTotalBalance(readHomeCache(user.id))
+          const fresh = await loadCustomerHome(true)
+          if (fresh) {
+            writeStoresCache(fresh.stores)
+            writeHomeCache(user.id, fresh)
+            applyHomeData(fresh, user.id)
+            if (hasNewPoints(prevRefBal, fresh, true)) savePrompt.glow()
+          }
+        } catch (err) {
+          console.error('Refresh failed:', err)
+        } finally {
+          refreshBtn.classList.remove('loading')
+          refreshBtn.disabled = false
         }
-        refreshBtn.classList.remove('loading')
-        refreshBtn.disabled = false
       })
     }
 
@@ -199,7 +197,7 @@ async function init() {
   }
 }
 
-// 6. Register service worker for PWA installability
+// 6. Register service worker for PWA installability.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/customer/sw.js').catch(() => {})
 }
