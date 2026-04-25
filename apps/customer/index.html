@@ -411,6 +411,39 @@
       border-color: rgba(255,255,255,0.5);
       color: #fff;
     }
+
+    .save-prompt {
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    .save-prompt-btn {
+      width: 100%;
+      padding: 11px 16px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      font-size: 14px;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      text-align: center;
+    }
+
+    .save-prompt-btn:hover {
+      color: var(--text);
+      border-color: var(--border-strong);
+    }
+
+    @keyframes save-glow {
+      0%, 100% { box-shadow: none; border-color: var(--border); color: var(--text-muted); }
+      50% { box-shadow: 0 0 0 3px rgba(99, 153, 34, 0.2); border-color: var(--success-border); color: var(--success-text); }
+    }
+
+    .save-prompt-btn.glowing {
+      animation: save-glow 1s ease-in-out 3;
+    }
   </style>
 </head>
 <body>
@@ -428,6 +461,10 @@
       <span class="staff-overlay-label">Your ID</span>
       <span id="staff-overlay-id" class="staff-overlay-id"></span>
       <button id="staff-overlay-done" class="staff-overlay-done">Done</button>
+    </div>
+
+    <div class="save-prompt" id="save-prompt">
+      <button class="save-prompt-btn" id="save-prompt-btn"></button>
     </div>
 
     <div id="user-stores">

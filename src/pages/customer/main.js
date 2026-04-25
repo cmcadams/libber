@@ -4,6 +4,31 @@ import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
 import { state } from '../../state/state.js'
 
+// ── Save prompt ───────────────────────────────────────────────────────────────
+
+function getTotalBalance(data) {
+  return (data?.memberships || []).reduce((sum, m) => sum + (m.balance || 0), 0)
+}
+
+function renderSavePrompt(data) {
+  const el = document.getElementById('save-prompt')
+  const btn = document.getElementById('save-prompt-btn')
+  if (!el || !btn) return
+  if (data.email_saved || !data.save_prompt) return
+  btn.textContent = data.save_prompt.text
+  el.style.display = ''
+}
+
+function glowSavePrompt() {
+  const btn = document.getElementById('save-prompt-btn')
+  const el = document.getElementById('save-prompt')
+  if (!btn || !el || el.style.display === 'none') return
+  btn.classList.remove('glowing')
+  void btn.offsetWidth
+  btn.classList.add('glowing')
+  btn.addEventListener('animationend', () => btn.classList.remove('glowing'), { once: true })
+}
+
 // ── Cache helpers ─────────────────────────────────────────────────────────────
 
 const homeKey  = id => `libber_home_${id}`
@@ -26,6 +51,7 @@ function writeStoresCache(stores) { writeJson(STORES_KEY, { stores, ts: Date.now
 // ── Apply data to state + DOM ─────────────────────────────────────────────────
 
 function applyHomeData(data, uuid) {
+  renderSavePrompt(data)
   renderUser(data.public_id, uuid)
 
   state.userStores = (data.memberships || []).map(m => ({
@@ -106,6 +132,7 @@ async function init() {
 
     // 1. Render from home cache immediately (instant on return visits)
     const cached = readHomeCache(user.id)
+    const cachedBalance = getTotalBalance(cached)
     if (cached) {
       const cachedStores = readStoresCache()
       if (cached.stores == null && cachedStores) cached.stores = cachedStores
@@ -126,6 +153,7 @@ async function init() {
       }
       writeHomeCache(user.id, data)
       applyHomeData(data, user.id)
+      if (getTotalBalance(data) > cachedBalance) glowSavePrompt()
     }
 
     // 3. Ask for notification permission after a short delay
@@ -138,8 +166,10 @@ async function init() {
       if (fresh) {
         if (stores) fresh.stores = stores
         else writeStoresCache(fresh.stores)
+        const prevBalance = getTotalBalance(readHomeCache(user.id))
         writeHomeCache(user.id, fresh)
         applyHomeData(fresh, user.id)
+        if (getTotalBalance(fresh) > prevBalance) glowSavePrompt()
         maybeNotify(row)
       }
     })
@@ -150,11 +180,13 @@ async function init() {
       refreshBtn.addEventListener('click', async () => {
         refreshBtn.classList.add('loading')
         refreshBtn.disabled = true
-        const fresh = await loadCustomerHome(true)   // always include stores on manual refresh
+        const prevBalance = getTotalBalance(readHomeCache(user.id))
+        const fresh = await loadCustomerHome(true)
         if (fresh) {
           writeStoresCache(fresh.stores)
           writeHomeCache(user.id, fresh)
           applyHomeData(fresh, user.id)
+          if (getTotalBalance(fresh) > prevBalance) glowSavePrompt()
         }
         refreshBtn.classList.remove('loading')
         refreshBtn.disabled = false
