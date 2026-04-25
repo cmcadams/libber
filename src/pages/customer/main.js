@@ -157,9 +157,8 @@ async function init() {
       applyHomeData(cached, user.id)
     }
 
-    // Wire up Show Staff and dev section before the network round-trip.
+    // Wire up Show Staff before the network round-trip.
     initShowStaff()
-    initDevSection()
 
     // 2. Fetch fresh data. Skip the stores query when the cache is still valid.
     const cachedStores = readStoresCache()
@@ -230,4 +229,5 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/customer/sw.js').catch(() => {})
 }
 
+initDevSection()
 init()

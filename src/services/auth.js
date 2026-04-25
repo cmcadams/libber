@@ -38,6 +38,6 @@ export async function initAuth() {
 
 export async function resetSession() {
   localStorage.clear()
-  await supabase.auth.signOut()
+  await supabase.auth.signOut().catch(() => {})
   location.reload()
 }
