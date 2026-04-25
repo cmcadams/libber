@@ -22,7 +22,11 @@ export function renderCustomers() {
   if (!container) return
 
   const members = state.members || []
-  const query = ($('search')?.value || '').toUpperCase().replace(/[-\s]/g, '').trim()
+  const showSearch = members.length >= 10
+  const searchEl = $('search')
+  if (searchEl) searchEl.style.display = showSearch ? '' : 'none'
+
+  const query = (showSearch ? searchEl?.value || '' : '').toUpperCase().replace(/[-\s]/g, '').trim()
 
   const filtered = query
     ? members.filter(m => m.public_id.replace(/[-\s]/g, '').includes(query))
