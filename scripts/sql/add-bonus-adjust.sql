@@ -1,6 +1,15 @@
--- Bonus/Adjust: adjust_points RPC.
--- Safe to re-run (CREATE OR REPLACE).
+-- Bonus/Adjust: kind constraint update + adjust_points RPC.
+-- Safe to re-run (CREATE OR REPLACE, constraint drop/re-add is idempotent).
 -- Run in Supabase SQL Editor after add-bonus-cap.sql.
+
+-- ── Extend kind constraint to allow bonus_reason and bonus_amount ─────────────
+
+ALTER TABLE public.store_reward_rules DROP CONSTRAINT IF EXISTS store_reward_rules_kind_check;
+
+ALTER TABLE public.store_reward_rules ADD CONSTRAINT store_reward_rules_kind_check
+  CHECK (kind IN ('award', 'redeem', 'bonus_reason', 'bonus_amount'));
+
+-- ── adjust_points RPC ─────────────────────────────────────────────────────────
 --
 -- adjust_points is for staff corrections — positive or negative — with no cap check.
 -- Separate from award_points so the cap bypass is explicit and auditable.
