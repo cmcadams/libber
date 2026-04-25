@@ -60,6 +60,13 @@ export function render(data) {
     return
   }
 
+  // Only show when the user has earned at least one point somewhere.
+  const hasPoints = (data.memberships || []).some(m => (m.balance || 0) > 0)
+  if (!hasPoints) {
+    hide()
+    return
+  }
+
   // Key absent → old cache format from before this feature. Leave visibility
   // unchanged — fresh data will arrive shortly and handle it correctly.
   if (!('save_prompt' in data)) return

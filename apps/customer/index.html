@@ -92,21 +92,20 @@
     .refresh-btn {
       padding: 10px 14px;
       background: var(--surface);
-      border: 0.5px solid var(--border);
+      border: 1px solid var(--border-strong);
       border-radius: var(--radius-md);
-      color: var(--text-muted);
+      color: var(--text);
       cursor: pointer;
       font-size: 18px;
       line-height: 1;
-      transition: color 0.2s, transform 0.2s;
+      transition: color 0.2s, transform 0.2s, background 0.2s;
       margin-left: auto;
       min-width: 44px;
       min-height: 44px;
     }
 
     .refresh-btn:hover {
-      color: var(--text);
-      border-color: var(--border-strong);
+      background: #f4f4f1;
     }
 
     .refresh-btn:active {
@@ -336,25 +335,14 @@
       border-color: var(--border-strong);
     }
 
-    .show-staff-btn {
-      padding: 10px 14px;
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: var(--radius-md);
-      color: var(--text-muted);
+    .header-id {
       cursor: pointer;
-      font-size: 13px;
-      font-family: var(--font-ui);
-      font-weight: 500;
-      transition: color 0.2s, border-color 0.2s;
-      min-width: 44px;
-      min-height: 44px;
-      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
-    .show-staff-btn:hover {
-      color: var(--text);
-      border-color: var(--border-strong);
+    .header-id:hover #user-id {
+      color: var(--text-muted);
     }
 
     .staff-overlay {
@@ -449,11 +437,10 @@
 <body>
   <div class="page">
     <div class="header">
-      <div class="header-id">
-        <span class="user-id">Your ID</span>
+      <div class="header-id" id="header-id">
+        <span class="user-id">Tap to show staff</span>
         <span id="user-id">Loading...</span>
       </div>
-      <button id="show-staff-btn" class="show-staff-btn">Show Staff</button>
       <button id="refresh-btn" class="refresh-btn" title="Refresh points">↻</button>
     </div>
 

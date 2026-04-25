@@ -302,6 +302,32 @@
       margin-bottom: 10px;
     }
 
+    .bonus-reason-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .bonus-reason-btn {
+      padding: 8px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      font-family: var(--font-ui);
+      transition: background 0.1s, border-color 0.1s;
+    }
+
+    .bonus-reason-btn:hover { background: #f4f4f1; border-color: var(--border-strong); }
+
+    .bonus-reason-btn.selected {
+      border-color: var(--border-strong);
+      background: #f4f4f1;
+    }
+
     .bonus-btn {
       padding: 11px 8px;
       border: 0.5px solid var(--border);
@@ -321,6 +347,26 @@
       border-color: var(--border-strong);
       background: #f4f4f1;
     }
+
+    .adjust-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: var(--font-ui);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      margin-bottom: 10px;
+      outline: none;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+
+    .adjust-input:focus { border-color: var(--border-strong); }
+    .adjust-input::placeholder { color: var(--text-hint); }
+    .adjust-input::-webkit-inner-spin-button,
+    .adjust-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 
     .reason-input {
       width: 100%;
@@ -463,9 +509,18 @@
 
       <div id="bonusSection">
         <div class="section-label">Bonus</div>
+        <div class="bonus-reason-btns" id="bonusReasonBtns"></div>
         <div class="bonus-btns" id="bonusBtns"></div>
-        <textarea class="reason-input" id="reasonInput" placeholder="Reason for bonus..."></textarea>
         <button class="award-btn" id="awardBtn" disabled>Award bonus</button>
+      </div>
+
+      <hr class="divider" />
+
+      <div id="adjustSection">
+        <div class="section-label">Adjust</div>
+        <input type="number" class="adjust-input" id="adjustInput" placeholder="e.g. 5 or -10" />
+        <textarea class="reason-input" id="adjustReason" placeholder="Reason..."></textarea>
+        <button class="award-btn" id="adjustBtn" disabled>Apply adjustment</button>
       </div>
 
       <hr class="divider" id="redeemDivider" style="display:none" />

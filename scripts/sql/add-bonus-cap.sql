@@ -37,6 +37,11 @@ END $$;
 -- p_rule_id: pass the store_reward_rules.id when awarding from a predefined rule.
 -- Rule-based awards are validated against the rule and exempt from the bonus cap.
 -- Leave NULL for free-form bonus awards — those are subject to max_bonus_points.
+--
+-- DROP the old 4-argument signature first — CREATE OR REPLACE only replaces when
+-- the signature matches exactly, so the old version would otherwise persist as a
+-- second overload and cause "could not choose the best candidate function" errors.
+DROP FUNCTION IF EXISTS public.award_points(uuid, uuid, integer, text);
 
 CREATE OR REPLACE FUNCTION public.award_points(
   p_user_id  uuid,

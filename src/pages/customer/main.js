@@ -80,11 +80,11 @@ function requestNotificationPermission() {
 // ── Show Staff overlay ────────────────────────────────────────────────────────
 
 function initShowStaff() {
-  const btn       = document.getElementById('show-staff-btn')
+  const trigger   = document.getElementById('header-id')
   const overlay   = document.getElementById('staff-overlay')
   const overlayId = document.getElementById('staff-overlay-id')
   const doneBtn   = document.getElementById('staff-overlay-done')
-  if (!btn || !overlay) return
+  if (!trigger || !overlay) return
 
   function exitStaffView() {
     overlay.classList.remove('active')
@@ -92,7 +92,7 @@ function initShowStaff() {
     screen.orientation?.unlock()
   }
 
-  btn.addEventListener('click', () => {
+  trigger.addEventListener('click', () => {
     overlayId.textContent = document.getElementById('user-id').textContent
     overlay.classList.add('active')
     document.documentElement.requestFullscreen?.().catch(() => {})

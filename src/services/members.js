@@ -119,3 +119,13 @@ export async function awardPoints(userId, storeId, points, reason, ruleId = null
   const { error } = await supabase.rpc('award_points', params)
   if (error) throw error
 }
+
+export async function adjustPoints(userId, storeId, points, reason) {
+  const { error } = await supabase.rpc('adjust_points', {
+    p_user_id:  userId,
+    p_store_id: storeId,
+    p_points:   points,
+    p_reason:   reason
+  })
+  if (error) throw error
+}

@@ -586,7 +586,13 @@ function renderRulesList() {
     return
   }
 
-  $('rulesList').innerHTML = currentRules.map((r, i) => `
+  $('rulesList').innerHTML = currentRules.map((r, i) => {
+    let ptsDisplay
+    if (r.kind === 'bonus_reason') ptsDisplay = '—'
+    else if (r.kind === 'redeem')  ptsDisplay = `−${r.points} pts`
+    else                           ptsDisplay = `+${r.points} pts`
+
+    return `
     <div class="rule-row">
       <div class="rule-order-btns">
         <button class="rule-order-btn" data-move-rule-id="${r.id}" data-direction="up" ${i === 0 ? 'disabled' : ''}>↑</button>
@@ -594,10 +600,10 @@ function renderRulesList() {
       </div>
       <span class="rule-badge">${escapeHtml(r.kind)}</span>
       <span class="rule-label-text">${escapeHtml(r.label || '—')}</span>
-      <span class="rule-pts-text">${r.kind === 'redeem' ? '−' : '+'}${r.points} pts</span>
+      <span class="rule-pts-text">${ptsDisplay}</span>
       <button class="rule-delete-btn" data-delete-rule-id="${r.id}">Remove</button>
     </div>
-  `).join('')
+  `}).join('')
 }
 
 async function handleMoveRule(ruleId, direction) {
@@ -621,14 +627,22 @@ async function handleAddRule() {
   const points = parseInt($('rulePoints').value, 10)
   const kind = $('ruleKind').value
 
-  if (!points || points < 1) { setStatus('addRuleStatus', 'Enter a valid point value.', true); return }
-  if (kind === 'award' && !label) { setStatus('addRuleStatus', 'Award rules need a label.', true); return }
+  if (kind === 'bonus_reason') {
+    if (!label) { setStatus('addRuleStatus', 'Bonus reason needs a label.', true); return }
+  } else if (kind === 'bonus_amount') {
+    if (!points || points < 1) { setStatus('addRuleStatus', 'Bonus amount needs a point value.', true); return }
+  } else {
+    if (!points || points < 1) { setStatus('addRuleStatus', 'Enter a valid point value.', true); return }
+    if (kind === 'award' && !label) { setStatus('addRuleStatus', 'Award rules need a label.', true); return }
+  }
+
+  const effectivePoints = kind === 'bonus_reason' ? 0 : points
 
   const btn = $('addRuleBtn')
   btn.disabled = true
   $('addRuleStatus').textContent = ''
 
-  const { error } = await insertRewardRule(selectedRulesStoreId, { label, points, kind }, currentRules.length + 1)
+  const { error } = await insertRewardRule(selectedRulesStoreId, { label, points: effectivePoints, kind }, currentRules.length + 1)
 
   if (error) {
     btn.disabled = false
