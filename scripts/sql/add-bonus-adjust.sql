@@ -9,6 +9,12 @@ ALTER TABLE public.store_reward_rules DROP CONSTRAINT IF EXISTS store_reward_rul
 ALTER TABLE public.store_reward_rules ADD CONSTRAINT store_reward_rules_kind_check
   CHECK (kind IN ('award', 'redeem', 'bonus_reason', 'bonus_amount'));
 
+-- ── Drop points > 0 constraint if it exists ───────────────────────────────────
+-- bonus_reason rules store points = 0 (the amount is chosen separately at award
+-- time). The original table may have a CHECK (points > 0) that would block this.
+
+ALTER TABLE public.store_reward_rules DROP CONSTRAINT IF EXISTS store_reward_rules_points_check;
+
 -- ── adjust_points RPC ─────────────────────────────────────────────────────────
 --
 -- adjust_points is for staff corrections — positive or negative — with no cap check.

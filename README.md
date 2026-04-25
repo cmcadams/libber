@@ -258,9 +258,11 @@ Points are **not fungible across stores**. 50 pts at Store A cannot be combined 
 Staff page buttons are driven by `store_reward_rules` in Supabase — not hardcoded. Configured per store in the admin tool.
 
 - `kind = 'award'` — quick-award buttons (label + points, reason auto-set to label)
-- `kind = 'redeem'` — redemption buttons (points only, staff enters reason manually)
+- `kind = 'redeem'` — redemption buttons (label + point cost)
+- `kind = 'bonus_reason'` — configurable reason options for the bonus section (label only, no point value)
+- `kind = 'bonus_amount'` — configurable amount buttons for the bonus section (point value, no label needed)
 
-A per-store bonus cap (`max_bonus_points`) limits how many free-form bonus points can be awarded. Rule-based quick-award buttons bypass the cap.
+Staff must pick one bonus reason and one bonus amount to enable the award. The per-store bonus cap (`max_bonus_points`) applies to bonus awards and limits the visible amount buttons. Quick-award buttons bypass the cap.
 
 ---
 
@@ -440,6 +442,7 @@ All scripts in `scripts/sql/` — paste into Supabase Dashboard → SQL Editor a
 | `add-load-store-members-rpc.sql` | `load_store_members` RPC |
 | `add-reject-applicant-rpc.sql` | `reject_staff_applicant` RPC |
 | `add-ab-testing.sql` | `ab_variants` table + RLS, new profile columns, updated `create_profile` trigger with weighted variant assignment, updated `load_customer_home` with save prompt fields, backfill for existing profiles |
+| `add-bonus-adjust.sql` | Extends `store_reward_rules_kind_check` to include `bonus_reason` and `bonus_amount`, drops stale `points > 0` constraint if present, adds `adjust_points` RPC |
 | `assign-admin.sql` | Grants admin access to a user by their human-readable public ID |
 | `delete-store.sql` | Deletes one store and all its memberships, staff, rules, and ledger entries |
 | `delete-user.sql` | Deletes one user and all their data by public ID |
@@ -463,8 +466,9 @@ Run scripts in this order:
 7. `add-load-store-members-rpc.sql`
 8. `add-reject-applicant-rpc.sql`
 9. `add-ab-testing.sql`
-10. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
-11. Reload admin tool — create stores, configure rules, assign managers
+10. `add-bonus-adjust.sql`
+11. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
+12. Reload admin tool — create stores, configure rules, assign managers
 
 ### After a full reset (`reset-all.sql`)
 
