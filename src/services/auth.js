@@ -35,3 +35,9 @@ export async function initAuth() {
   state.user = userData.user
   return state.user
 }
+
+export async function resetSession() {
+  localStorage.clear()
+  await supabase.auth.signOut()
+  location.reload()
+}

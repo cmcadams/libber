@@ -432,6 +432,57 @@
     .save-prompt-btn.glowing {
       animation: save-glow 1s ease-in-out 3;
     }
+
+    .dev-tap {
+      height: 32px;
+      margin-top: 2rem;
+      cursor: default;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .dev-section {
+      margin-top: 0.5rem;
+      padding: 12px;
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dev-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-hint);
+      font-weight: 500;
+      margin-right: 4px;
+    }
+
+    .dev-btn {
+      font-size: 13px;
+      padding: 7px 14px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.1s;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .dev-btn:hover { background: #f4f4f1; }
+
+    .dev-btn-danger {
+      color: #b91c1c;
+      border-color: #fca5a5;
+    }
+
+    .dev-btn-danger:hover { background: #fef2f2; }
   </style>
 </head>
 <body>
@@ -462,6 +513,14 @@
       <h2 class="section-title">Join a store</h2>
       <div id="stores-list">Loading...</div>
     </div>
+
+    <div id="dev-section" class="dev-section" hidden>
+      <div class="dev-title">Dev</div>
+      <a class="dev-btn" href="/apps/staff/">Staff page</a>
+      <button class="dev-btn dev-btn-danger" id="dev-reset">Reset session</button>
+    </div>
+
+    <div id="dev-tap" class="dev-tap" aria-hidden="true"></div>
   </div>
 
   <script type="module" src="/src/pages/customer/main.js"></script>

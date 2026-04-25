@@ -1,4 +1,4 @@
-import { initAuth } from '../../services/auth.js'
+import { initAuth, resetSession } from '../../services/auth.js'
 import { loadCustomerHome, subscribeToPointsInserts } from '../../services/members.js'
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
@@ -110,6 +110,33 @@ function initShowStaff() {
   })
 }
 
+// ── Dev section (testing only) ────────────────────────────────────────────────
+
+function initDevSection() {
+  const tap     = document.getElementById('dev-tap')
+  const section = document.getElementById('dev-section')
+  const resetBtn = document.getElementById('dev-reset')
+  if (!tap || !section || !resetBtn) return
+
+  let count = 0
+  let timer = null
+
+  tap.addEventListener('click', () => {
+    count++
+    clearTimeout(timer)
+    timer = setTimeout(() => { count = 0 }, 1500)
+    if (count >= 7) {
+      count = 0
+      section.hidden = false
+    }
+  })
+
+  resetBtn.addEventListener('click', () => {
+    if (!confirm('Clear all local data and start as a new user?')) return
+    resetSession()
+  })
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 async function init() {
@@ -130,8 +157,9 @@ async function init() {
       applyHomeData(cached, user.id)
     }
 
-    // Wire up Show Staff before the network round-trip.
+    // Wire up Show Staff and dev section before the network round-trip.
     initShowStaff()
+    initDevSection()
 
     // 2. Fetch fresh data. Skip the stores query when the cache is still valid.
     const cachedStores = readStoresCache()
