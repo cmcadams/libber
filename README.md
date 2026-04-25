@@ -11,7 +11,7 @@ The project builds two separate web apps from one codebase:
 | App | Audience | Entry |
 |---|---|---|
 | **Customer** | End users joining stores and viewing points | `apps/customer/` |
-| **Staff** | Staff applying, staff awarding points, managers approving | `apps/staff/` |
+| **Staff** | Staff awarding points, managers approving applicants | `apps/staff/` |
 
 The **admin tool** (`adminstart.html`) lives at the repo root and is run locally only by the repo owner — it is not deployed and is not intended for other users. It is used to create stores, configure reward rules, and assign managers.
 
@@ -23,9 +23,9 @@ The **admin tool** (`adminstart.html`) lives at the repo root and is run locally
 - `index.html` — shows the user's ID, joined stores, balances, and available stores to join
 
 ### Staff app (`apps/staff/`)
-- `index.html` — staff apply page: pick a store, apply for staff access, or open staff tools if already approved
-- `page.html` — staff tools: load members, award points via store-configured buttons
-- `manager.html` — manager tools: see managed stores, approve applicants, view current staff
+- `index.html` — pick a store you work at and go to staff tools, or apply for access to a new store. Managers see their managed stores here too.
+- `page.html` — staff tools: load members, award points via store-configured buttons. ← Back returns to the store picker.
+- `manager.html` — manager tools: see managed stores, approve/reject applicants, view and remove current staff, apply to manage new stores.
 
 ### Admin (local only)
 - `adminstart.html` — create stores, configure reward rules (with ordering), assign managers. Your public ID is shown at the top of the page — used when running `assign-admin.sql`.
@@ -44,13 +44,19 @@ apps/
     manager.html
 scripts/
   sql/
-    admin-rpcs.sql       one-time RLS + RPC setup (stores, reward rules, admin RPCs)
-    staff-rpcs.sql       one-time RLS + RPC setup (memberships, staff, ledger)
-    assign-admin.sql     grant admin access by public ID
-    delete-store.sql     delete one store and all its data
-    delete-user.sql      delete one user by public ID
-    delete-all-users.sql delete all users, preserve stores and rules
-    reset-all.sql        full wipe of all data
+    admin-rpcs.sql              RLS + RPC setup for stores, reward rules, admin RPCs
+    staff-rpcs.sql              RLS + RPC setup for memberships, staff, ledger
+    add-manager-applicants.sql  Manager application flow + RPCs
+    add-bonus-cap.sql           Per-store bonus cap column + award_points RPC
+    add-rls-select-policies.sql SELECT RLS policies for all client-read tables
+    add-load-customer-home-rpc.sql  load_customer_home RPC
+    add-load-store-members-rpc.sql  load_store_members RPC
+    add-reject-applicant-rpc.sql    reject_staff_applicant RPC
+    assign-admin.sql            Grant admin access by public ID
+    delete-store.sql            Delete one store and all its data
+    delete-user.sql             Delete one user by public ID
+    delete-all-users.sql        Delete all users, preserve stores and rules
+    reset-all.sql               Full wipe of all data
 src/
   lib/
     escape.js         shared escapeHtml utility
@@ -64,15 +70,15 @@ src/
     manager/
       start.js        manager page controller
     staff/
-      start.js        staff apply page controller
+      start.js        staff apply/store picker page controller
       page.js         staff tools page controller
   services/
     admin.js          store creation, reward rules, admin RPCs
-    applicants.js     apply_for_staff, loadApplicants, loadMyApplications, loadStaff, approveApplicant, demoteStaff
+    applicants.js     apply_for_staff, loadApplicants, loadMyApplications, loadStaff, approveApplicant, demoteStaff, applyForManager, loadMyManagerApplications
     auth.js           anonymous auth bootstrap
-    members.js        loadMembers, loadUserProfile, awardPoints, loadPointsHistory
-    staff.js          loadStaffStores
-    stores.js         getStores, joinStore
+    members.js        loadMembers, loadUserProfile, loadCustomerHome, awardPoints, loadPointsHistory
+    staff.js          loadStaffStores (unions store_staff + store_managers)
+    stores.js         getStores, joinStore, getStoreBonusCap
   state/
     state.js          shared in-memory state
   ui/
@@ -81,7 +87,6 @@ src/
     renderUser.js
 adminstart.html         local admin tool (not deployed)
 vite.config.js          multi-page build config
-netlify.toml            build config + root redirect to customer app
 ```
 
 ---
@@ -120,8 +125,8 @@ npm run dev
 | Page | URL |
 |---|---|
 | Customer app | `http://localhost:5173/apps/customer/` |
-| Staff apply | `http://localhost:5173/apps/staff/` |
-| Staff tools | `http://localhost:5173/apps/staff/page.html` (navigated to automatically from staff apply) |
+| Staff store picker | `http://localhost:5173/apps/staff/` |
+| Staff tools | `http://localhost:5173/apps/staff/page.html` (navigated to by clicking a store) |
 | Manager tools | `http://localhost:5173/apps/staff/manager.html` |
 | Admin (local) | `http://localhost:5173/adminstart.html` |
 
@@ -152,7 +157,7 @@ The admin tool is never built for deployment — run it locally from dev only.
 | Page | URL |
 |---|---|
 | Customer app | https://libber.vercel.app |
-| Staff apply | https://libber.vercel.app/apps/staff/ |
+| Staff store picker | https://libber.vercel.app/apps/staff/ |
 | Staff tools | https://libber.vercel.app/apps/staff/page.html |
 | Manager | https://libber.vercel.app/apps/staff/manager.html |
 
@@ -180,18 +185,16 @@ The root redirect (`/` → `/apps/customer/`) is handled by `vercel.json`:
 }
 ```
 
-`netlify.toml` and `public/_redirects` are kept in the repo but not used by Vercel.
-
 ---
 
 ## Auth Model
 
 The app uses anonymous Supabase auth (`src/services/auth.js`):
 
-- A visitor gets or restores an anonymous Supabase user
+- A visitor gets or restores an anonymous Supabase session automatically — no signup required
 - All role assignment is tied to that Supabase `auth.uid()`
-- Anonymous auth is fine for customers (nothing sensitive)
-- Staff and managers also use anonymous auth — their identity is tied to the device/browser. If a staff member loses their token (cleared browser data, new device), they re-apply via the staff page and send their new `public_id` to the manager to approve again. This is an acceptable edge case — no real sign-in required.
+- A `create_profile` database trigger fires on every new auth user, inserting a row into `profiles` with a generated human-readable `public_id` (e.g. `MQH 335 484`)
+- If a stored JWT references a deleted user, `initAuth()` detects the error, signs out, and creates a fresh anonymous session automatically
 
 ---
 
@@ -199,46 +202,49 @@ The app uses anonymous Supabase auth (`src/services/auth.js`):
 
 ### Customer
 1. Open `apps/customer/`
-2. Anonymous auth initialises
-3. Profile and joined stores with balances load
+2. Anonymous auth initialises, profile created automatically
+3. Joined stores with balances load
 4. Tap a store card to expand:
    - **How to earn** — the store's award rules (e.g. "1 coffee → +5 pts")
    - **Rewards** — the store's redeem options and their point costs
    - **Transaction history** — last 10 entries
-5. User can join additional stores — "Join a store" section is hidden once all stores are joined
+5. Join additional stores from the "Join a store" section
 
-### Staff Applicant
+### Staff (applying)
 1. Open `apps/staff/`
-2. Top section shows stores you're already approved for — click one to go straight to staff tools
-3. Bottom section: pick a store and apply
+2. "Your stores" section shows stores you're already approved for — click one to go straight to staff tools
+3. "Apply for a new store" section: pick a store and apply
 4. If already applied but not yet approved: button shows "Pending approval"
-5. On approval by manager: store appears in your approved list
-
-### Manager
-1. Open `apps/staff/manager.html`
-2. Pick a managed store
-3. Review applicants → approve to promote to staff
-4. View current staff — remove a staff member if needed
-5. Use "Go to staff tools →" to jump directly to the staff tools page
+5. On manager approval: store appears in "Your stores"
 
 ### Staff (awarding points)
-1. Open `apps/staff/page.html` (navigated to from the apply page)
-2. Selected store loaded from localStorage
-3. Members and reward rules load
-4. Award points using quick-award or bonus buttons
+1. Click a store from "Your stores" on the staff index
+2. Members and reward rules load for that store
+3. Click a member to open their panel
+4. Award points via quick-award buttons or bonus section
+5. ← Back returns to the store picker
+
+### Manager
+1. Open `apps/staff/manager.html` (linked from staff index via "Go to manager tools →")
+2. "Your stores" shows all stores you manage
+3. Click a store to load its applicants and current staff
+4. Approve or reject applicants; remove staff members if needed
+5. Apply to manage additional stores from the bottom section
+6. "Go to staff page →" links back to the staff index to use staff tools
 
 ### Admin (local)
 1. Open `adminstart.html` in dev (`http://localhost:5173/adminstart.html`)
 2. Your public ID is shown at the top — copy it for `assign-admin.sql`
 3. Create stores
 4. Configure reward rules per store (label, points, kind, ordering)
-5. Assign managers to stores
+5. Assign and remove managers and staff
+6. View all users and manager applicants
 
 ---
 
 ## Points Model
 
-Points are **not fungible across stores**. 50 pts at Store A cannot be combined with or used at Store B. Each store's balance is independent. Do not display a combined total.
+Points are **not fungible across stores**. 50 pts at Store A cannot be combined with or used at Store B. Each store's balance is independent.
 
 ---
 
@@ -249,44 +255,58 @@ Staff page buttons are driven by `store_reward_rules` in Supabase — not hardco
 - `kind = 'award'` — quick-award buttons (label + points, reason auto-set to label)
 - `kind = 'redeem'` — redemption buttons (points only, staff enters reason manually)
 
+A per-store bonus cap (`max_bonus_points`) limits how many free-form bonus points can be awarded. Rule-based quick-award buttons bypass the cap.
+
 ---
 
 ## Supabase Tables
 
-- `profiles`
-- `stores`
-- `store_memberships`
-- `store_staff`
-- `store_managers`
-- `store_staff_applicants`
-- `points_ledger`
-- `store_reward_rules`
-- `admins`
+| Table | Purpose |
+|---|---|
+| `profiles` | Human-readable public ID per user, created by trigger on signup |
+| `stores` | Store records |
+| `store_memberships` | Which users are members of which stores |
+| `store_staff` | Approved staff per store |
+| `store_managers` | Approved managers per store |
+| `store_staff_applicants` | Pending staff applications |
+| `store_manager_applicants` | Pending manager applications |
+| `points_ledger` | Every points transaction with running balance |
+| `store_reward_rules` | Award and redeem rules per store |
+| `admins` | Users with admin access |
+
+---
 
 ## Supabase RPCs / Views
 
 | Name | Auth check | What it does |
 |---|---|---|
 | `join_store` | `auth.uid()` required | Creates store membership for caller |
-| `award_points` | Must be staff of the store | Inserts points ledger entry |
-| `apply_for_staff` | `auth.uid()` required | Creates applicant record for caller |
+| `apply_for_staff` | `auth.uid()` required | Creates staff applicant record for caller |
+| `apply_for_manager` | `auth.uid()` required | Creates manager applicant record for caller |
 | `approve_staff_applicant` | Must be manager of the store | Promotes applicant to staff, removes from applicants |
+| `reject_staff_applicant` | Must be manager of the store | Rejects and removes a staff applicant |
 | `demote_store_staff` | Must be manager of the store | Removes a user from store staff |
-| `admin_assign_manager` | Must be in `admins` table | Assigns a user as manager of a store |
+| `award_points` | Must be staff or manager of the store | Inserts points ledger entry, enforces bonus cap |
+| `load_customer_home` | `auth.uid()` required | Returns profile, memberships, balances, rules, history in one call |
+| `load_store_members` | Must be staff or manager of the store | Returns members with balances and public IDs |
+| `admin_assign_manager` | Must be in `admins` table | Assigns a user as manager, clears their applicant record |
+| `admin_reject_manager_applicant` | Must be in `admins` table | Rejects a manager applicant |
 | `admin_create_store` | Must be in `admins` table | Creates a store |
 | `admin_update_store` | Must be in `admins` table | Renames a store |
 | `admin_remove_store` | Must be in `admins` table | Deletes a store and all related data |
 | `admin_insert_reward_rule` | Must be in `admins` table | Adds a reward rule to a store |
 | `admin_delete_reward_rule` | Must be in `admins` table | Deletes a reward rule |
 | `admin_update_reward_rule_order` | Must be in `admins` table | Updates sort order of a reward rule |
+| `admin_set_bonus_cap` | Must be in `admins` table | Sets or clears the bonus cap for a store |
 | `admin_assign_staff` | Must be in `admins` table | Directly assigns a user as staff |
 | `admin_remove_staff` | Must be in `admins` table | Removes a user from store staff |
 | `admin_remove_manager` | Must be in `admins` table | Removes a manager from a store |
 | `admin_approve_applicant` | Must be in `admins` table | Approves a staff applicant |
 | `admin_reject_applicant` | Must be in `admins` table | Rejects a staff applicant |
-| `admin_user_directory` | View | Lists all users (used by admin tool) |
-| `staff_applicant_directory` | View | Lists applicants per store |
-| `create_profile` | Trigger | Auto-creates a profile with public_id on new auth user |
+| `is_admin` | — | Helper: returns true if caller is in `admins` table |
+| `admin_user_directory` | View | Lists all users with public IDs (used by admin tool) |
+| `staff_applicant_directory` | View | Lists applicants per store with public IDs |
+| `create_profile` | Trigger on `auth.users` | Auto-creates a profile with generated public_id on new user |
 
 ---
 
@@ -303,13 +323,31 @@ All write operations go through `SECURITY DEFINER` RPCs. RESTRICTIVE RLS policie
 
 | Table | Direct writes | Via RPC |
 |---|---|---|
-| `stores` | Blocked (RESTRICTIVE) | `admin_create_store`, `admin_update_store`, `admin_remove_store` |
-| `store_reward_rules` | Blocked (RESTRICTIVE) | `admin_insert_reward_rule`, `admin_delete_reward_rule`, `admin_update_reward_rule_order` |
-| `store_memberships` | Blocked (RESTRICTIVE) | `join_store` |
-| `store_staff` | Blocked (RESTRICTIVE) | `approve_staff_applicant`, `demote_store_staff`, `admin_assign_staff`, `admin_remove_staff` |
-| `store_managers` | Blocked (RESTRICTIVE) | `admin_assign_manager`, `admin_remove_manager` |
-| `store_staff_applicants` | Blocked (RESTRICTIVE) | `apply_for_staff`, `approve_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` |
-| `points_ledger` | Blocked (RESTRICTIVE) | `award_points` |
+| `stores` | Blocked | `admin_create_store`, `admin_update_store`, `admin_remove_store` |
+| `store_reward_rules` | Blocked | `admin_insert_reward_rule`, `admin_delete_reward_rule`, `admin_update_reward_rule_order` |
+| `store_memberships` | Blocked | `join_store` |
+| `store_staff` | Blocked | `approve_staff_applicant`, `demote_store_staff`, `admin_assign_staff`, `admin_remove_staff` |
+| `store_managers` | Blocked | `admin_assign_manager`, `admin_remove_manager` |
+| `store_staff_applicants` | Blocked | `apply_for_staff`, `approve_staff_applicant`, `reject_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` |
+| `store_manager_applicants` | Blocked | `apply_for_manager`, `admin_assign_manager`, `admin_reject_manager_applicant` |
+| `points_ledger` | Blocked | `award_points` |
+
+### SELECT RLS policies
+
+All tables readable by the client have explicit SELECT policies:
+
+| Table | Policy |
+|---|---|
+| `profiles` | `USING (true)` — public IDs are intentionally shareable |
+| `stores` | `USING (true)` |
+| `store_reward_rules` | `USING (true)` |
+| `store_staff` | `USING (true)` |
+| `store_staff_applicants` | `USING (true)` |
+| `store_memberships` | `USING (user_id = auth.uid())` |
+| `points_ledger` | `USING (user_id = auth.uid())` |
+| `store_managers` | `USING (user_id = auth.uid() OR is_admin())` |
+| `store_manager_applicants` | `USING (user_id = auth.uid() OR is_admin())` |
+| `admins` | Service role only |
 
 ### Admin identity
 
@@ -319,41 +357,27 @@ Admin RPCs check `is_admin()` — a `SECURITY DEFINER` helper that looks up `aut
 
 All user-controlled values are escaped via `src/lib/escape.js` before being written to the DOM.
 
-### Pre-RLS checklist
-
-Before adding RLS to any table:
-
-```sql
--- Check existing policies
-SELECT tablename, policyname, cmd
-FROM pg_policies
-WHERE tablename = 'your_table';
-
--- Check if RLS is already enabled
-SELECT relname, relrowsecurity
-FROM pg_class
-WHERE relname = 'your_table';
-```
-
-If RLS is off and there is no SELECT policy, add one (`USING (true)`) before enabling RLS or reads will break.
-
 ---
 
 ## SQL Scripts
 
-All scripts in `scripts/sql/` — paste into Supabase Dashboard → SQL Editor and run.
+All scripts in `scripts/sql/` — paste into Supabase Dashboard → SQL Editor and run. All are safe to re-run (idempotent).
 
 | Script | What it does |
 |---|---|
-| `admin-rpcs.sql` | One-time setup: creates `admins` table, `is_admin()` helper, RESTRICTIVE RLS on `stores` and `store_reward_rules`, all admin RPCs. Safe to re-run. |
-| `staff-rpcs.sql` | One-time setup: RESTRICTIVE RLS on `store_memberships`, `store_staff`, `store_staff_applicants`, `points_ledger`. Rewrites staff/manager RPCs as SECURITY DEFINER. Safe to re-run. |
-| `assign-admin.sql` | Grants admin access to a user by their human-readable public ID. Run after reset or on a fresh project. |
-| `delete-store.sql` | Deletes one store and all its memberships, staff, rules, and ledger entries. Set `v_store_id` at the top. |
-| `delete-user.sql` | Deletes one user and all their data. Set `v_public_id` to their human-readable ID (shown in admin tool). |
-| `delete-all-users.sql` | Deletes all users and their data (ledger, memberships, staff, profiles, auth). Leaves stores and reward rules intact. |
-| `reset-all.sql` | Full wipe — every row in every table including stores, rules, and all auth users. No undo. |
-
-Each script prints a row count per table so you can see exactly what was deleted.
+| `admin-rpcs.sql` | Creates `admins` table, `is_admin()` helper, RESTRICTIVE RLS on `stores` and `store_reward_rules`, all admin RPCs |
+| `staff-rpcs.sql` | RESTRICTIVE RLS on `store_memberships`, `store_staff`, `store_staff_applicants`, `points_ledger`. Staff and manager RPCs as SECURITY DEFINER |
+| `add-manager-applicants.sql` | `store_manager_applicants` table, `apply_for_manager` RPC, `admin_assign_manager` and `admin_remove_store` (authoritative versions) |
+| `add-bonus-cap.sql` | `max_bonus_points` column on `stores`, `award_points` RPC (authoritative version with cap logic), `admin_set_bonus_cap` RPC |
+| `add-rls-select-policies.sql` | SELECT RLS policies for all client-read tables |
+| `add-load-customer-home-rpc.sql` | `load_customer_home` RPC |
+| `add-load-store-members-rpc.sql` | `load_store_members` RPC |
+| `add-reject-applicant-rpc.sql` | `reject_staff_applicant` RPC |
+| `assign-admin.sql` | Grants admin access to a user by their human-readable public ID |
+| `delete-store.sql` | Deletes one store and all its memberships, staff, rules, and ledger entries |
+| `delete-user.sql` | Deletes one user and all their data by public ID |
+| `delete-all-users.sql` | Deletes all users and their data. Leaves stores and reward rules intact |
+| `reset-all.sql` | Full wipe — every row in every table including auth users. No undo |
 
 ---
 
@@ -361,23 +385,22 @@ Each script prints a row count per table so you can see exactly what was deleted
 
 ### First time (new Supabase project)
 
-1. Run `scripts/sql/admin-rpcs.sql` in the SQL Editor
-2. Run `scripts/sql/staff-rpcs.sql` in the SQL Editor
-3. Open the admin tool locally: `http://localhost:5173/adminstart.html`
-4. Your public ID is shown at the top of the page — copy it
-5. Paste it into `scripts/sql/assign-admin.sql` and run it
-6. Reload the admin tool — you now have admin access
-7. Create stores, configure reward rules, assign managers
+Run scripts in this order:
+
+1. `admin-rpcs.sql`
+2. `staff-rpcs.sql`
+3. `add-manager-applicants.sql`
+4. `add-bonus-cap.sql`
+5. `add-rls-select-policies.sql`
+6. `add-load-customer-home-rpc.sql`
+7. `add-load-store-members-rpc.sql`
+8. `add-reject-applicant-rpc.sql`
+9. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
+10. Reload admin tool — create stores, configure rules, assign managers
 
 ### After a full reset (`reset-all.sql`)
 
-The RPC and RLS setup survives a reset — it lives in the database schema, not the data. Only steps 3–7 above are needed:
-
-1. Open the admin tool — you'll get a new anonymous session with a new public ID
-2. Copy your new public ID from the header
-3. Run `assign-admin.sql` with the new public ID
-4. Reload — admin access restored
-5. Re-create stores and reward rules
+The RPC and RLS setup survives a reset — it lives in the schema, not the data. Only re-do steps 9–10 above.
 
 ---
 
