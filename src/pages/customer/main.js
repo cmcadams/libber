@@ -132,9 +132,9 @@ function initDevSection() {
     }
   })
 
-  resetBtn.addEventListener('click', () => {
+  resetBtn.addEventListener('click', async () => {
     if (!confirm('Clear all local data and start as a new user?')) return
-    resetSession()
+    await resetSession()
   })
 }
 
