@@ -339,7 +339,7 @@ The save prompt is a persistent button on the customer home page that encourages
 | `store_managers` | Approved managers per store |
 | `store_staff_applicants` | Pending staff applications |
 | `store_manager_applicants` | Pending manager applications |
-| `points_ledger` | Every points transaction with running balance |
+| `points_ledger` | Every points transaction |
 | `store_reward_rules` | Award and redeem rules per store |
 | `admins` | Users with admin access |
 | `ab_variants` | A/B test variant definitions (text, position, weight, active flag) |
@@ -363,12 +363,12 @@ The save prompt is a persistent button on the customer home page that encourages
 | `join_store` | `auth.uid()` required | Creates store membership for caller |
 | `apply_for_staff` | `auth.uid()` required | Creates staff applicant record for caller |
 | `apply_for_manager` | `auth.uid()` required | Creates manager applicant record for caller |
-| `approve_staff_applicant` | Must be manager of the store | Promotes applicant to staff, removes from applicants |
+| `approve_staff_applicant` | Must be manager of the store | Promotes applicant to staff, removes applicant record |
 | `reject_staff_applicant` | Must be manager of the store | Rejects and removes a staff applicant |
 | `demote_store_staff` | Must be manager of the store | Removes a user from store staff |
 | `award_points` | Must be staff or manager of the store | Inserts points ledger entry, enforces bonus cap |
 | `adjust_points` | Must be staff or manager of the store | Inserts a positive or negative correction entry, no cap check |
-| `load_customer_home` | `auth.uid()` required | Returns profile, memberships, balances, rules, history, save_prompt variant, email_saved flag in one call |
+| `load_customer_home` | `auth.uid()` required | Returns profile, memberships, balances, rules, history, save_prompt variant, email_saved flag in one call. Accepts `p_include_stores boolean` |
 | `load_store_members` | Must be staff or manager of the store | Returns members with balances and public IDs |
 | `admin_assign_manager` | Must be in `admins` table | Assigns a user as manager, clears their applicant record |
 | `admin_reject_manager_applicant` | Must be in `admins` table | Rejects a manager applicant |
@@ -395,10 +395,12 @@ The save prompt is a persistent button on the customer home page that encourages
 
 ### Pattern
 
-All write operations go through `SECURITY DEFINER` RPCs. RESTRICTIVE RLS policies block direct client writes to every table. The auth/permission check lives inside the RPC. No service role key is ever used in the browser.
+All write operations go through `SECURITY DEFINER` RPCs. RLS policies block direct client writes to every table. The auth/permission check lives inside the RPC. No service role key is ever used in the browser.
 
 - Client calls RPC → RPC checks `auth.uid()` / `is_admin()` → writes to table
-- Direct client INSERT/UPDATE/DELETE → blocked by RESTRICTIVE RLS policy
+- Direct client INSERT/UPDATE/DELETE → blocked by RLS policy (`WITH CHECK (false)` or `USING (false)`)
+
+All SECURITY DEFINER RPCs are created with `SET search_path = ''` to prevent search path injection. All table references inside RPCs use fully qualified `public.table_name` notation.
 
 ### What is secured
 
@@ -426,11 +428,11 @@ All tables readable by the client have explicit SELECT policies:
 | `store_staff` | `USING (true)` |
 | `store_staff_applicants` | `USING (true)` |
 | `ab_variants` | `USING (true)` — variant data is non-sensitive |
-| `store_memberships` | `USING (user_id = auth.uid())` |
-| `points_ledger` | `USING (user_id = auth.uid())` |
+| `store_memberships` | `USING (user_id = auth.uid())` — own rows only |
+| `points_ledger` | `USING (user_id = auth.uid())` — own rows only |
 | `store_managers` | `USING (user_id = auth.uid() OR is_admin())` |
 | `store_manager_applicants` | `USING (user_id = auth.uid() OR is_admin())` |
-| `admins` | Service role only |
+| `admins` | Service role only — `is_admin()` reads this as SECURITY DEFINER |
 
 ### Admin identity
 
