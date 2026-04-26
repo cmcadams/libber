@@ -57,18 +57,29 @@ export function renderUserStores() {
   })
 }
 
+function txnKind(row, awardLabels, bonusLabels) {
+  if (row.points < 0)                   return 'redeem'
+  if (awardLabels.has(row.reason))      return 'award'
+  if (bonusLabels.has(row.reason))      return 'bonus'
+  return 'adjust'
+}
+
 function renderStoreDetail(el, history, rules) {
   const awardRules  = (rules || []).filter(r => r.kind === 'award')
   const redeemRules = (rules || []).filter(r => r.kind === 'redeem')
+  const awardLabels = new Set(awardRules.map(r => r.label))
+  const bonusLabels = new Set((rules || []).filter(r => r.kind === 'bonus_reason').map(r => r.label))
 
   const historyHtml = (history || []).length
-    ? history.map(row => `
+    ? history.map(row => {
+        const kind = txnKind(row, awardLabels, bonusLabels)
+        return `
         <div class="history-row">
           <span class="history-reason">${escapeHtml(row.reason || '—')}</span>
-          <span class="history-pts${row.points < 0 ? ' history-pts-redeem' : ''}">${row.points > 0 ? '+' : ''}${row.points} pts</span>
+          <span class="history-pts history-pts-${kind}">${row.points > 0 ? '+' : ''}${row.points} pts</span>
           <span class="history-date">${formatDate(row.created_at)}</span>
-        </div>
-      `).join('')
+        </div>`
+      }).join('')
     : '<p class="history-empty">No transactions yet</p>'
 
   const rulesHtml = (awardRules.length || redeemRules.length) ? `
