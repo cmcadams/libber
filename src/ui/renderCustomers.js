@@ -1,6 +1,7 @@
 import { state } from '../state/state.js'
 import { awardPoints, adjustPoints } from '../services/members.js'
 import { escapeHtml } from '../lib/escape.js'
+import { $ } from '../lib/dom.js'
 
 let selectedMember = null
 let bonusPts       = null
@@ -14,8 +15,6 @@ function scheduleReRender() {
     renderCustomers()
   }, 1500)
 }
-
-const $ = id => document.getElementById(id)
 
 export function renderCustomers() {
   const container = $('customerList')

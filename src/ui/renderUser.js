@@ -2,11 +2,12 @@ import { state } from '../state/state.js'
 import { escapeHtml } from '../lib/escape.js'
 import { loadPointsHistory } from '../services/members.js'
 import { loadRewardRules } from '../services/admin.js'
+import { toHumanId } from '../lib/format.js'
 
 export function renderUser(publicId, uuid) {
   const el = document.getElementById('user-id')
   if (!el) return
-  el.textContent = publicId || `USR-${String(uuid || '').slice(0, 6).toUpperCase()}` || 'No ID'
+  el.textContent = toHumanId(publicId, uuid)
 }
 
 function formatDate(iso) {

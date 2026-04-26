@@ -12,8 +12,7 @@ import {
 } from '../../services/admin.js'
 import { getStoreBonusCap } from '../../services/stores.js'
 import { escapeHtml } from '../../lib/escape.js'
-
-const $ = id => document.getElementById(id)
+import { $ } from '../../lib/dom.js'
 
 let users = []
 let stores = []

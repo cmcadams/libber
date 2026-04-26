@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase.js'
 import { state } from '../state/state.js'
+import { toHumanId } from '../lib/format.js'
 
 export async function loadUserProfile(userId) {
   const { data: profile, error } = await supabase
@@ -107,7 +108,7 @@ export async function loadMembers(storeId) {
 
   state.members = (data || []).map(m => ({
     user_id: m.user_id,
-    public_id: m.public_id || `USR-${m.user_id.slice(0, 6).toUpperCase()}`,
+    public_id: toHumanId(m.public_id, m.user_id),
     balance: m.balance ?? 0
   }))
 }

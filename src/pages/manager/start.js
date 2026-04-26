@@ -4,14 +4,13 @@ import { loadUserProfile } from '../../services/members.js'
 import { getStores } from '../../services/stores.js'
 import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
+import { $ } from '../../lib/dom.js'
+import { toHumanId } from '../../lib/format.js'
 
 let selectedStoreId = null
 let selectedApplyStoreId = null
 let pendingManagerStoreIds = new Set()
 let managedStoreIds = new Set()
-
-const $ = id => document.getElementById(id)
-const toHumanId = (publicId, userId) => publicId || `USR-${String(userId || '').slice(0, 6).toUpperCase()}`
 
 async function init() {
   try {

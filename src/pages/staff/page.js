@@ -5,6 +5,7 @@ import { getStoreBonusCap } from '../../services/stores.js'
 import { state } from '../../state/state.js'
 import { loadSelectedStore } from '../../lib/storage.js'
 import { renderCustomers, initCustomerHandlers } from '../../ui/renderCustomers.js'
+import { toHumanId } from '../../lib/format.js'
 
 async function boot() {
   const user = await initAuth()
@@ -22,7 +23,7 @@ async function boot() {
   document.getElementById('storeName').textContent = state.selectedStoreName || 'Store'
 
   const profile = await loadUserProfile(user.id)
-  const publicId = profile?.public_id || `USR-${user.id.slice(0, 6).toUpperCase()}`
+  const publicId = toHumanId(profile?.public_id, user.id)
   document.getElementById('staffBadge').textContent = `Staff: ${publicId}`
 
   // load members and reward rules for this store

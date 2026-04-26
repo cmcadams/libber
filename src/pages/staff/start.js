@@ -6,13 +6,12 @@ import { loadStaffStores } from '../../services/staff.js'
 import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
 import { state } from '../../state/state.js'
+import { $ } from '../../lib/dom.js'
+import { toHumanId } from '../../lib/format.js'
 
 let selectedStoreId = null
 let isPendingForSelectedStore = false
 let pendingStoreIds = new Set()
-
-const $ = id => document.getElementById(id)
-const toHumanId = (publicId, userId) => publicId || `USR-${String(userId || '').slice(0, 6).toUpperCase()}`
 
 async function init() {
   try {
