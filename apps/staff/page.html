@@ -454,15 +454,20 @@
     .redeem-btn.done .redeem-btn-label,
     .redeem-btn.done .redeem-btn-cost { color: var(--success-text); }
 
-    .back-link {
-      display: inline-block;
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-size: 13px;
+      font-family: inherit;
       color: var(--text-muted);
-      text-decoration: none;
+      background: none;
+      border: none;
       padding: 0.5rem 0;
+      cursor: pointer;
     }
 
-    .back-link:hover { color: var(--text); }
+    .back-btn:hover { color: var(--text); }
 
     #status {
       font-size: 13px;
@@ -475,7 +480,7 @@
 </head>
 <body>
   <div class="page">
-    <a href="/apps/staff/" class="back-link">← Back</a>
+    <button class="back-btn" onclick="location.href='/apps/staff/'">← My Stores</button>
     <div class="header">
       <span class="store-name" id="storeName">—</span>
       <span class="staff-badge" id="staffBadge">Staff</span>
