@@ -74,7 +74,7 @@ async function handleJoin(store, btn) {
   }]
   prevBalances.delete(store.id)
 
-  try { localStorage.removeItem(`libber_home_${state.user?.id}`) } catch {}
+  try { localStorage.removeItem(`libber_home_${state.user.id}`) } catch {}
   renderUserStores()
 
   btn.textContent = 'Unjoin'
@@ -103,7 +103,7 @@ async function handleUnjoin(store, btn) {
   state.userStores = (state.userStores || []).filter(s => s.store_id !== store.id)
   if (state.storeData) delete state.storeData[store.id]
 
-  try { localStorage.removeItem(`libber_home_${state.user?.id}`) } catch {}
+  try { localStorage.removeItem(`libber_home_${state.user.id}`) } catch {}
   renderUserStores()
 
   btn.textContent = 'Join'

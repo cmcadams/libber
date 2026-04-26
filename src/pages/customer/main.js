@@ -158,12 +158,12 @@ async function init() {
     // 1. Render from cache immediately — instant on return visits.
     //    Capture balance before render so we can detect new points after
     //    fresh data arrives.
-    const cached    = readHomeCache(user.id)
-    const hadCache  = cached !== null
-    const prevBal   = getTotalBalance(cached)
+    const cached       = readHomeCache(user.id)
+    const hadCache     = cached !== null
+    const prevBal      = getTotalBalance(cached)
+    const cachedStores = readStoresCache()
 
     if (cached) {
-      const cachedStores = readStoresCache()
       if (cached.stores == null && cachedStores) cached.stores = cachedStores
       applyHomeData(cached, user.id)
     }
@@ -172,7 +172,6 @@ async function init() {
     initShowStaff()
 
     // 2. Fetch fresh data. Skip the stores query when the cache is still valid.
-    const cachedStores = readStoresCache()
     const data = await loadCustomerHome(!cachedStores)
     if (data) {
       if (cachedStores) {
