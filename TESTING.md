@@ -19,7 +19,8 @@
 - [ ] Opens, anonymous auth fires, ID appears in header
 - [ ] Joined stores load (from cache first, then fresh)
 - [ ] "Join a store" section lists available stores; joining one adds it to your list
-- [ ] Store card expands to show earn rules, redeem options, and last 10 transactions
+- [ ] Store card expands to show earn rules, redeem options, and last 10 transactions in time order
+- [ ] Transactions colour-coded: award (green), redeem (purple), bonus (amber), adjust (blue)
 - [ ] Save prompt hidden until at least 1 point is earned at any store
 - [ ] Save prompt glows when new points arrive (award something via staff page, watch customer page update in real time)
 - [ ] Tap the ID/header area → full-screen staff overlay appears in landscape; Done/tap outside dismisses it

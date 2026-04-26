@@ -211,7 +211,7 @@ The app uses anonymous Supabase auth (`src/services/auth.js`):
 5. Tap a store card to expand:
    - **How to earn** — the store's award rules (e.g. "1 coffee → +5 pts")
    - **Rewards** — the store's redeem options and their point costs
-   - **Transaction history** — last 10 entries
+   - **Transaction history** — last 10 entries in chronological order, colour-coded by type: award (green), redeem (purple), bonus (amber), adjust (blue)
 6. Join additional stores from the "Join a store" section
 
 ### Staff (applying)
@@ -264,6 +264,19 @@ Staff page buttons are driven by `store_reward_rules` in Supabase — not hardco
 - `kind = 'bonus_amount'` — configurable amount buttons for the bonus section (point value, no label needed)
 
 Staff must pick one bonus reason and one bonus amount to enable the award. The per-store bonus cap (`max_bonus_points`) applies to bonus awards and limits the visible amount buttons. Quick-award buttons bypass the cap.
+
+---
+
+## Transaction History
+
+Each store card on the customer page shows the last 10 transactions in reverse-chronological order. Transactions are colour-coded by type, inferred at render time from the points value and reason against the store's active rules — no extra DB column needed.
+
+| Type | Colour | How identified |
+|---|---|---|
+| Award | Green | Points > 0 and reason matches an `award` rule label |
+| Redeem | Purple | Points < 0 |
+| Bonus | Amber | Points > 0 and reason matches a `bonus_reason` rule label |
+| Adjust | Blue | Everything else (free-form staff correction) |
 
 ---
 
