@@ -60,6 +60,7 @@ scripts/
     reset-all.sql                    Full wipe of all data
 src/
   lib/
+    dom.js            getElementById ($), querySelector ($q), querySelectorAll ($$) helpers
     escape.js         shared escapeHtml utility
     storage.js        shared localStorage helpers
     supabase.js       Supabase client
@@ -79,13 +80,13 @@ src/
     auth.js           anonymous auth bootstrap, resetSession() for dev testing
     members.js        loadMembers, loadUserProfile, loadCustomerHome, awardPoints, adjustPoints, loadPointsHistory
     staff.js          loadStaffStores (unions store_staff + store_managers)
-    stores.js         getStores, joinStore, getStoreBonusCap
+    stores.js         getStores, joinStore, unjoinStore, getStoreBonusCap
   state/
     state.js          shared in-memory state
   ui/
     renderCustomers.js
-    renderStores.js
-    renderUser.js
+    renderStores.js   renders all stores with join/unjoin buttons; preserves balance optimistically on rejoin
+    renderUser.js     renders user ID header and joined-store cards with expandable history
     savePrompt.js     save-prompt module: render(data), glow()
 adminstart.html         local admin tool (not deployed)
 vite.config.js          multi-page build config
@@ -212,7 +213,7 @@ The app uses anonymous Supabase auth (`src/services/auth.js`):
    - **How to earn** — the store's award rules (e.g. "1 coffee → +5 pts")
    - **Rewards** — the store's redeem options and their point costs
    - **Transaction history** — last 10 entries in chronological order, colour-coded by type: award (green), redeem (purple), bonus (amber), adjust (blue)
-6. Join additional stores from the "Join a store" section
+6. Join additional stores from the "Join to earn points" section, or unjoin stores with the Unjoin button. Points are preserved if the user rejoins later
 
 ### Staff (applying)
 1. Open `apps/staff/`
@@ -360,7 +361,8 @@ The save prompt is a persistent button on the customer home page that encourages
 
 | Name | Auth check | What it does |
 |---|---|---|
-| `join_store` | `auth.uid()` required | Creates store membership for caller |
+| `join_store` | `auth.uid()` required | Creates store membership for caller (safe to re-call — ON CONFLICT DO NOTHING) |
+| `unjoin_store` | `auth.uid()` required | Removes caller's membership from a store |
 | `apply_for_staff` | `auth.uid()` required | Creates staff applicant record for caller |
 | `apply_for_manager` | `auth.uid()` required | Creates manager applicant record for caller |
 | `approve_staff_applicant` | Must be manager of the store | Promotes applicant to staff, removes applicant record |
@@ -408,7 +410,7 @@ All SECURITY DEFINER RPCs are created with `SET search_path = ''` to prevent sea
 |---|---|---|
 | `stores` | Blocked | `admin_create_store`, `admin_update_store`, `admin_remove_store` |
 | `store_reward_rules` | Blocked | `admin_insert_reward_rule`, `admin_delete_reward_rule`, `admin_update_reward_rule_order` |
-| `store_memberships` | Blocked | `join_store` |
+| `store_memberships` | Blocked | `join_store`, `unjoin_store` |
 | `store_staff` | Blocked | `approve_staff_applicant`, `demote_store_staff`, `admin_assign_staff`, `admin_remove_staff` |
 | `store_managers` | Blocked | `admin_assign_manager`, `admin_remove_manager` |
 | `store_staff_applicants` | Blocked | `apply_for_staff`, `approve_staff_applicant`, `reject_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` |
