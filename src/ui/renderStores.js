@@ -1,10 +1,11 @@
 import { joinStore } from '../services/stores.js'
 import { state } from '../state/state.js'
 import { renderUserStores } from './renderUser.js'
+import { $ } from '../lib/dom.js'
 
 export function renderStores(stores) {
-  const container = document.getElementById('stores-list')
-  const section = document.getElementById('stores-section')
+  const container = $('stores-list')
+  const section = $('stores-section')
 
   if (!container) return
 

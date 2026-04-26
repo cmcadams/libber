@@ -1,6 +1,4 @@
-// Save prompt module.
-// Owns all state and DOM interaction for the account-saving prompt.
-// Public API: render(data), glow().
+import { $ } from '../lib/dom.js'
 
 let _visible    = false  // prompt is currently shown
 let _emailSaved = false  // user has already saved their email
@@ -9,8 +7,8 @@ let _mounted    = false  // animationend listener has been attached
 
 function getEls() {
   return {
-    el:  document.getElementById('save-prompt'),
-    btn: document.getElementById('save-prompt-btn')
+    el:  $('save-prompt'),
+    btn: $('save-prompt-btn')
   }
 }
 
