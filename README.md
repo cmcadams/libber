@@ -20,11 +20,11 @@ The **admin tool** (`adminstart.html`) lives at the repo root and is run locally
 ## Pages
 
 ### Customer app (`apps/customer/`)
-- `index.html` — shows the user's ID, joined stores, balances, and available stores to join. Includes a persistent save-prompt button (A/B tested text) that glows when new points are detected.
+- `index.html` — shows the user's ID, joined stores, balances, and available stores to join. Includes a persistent save-prompt button (A/B tested text, only shown once the user has earned points) that glows when new points are detected. Tapping the ID area shows a full-screen staff view. A hidden dev section (7 taps on the footer strip) exposes a staff page link and a session reset button for testing.
 
 ### Staff app (`apps/staff/`)
 - `index.html` — pick a store you work at (staff or manager) and click it to open staff tools, or apply for access to a new store. Managers also see a "Go to manager tools →" link.
-- `page.html` — staff tools: load members, award points via store-configured buttons. ← Back returns to the store picker.
+- `page.html` — staff tools: load members, award points via store-configured buttons. "← My Stores" button returns to the store picker.
 - `manager.html` — manager tools: see managed stores, approve/reject applicants, view and remove current staff, apply to manage new stores. Includes refresh button.
 
 ### Admin (local only)
@@ -76,8 +76,8 @@ src/
   services/
     admin.js          store creation, reward rules, admin RPCs
     applicants.js     apply_for_staff, loadApplicants, loadMyApplications, loadStaff, approveApplicant, demoteStaff, applyForManager, loadMyManagerApplications
-    auth.js           anonymous auth bootstrap
-    members.js        loadMembers, loadUserProfile, loadCustomerHome, awardPoints, loadPointsHistory
+    auth.js           anonymous auth bootstrap, resetSession() for dev testing
+    members.js        loadMembers, loadUserProfile, loadCustomerHome, awardPoints, adjustPoints, loadPointsHistory
     staff.js          loadStaffStores (unions store_staff + store_managers)
     stores.js         getStores, joinStore, getStoreBonusCap
   state/
@@ -225,8 +225,9 @@ The app uses anonymous Supabase auth (`src/services/auth.js`):
 1. Click a store from "Your stores" on the staff index
 2. Members and reward rules load for that store
 3. Click a member to open their panel
-4. Award points via quick-award buttons or bonus section
-5. ← Back returns to the store picker
+4. Award points via quick-award buttons, bonus section (configurable reasons + amounts), or adjust (free-form positive/negative correction)
+5. "← My Stores" returns to the store picker
+6. Member filter only appears when the store has 10 or more members
 
 ### Manager
 1. Open `apps/staff/manager.html` (linked from staff index via "Go to manager tools →")
@@ -300,7 +301,7 @@ The save prompt is a persistent button on the customer home page that encourages
 
 ### Behaviour
 
-- Shown as soon as the user has a variant assigned (immediately after profile creation for new users)
+- Only shown once the user has at least one point at any store — hidden on first visit until points are earned
 - Hidden permanently once `email_saved_at` is set on the profile
 - Text and position come from the assigned `ab_variants` row — configurable without a deploy
 - **Glow effect**: each time the page loads or refreshes and new points are detected (balance increased since last cache), the button glows briefly — a subtle visual nudge. Repeats on every new-points event until the user saves their account
@@ -353,6 +354,7 @@ The save prompt is a persistent button on the customer home page that encourages
 | `reject_staff_applicant` | Must be manager of the store | Rejects and removes a staff applicant |
 | `demote_store_staff` | Must be manager of the store | Removes a user from store staff |
 | `award_points` | Must be staff or manager of the store | Inserts points ledger entry, enforces bonus cap |
+| `adjust_points` | Must be staff or manager of the store | Inserts a positive or negative correction entry, no cap check |
 | `load_customer_home` | `auth.uid()` required | Returns profile, memberships, balances, rules, history, save_prompt variant, email_saved flag in one call |
 | `load_store_members` | Must be staff or manager of the store | Returns members with balances and public IDs |
 | `admin_assign_manager` | Must be in `admins` table | Assigns a user as manager, clears their applicant record |
@@ -396,7 +398,7 @@ All write operations go through `SECURITY DEFINER` RPCs. RESTRICTIVE RLS policie
 | `store_managers` | Blocked | `admin_assign_manager`, `admin_remove_manager` |
 | `store_staff_applicants` | Blocked | `apply_for_staff`, `approve_staff_applicant`, `reject_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` |
 | `store_manager_applicants` | Blocked | `apply_for_manager`, `admin_assign_manager`, `admin_reject_manager_applicant` |
-| `points_ledger` | Blocked | `award_points` |
+| `points_ledger` | Blocked | `award_points`, `adjust_points` |
 | `ab_variants` | Blocked | Managed via Supabase dashboard only |
 
 ### SELECT RLS policies
