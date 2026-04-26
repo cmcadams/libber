@@ -36,7 +36,6 @@ export function renderUserStores() {
   )
 
   el.innerHTML = `
-    <h2 class="section-title">Your stores</h2>
     <div class="store-list">
       ${stores.map(store => `
         <div class="store-card" data-store-id="${escapeHtml(store.store_id)}">

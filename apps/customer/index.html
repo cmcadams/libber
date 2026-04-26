@@ -62,14 +62,13 @@
       padding-bottom: 1.5rem;
       border-bottom: 0.5px solid var(--border);
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 1rem;
       width: 100%;
     }
 
     .header-id {
-      flex: 1;
-      min-width: 0;
+      text-align: center;
     }
 
     .user-id {
@@ -89,19 +88,29 @@
       letter-spacing: 0.02em;
     }
 
+    .user-stores-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .user-stores-header .section-title {
+      margin-bottom: 0;
+    }
+
     .refresh-btn {
-      padding: 10px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
+      padding: 6px 10px;
+      background: transparent;
+      border: 0.5px solid var(--border-strong);
       border-radius: var(--radius-md);
-      color: var(--text);
+      color: var(--text-muted);
       cursor: pointer;
-      font-size: 18px;
+      font-size: 16px;
       line-height: 1;
       transition: color 0.2s, transform 0.2s, background 0.2s;
-      margin-left: auto;
-      min-width: 44px;
-      min-height: 44px;
+      min-width: 36px;
+      min-height: 36px;
     }
 
     .refresh-btn:hover {
@@ -494,7 +503,6 @@
         <span class="user-id">Tap to show staff</span>
         <span id="user-id">Loading...</span>
       </div>
-      <button id="refresh-btn" class="refresh-btn" title="Refresh points">↻</button>
     </div>
 
     <div id="staff-overlay" class="staff-overlay">
@@ -505,6 +513,11 @@
 
     <div class="save-prompt" id="save-prompt">
       <button class="save-prompt-btn" id="save-prompt-btn"></button>
+    </div>
+
+    <div class="user-stores-header">
+      <h2 class="section-title">Your stores</h2>
+      <button id="refresh-btn" class="refresh-btn" title="Refresh">↻</button>
     </div>
 
     <div id="user-stores">
