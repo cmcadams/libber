@@ -4,7 +4,7 @@ import { loadUserProfile } from '../../services/members.js'
 import { getStores } from '../../services/stores.js'
 import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
-import { $ } from '../../lib/dom.js'
+import { $, $$ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
 
 let selectedStoreId = null
@@ -161,7 +161,7 @@ function bindEvents() {
     selectedStoreId = button.dataset.storeId
     const storeName = button.querySelector('.pick-title')?.textContent || selectedStoreId
     saveSelectedStore(selectedStoreId, storeName)
-    document.querySelectorAll('[data-store-id]').forEach(node => {
+    $$('[data-store-id]').forEach(node => {
       node.classList.toggle('selected', node === button)
     })
     $('selectedStore').textContent = storeName
@@ -239,7 +239,7 @@ function bindEvents() {
     if (!button) return
 
     selectedApplyStoreId = button.dataset.applyStoreId
-    document.querySelectorAll('[data-apply-store-id]').forEach(node => {
+    $$('[data-apply-store-id]').forEach(node => {
       node.classList.toggle('selected', node === button)
     })
     $('applySelectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedApplyStoreId

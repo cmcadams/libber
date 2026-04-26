@@ -12,7 +12,7 @@ import {
 } from '../../services/admin.js'
 import { getStoreBonusCap } from '../../services/stores.js'
 import { escapeHtml } from '../../lib/escape.js'
-import { $ } from '../../lib/dom.js'
+import { $, $$, $q } from '../../lib/dom.js'
 
 let users = []
 let stores = []
@@ -140,7 +140,7 @@ function renderMemberList(containerId, members, removeAttr) {
 // ── Events ────────────────────────────────────────────────────────────────────
 
 function bindEvents() {
-  document.querySelectorAll('.action-btn[data-section]').forEach(btn => {
+  $$('.action-btn[data-section]').forEach(btn => {
     btn.addEventListener('click', () => {
       showSection(btn.dataset.section, btn)
       if (btn.dataset.section === 'applicants') loadAndRenderApplicants()
@@ -310,15 +310,15 @@ function bindEvents() {
 // ── Section nav ───────────────────────────────────────────────────────────────
 
 function showSection(name, activeBtn) {
-  document.querySelectorAll('#panelArea .panel').forEach(p => p.classList.add('hidden'))
-  document.querySelectorAll('.action-btn[data-section]').forEach(b => b.classList.remove('active'))
+  $$('#panelArea .panel').forEach(p => p.classList.add('hidden'))
+  $$('.action-btn[data-section]').forEach(b => b.classList.remove('active'))
   const panel = $(`panel-${name}`)
   if (panel) panel.classList.remove('hidden')
   if (activeBtn) activeBtn.classList.add('active')
 }
 
 function selectInPicker(containerId, activeBtn) {
-  document.querySelectorAll(`#${containerId} .pick-card`).forEach(b => {
+  $$(`#${containerId} .pick-card`).forEach(b => {
     b.classList.toggle('selected', b === activeBtn)
   })
 }
@@ -449,19 +449,19 @@ function refreshAllStorePickers() {
   renderAllStores()
 
   if (selectedManagerStoreId) {
-    const btn = document.querySelector(`#managerStoreList [data-store-id="${CSS.escape(selectedManagerStoreId)}"]`)
+    const btn = $q(`#managerStoreList [data-store-id="${CSS.escape(selectedManagerStoreId)}"]`)
     if (btn) btn.classList.add('selected')
   }
   if (selectedStaffStoreId) {
-    const btn = document.querySelector(`#staffStoreList [data-store-id="${CSS.escape(selectedStaffStoreId)}"]`)
+    const btn = $q(`#staffStoreList [data-store-id="${CSS.escape(selectedStaffStoreId)}"]`)
     if (btn) btn.classList.add('selected')
   }
   if (selectedRulesStoreId) {
-    const btn = document.querySelector(`#rulesStoreList [data-store-id="${CSS.escape(selectedRulesStoreId)}"]`)
+    const btn = $q(`#rulesStoreList [data-store-id="${CSS.escape(selectedRulesStoreId)}"]`)
     if (btn) btn.classList.add('selected')
   }
   if (selectedManageStoreId) {
-    const btn = document.querySelector(`#manageStoreList [data-store-id="${CSS.escape(selectedManageStoreId)}"]`)
+    const btn = $q(`#manageStoreList [data-store-id="${CSS.escape(selectedManageStoreId)}"]`)
     if (btn) btn.classList.add('selected')
   }
 }

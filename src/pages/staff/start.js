@@ -6,7 +6,7 @@ import { loadStaffStores } from '../../services/staff.js'
 import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
 import { state } from '../../state/state.js'
-import { $ } from '../../lib/dom.js'
+import { $, $$ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
 
 let selectedStoreId = null
@@ -89,7 +89,7 @@ function bindEvents() {
 
     selectedStoreId = button.dataset.storeId
     isPendingForSelectedStore = pendingStoreIds.has(selectedStoreId)
-    document.querySelectorAll('[data-store-id]').forEach(node => {
+    $$('[data-store-id]').forEach(node => {
       node.classList.toggle('selected', node === button)
     })
     $('selectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedStoreId

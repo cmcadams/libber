@@ -1,1 +1,3 @@
-export const $ = id => document.getElementById(id)
+export const $  = id  => document.getElementById(id)
+export const $$ = sel => document.querySelectorAll(sel)
+export const $q = sel => document.querySelector(sel)
