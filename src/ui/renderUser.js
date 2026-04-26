@@ -29,7 +29,7 @@ export function renderUserStores() {
 
   if (!stores.length) {
     if (header) header.style.display = 'none'
-    el.innerHTML = '<p class="empty">Join to earn points</p>'
+    el.innerHTML = ''
     return
   }
 
