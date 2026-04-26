@@ -491,6 +491,84 @@ The RPC and RLS setup survives a reset — it lives in the schema, not the data.
 
 ---
 
+## DB Security Audit Queries
+
+Run these in the Supabase Dashboard → SQL Editor to audit auth and RLS posture.
+
+**1. RLS status per table**
+```sql
+SELECT
+  c.relname                        AS table_name,
+  c.relrowsecurity                 AS rls_enabled,
+  c.relforcerowsecurity            AS rls_forced,
+  COUNT(p.policyname)              AS policy_count,
+  CASE
+    WHEN NOT c.relrowsecurity                         THEN 'OPEN — no RLS'
+    WHEN c.relrowsecurity AND COUNT(p.policyname) = 0 THEN 'BLOCKED — RLS on, no policies'
+    ELSE 'ok'
+  END                              AS status
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+LEFT JOIN pg_policies p
+       ON p.schemaname = n.nspname
+      AND p.tablename  = c.relname
+WHERE n.nspname = 'public'
+  AND c.relkind  = 'r'
+GROUP BY c.relname, c.relrowsecurity, c.relforcerowsecurity
+ORDER BY status, table_name;
+```
+
+**2. All RLS policies**
+```sql
+SELECT tablename, policyname, roles, cmd,
+       qual       AS using_expr,
+       with_check AS check_expr
+FROM pg_policies
+WHERE schemaname = 'public'
+ORDER BY tablename, cmd;
+```
+
+**3. Direct table grants to anon / authenticated**
+```sql
+SELECT table_name, grantee, privilege_type
+FROM information_schema.role_table_grants
+WHERE table_schema = 'public'
+  AND grantee IN ('anon', 'authenticated')
+ORDER BY table_name, grantee, privilege_type;
+```
+
+**4. All public RPCs — security model and search_path**
+```sql
+SELECT proname,
+       prosecdef                          AS security_definer,
+       proconfig                          AS config,
+       pg_get_function_arguments(oid)     AS args
+FROM pg_proc
+WHERE pronamespace = 'public'::regnamespace
+ORDER BY proname;
+```
+
+**5. Which RPCs anon / authenticated can call**
+```sql
+SELECT routine_name, grantee, privilege_type
+FROM information_schema.role_routine_grants
+WHERE routine_schema = 'public'
+  AND grantee IN ('anon', 'authenticated')
+ORDER BY routine_name, grantee;
+```
+
+**What to look for:**
+
+| Query | Red flag |
+|---|---|
+| 1 | `status = OPEN` (no RLS) or `BLOCKED` (RLS on but no policies — all access denied) |
+| 2 | `using_expr = true` (unrestricted read) or `with_check = true` (unrestricted write) |
+| 3 | `INSERT`, `UPDATE`, or `DELETE` granted directly to `anon` or `authenticated` |
+| 4 | `security_definer = true` and `config` does not include `search_path=` |
+| 5 | Any RPC callable by `anon` that was not intended to be public |
+
+---
+
 ## Commands
 
 ```bash
