@@ -21,15 +21,19 @@ function formatDate(iso) {
 }
 
 export function renderUserStores() {
-  const el = $('user-stores')
+  const el     = $('user-stores')
+  const header = $('user-stores-header')
   if (!el) return
 
   const stores = state.userStores || []
 
   if (!stores.length) {
-    el.innerHTML = '<p class="empty">No stores joined yet</p>'
+    if (header) header.style.display = 'none'
+    el.innerHTML = '<p class="empty">Join to earn points</p>'
     return
   }
+
+  if (header) header.style.display = ''
 
   const openIds = new Set(
     [...el.querySelectorAll('.store-card.open')].map(c => c.dataset.storeId)

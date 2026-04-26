@@ -58,7 +58,7 @@
     }
 
     .header {
-      margin-bottom: 2rem;
+      margin-bottom: 1.25rem;
       padding-bottom: 1.5rem;
       border-bottom: 0.5px solid var(--border);
       display: flex;
@@ -424,7 +424,7 @@
       color: #fff;
     }
 
-    .save-prompt           { margin-bottom: 1.25rem; display: none; }
+    .save-prompt           { margin-bottom: 0.75rem; display: none; }
     .save-prompt.is-visible { display: block; }
 
     .save-prompt-btn {
@@ -515,7 +515,7 @@
   <div class="page">
     <div class="header">
       <div class="header-id" id="header-id">
-        <span class="user-id">Tap to show staff</span>
+        <span class="user-id" id="header-label">Tap to show staff</span>
         <span id="user-id">Loading...</span>
       </div>
     </div>
@@ -530,7 +530,7 @@
       <button class="save-prompt-btn" id="save-prompt-btn"></button>
     </div>
 
-    <div class="user-stores-header">
+    <div class="user-stores-header" id="user-stores-header">
       <h2 class="section-title">Your stores</h2>
       <button id="refresh-btn" class="refresh-btn" title="Refresh">↻</button>
     </div>

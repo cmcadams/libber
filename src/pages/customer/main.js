@@ -85,7 +85,12 @@ function initShowStaff() {
   const overlay   = $('staff-overlay')
   const overlayId = $('staff-overlay-id')
   const doneBtn   = $('staff-overlay-done')
+  const label     = $('header-label')
   if (!trigger || !overlay) return
+
+  if (label && localStorage.getItem('libber_staff_used')) {
+    label.style.display = 'none'
+  }
 
   function exitStaffView() {
     overlay.classList.remove('active')
@@ -94,6 +99,10 @@ function initShowStaff() {
   }
 
   trigger.addEventListener('click', () => {
+    if (label) {
+      localStorage.setItem('libber_staff_used', '1')
+      label.style.display = 'none'
+    }
     overlayId.textContent = $('user-id').textContent
     overlay.classList.add('active')
     document.documentElement.requestFullscreen?.().catch(() => {})
