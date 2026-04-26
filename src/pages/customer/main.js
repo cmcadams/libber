@@ -89,7 +89,7 @@ function initShowStaff() {
   if (!trigger || !overlay) return
 
   if (label && localStorage.getItem('libber_staff_used')) {
-    label.style.display = 'none'
+    label.textContent = 'Your ID'
   }
 
   function exitStaffView() {
@@ -101,7 +101,7 @@ function initShowStaff() {
   trigger.addEventListener('click', () => {
     if (label) {
       localStorage.setItem('libber_staff_used', '1')
-      label.style.display = 'none'
+      label.textContent = 'Your ID'
     }
     overlayId.textContent = $('user-id').textContent
     overlay.classList.add('active')
