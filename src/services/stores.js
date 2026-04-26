@@ -23,3 +23,10 @@ export async function joinStore(storeId) {
   })
   return { data, error }
 }
+
+export async function unjoinStore(storeId) {
+  const { data, error } = await supabase.rpc('unjoin_store', {
+    p_store_id: storeId
+  })
+  return { data, error }
+}

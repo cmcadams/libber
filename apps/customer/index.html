@@ -347,6 +347,24 @@
       border-color: var(--border-strong);
     }
 
+    .unjoin-btn {
+      font-size: 14px;
+      padding: 10px 16px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
+      min-height: 44px;
+    }
+
+    .unjoin-btn:hover {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #b91c1c;
+    }
+
     .header-id:hover #user-id {
       color: var(--text-muted);
     }
@@ -522,7 +540,7 @@
     </div>
 
     <div id="stores-section">
-      <h2 class="section-title">Join a store</h2>
+      <h2 class="section-title">Stores</h2>
       <div id="stores-list">Loading...</div>
     </div>
 

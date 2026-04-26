@@ -1,78 +1,112 @@
-import { joinStore } from '../services/stores.js'
+import { joinStore, unjoinStore } from '../services/stores.js'
 import { state } from '../state/state.js'
 import { renderUserStores } from './renderUser.js'
 import { $ } from '../lib/dom.js'
 
+const prevBalances = new Map()
+
 export function renderStores(stores) {
   const container = $('stores-list')
-  const section = $('stores-section')
-
+  const section   = $('stores-section')
   if (!container) return
 
-  container.innerHTML = ''
+  const storeList = stores || []
 
-  const joinedStoreIds = new Set((state.userStores || []).map(s => s.store_id))
-  const unjoinedStores = (stores || []).filter(s => !joinedStoreIds.has(s.id))
-
-  if (!unjoinedStores.length) {
+  if (!storeList.length) {
     if (section) section.style.display = 'none'
     return
   }
 
   if (section) section.style.display = ''
 
-  const listDiv = document.createElement('div')
-  listDiv.className = 'available-stores'
+  const joinedIds = new Set((state.userStores || []).map(s => s.store_id))
 
-  unjoinedStores.forEach(store => {
-    const card = document.createElement('div')
+  container.innerHTML = ''
+  const list = document.createElement('div')
+  list.className = 'available-stores'
+
+  for (const store of storeList) {
+    const joined = joinedIds.has(store.id)
+
+    const card    = document.createElement('div')
     card.className = 'store-join-card'
 
-    const nameSpan = document.createElement('span')
-    nameSpan.className = 'store-join-name'
-    nameSpan.textContent = store.name ?? 'Unknown Store'
+    const nameEl      = document.createElement('span')
+    nameEl.className  = 'store-join-name'
+    nameEl.textContent = store.name ?? 'Unknown Store'
 
-    const button = document.createElement('button')
-    button.className = 'join-btn'
-    button.textContent = 'Join'
+    const btn         = document.createElement('button')
+    btn.className     = joined ? 'unjoin-btn' : 'join-btn'
+    btn.textContent   = joined ? 'Unjoin' : 'Join'
 
-    button.addEventListener('click', async () => {
-      button.disabled = true
-      button.textContent = '...'
-
-      if (!state.user) {
-        alert('User not ready')
-        button.disabled = false
-        button.textContent = 'Join'
-        return
-      }
-
-      const { error } = await joinStore(store.id)
-
-      if (error) {
-        console.error(error)
-        alert('Failed to join')
-        button.disabled = false
-        button.textContent = 'Join'
-        return
-      }
-
-      state.userStores = [...(state.userStores || []), {
-        store_id:   store.id,
-        store_name: store.name ?? 'Unknown Store',
-        balance:    0
-      }]
-      try { localStorage.removeItem(`libber_home_${state.user?.id}`) } catch {}
-      renderUserStores()
-
-      card.remove()
-      if (!listDiv.children.length && section) section.style.display = 'none'
+    btn.addEventListener('click', () => {
+      if (btn.className === 'unjoin-btn') handleUnjoin(store, btn)
+      else handleJoin(store, btn)
     })
 
-    card.appendChild(nameSpan)
-    card.appendChild(button)
-    listDiv.appendChild(card)
-  })
+    card.appendChild(nameEl)
+    card.appendChild(btn)
+    list.appendChild(card)
+  }
 
-  container.appendChild(listDiv)
+  container.appendChild(list)
+}
+
+async function handleJoin(store, btn) {
+  if (!state.user) return
+
+  btn.disabled    = true
+  btn.textContent = '...'
+
+  const { error } = await joinStore(store.id)
+
+  if (error) {
+    console.error(error)
+    btn.disabled    = false
+    btn.textContent = 'Join'
+    return
+  }
+
+  state.userStores = [...(state.userStores || []), {
+    store_id:   store.id,
+    store_name: store.name ?? 'Unknown Store',
+    balance:    prevBalances.get(store.id) ?? 0
+  }]
+  prevBalances.delete(store.id)
+
+  try { localStorage.removeItem(`libber_home_${state.user?.id}`) } catch {}
+  renderUserStores()
+
+  btn.textContent = 'Unjoin'
+  btn.className   = 'unjoin-btn'
+  btn.disabled    = false
+}
+
+async function handleUnjoin(store, btn) {
+  if (!confirm(`Leave ${store.name ?? 'this store'}? Your points are saved if you rejoin.`)) return
+
+  btn.disabled    = true
+  btn.textContent = '...'
+
+  const { error } = await unjoinStore(store.id)
+
+  if (error) {
+    console.error(error)
+    btn.disabled    = false
+    btn.textContent = 'Unjoin'
+    return
+  }
+
+  const existing = (state.userStores || []).find(s => s.store_id === store.id)
+  if (existing) prevBalances.set(store.id, existing.balance)
+
+  state.userStores = (state.userStores || []).filter(s => s.store_id !== store.id)
+  if (state.storeData) delete state.storeData[store.id]
+
+  try { localStorage.removeItem(`libber_home_${state.user?.id}`) } catch {}
+  renderUserStores()
+
+  btn.textContent = 'Join'
+  btn.className   = 'join-btn'
+  btn.disabled    = false
 }
