@@ -3,9 +3,10 @@ import { escapeHtml } from '../lib/escape.js'
 import { loadPointsHistory } from '../services/members.js'
 import { loadRewardRules } from '../services/admin.js'
 import { toHumanId } from '../lib/format.js'
+import { $ } from '../lib/dom.js'
 
 export function renderUser(publicId, uuid) {
-  const el = document.getElementById('user-id')
+  const el = $('user-id')
   if (!el) return
   el.textContent = toHumanId(publicId, uuid)
 }
@@ -20,7 +21,7 @@ function formatDate(iso) {
 }
 
 export function renderUserStores() {
-  const el = document.getElementById('user-stores')
+  const el = $('user-stores')
   if (!el) return
 
   const stores = state.userStores || []

@@ -17,52 +17,6 @@ export async function loadUserProfile(userId) {
   return profile
 }
 
-export async function loadUserStoresWithPoints(userId) {
-  // fetch stores user is member of
-  const { data: memberships, error: membError } = await supabase
-    .from('store_memberships')
-    .select('store_id, stores(id, name)')
-    .eq('user_id', userId)
-
-  if (membError) {
-    console.error('loadUserStoresWithPoints: membership error', membError)
-    state.userStores = []
-    return
-  }
-
-  if (!memberships?.length) {
-    state.userStores = []
-    return
-  }
-
-  const storeIds = memberships.map(m => m.store_id)
-
-  // fetch latest balance per store from ledger
-  const { data: ledger, error: ledgerError } = await supabase
-    .from('points_ledger')
-    .select('store_id, running_balance, created_at')
-    .eq('user_id', userId)
-    .in('store_id', storeIds)
-    .order('created_at', { ascending: false })
-
-  if (ledgerError) {
-    console.error('loadUserStoresWithPoints: ledger error', ledgerError)
-  }
-
-  // latest balance per store
-  const balanceMap = {}
-  for (const row of (ledger || [])) {
-    if (!(row.store_id in balanceMap)) {
-      balanceMap[row.store_id] = row.running_balance
-    }
-  }
-
-  state.userStores = memberships.map(m => ({
-    store_id: m.store_id,
-    store_name: m.stores?.name || 'Unknown Store',
-    balance: balanceMap[m.store_id] ?? 0
-  }))
-}
 
 export async function loadPointsHistory(userId, storeId) {
   return supabase

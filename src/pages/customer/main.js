@@ -4,6 +4,7 @@ import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
 import * as savePrompt from '../../ui/savePrompt.js'
 import { state } from '../../state/state.js'
+import { $ } from '../../lib/dom.js'
 
 // ── Balance helpers ───────────────────────────────────────────────────────────
 
@@ -80,10 +81,10 @@ function requestNotificationPermission() {
 // ── Show Staff overlay ────────────────────────────────────────────────────────
 
 function initShowStaff() {
-  const trigger   = document.getElementById('header-id')
-  const overlay   = document.getElementById('staff-overlay')
-  const overlayId = document.getElementById('staff-overlay-id')
-  const doneBtn   = document.getElementById('staff-overlay-done')
+  const trigger   = $('header-id')
+  const overlay   = $('staff-overlay')
+  const overlayId = $('staff-overlay-id')
+  const doneBtn   = $('staff-overlay-done')
   if (!trigger || !overlay) return
 
   function exitStaffView() {
@@ -93,7 +94,7 @@ function initShowStaff() {
   }
 
   trigger.addEventListener('click', () => {
-    overlayId.textContent = document.getElementById('user-id').textContent
+    overlayId.textContent = $('user-id').textContent
     overlay.classList.add('active')
     document.documentElement.requestFullscreen?.().catch(() => {})
     screen.orientation?.lock('landscape').catch(() => {})
@@ -113,9 +114,9 @@ function initShowStaff() {
 // ── Dev section (testing only) ────────────────────────────────────────────────
 
 function initDevSection() {
-  const tap     = document.getElementById('dev-tap')
-  const section = document.getElementById('dev-section')
-  const resetBtn = document.getElementById('dev-reset')
+  const tap     = $('dev-tap')
+  const section = $('dev-section')
+  const resetBtn = $('dev-reset')
   if (!tap || !section || !resetBtn) return
 
   let count = 0
@@ -196,7 +197,7 @@ async function init() {
     })
 
     // 5. Refresh button.
-    const refreshBtn = document.getElementById('refresh-btn')
+    const refreshBtn = $('refresh-btn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
         refreshBtn.classList.add('loading')

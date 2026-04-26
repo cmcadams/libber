@@ -234,7 +234,7 @@ async function handleAdjust() {
   if (!selectedMember || !state.selectedStoreId) return
   const pts    = parseInt($('adjustInput').value)
   const reason = $('adjustReason').value.trim()
-  if (!pts || pts === 0 || !reason) return
+  if (!Number.isInteger(pts) || pts === 0 || !reason) return
 
   const btn = $('adjustBtn')
   btn.disabled = true

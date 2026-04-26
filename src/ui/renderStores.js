@@ -1,6 +1,5 @@
 import { joinStore } from '../services/stores.js'
 import { state } from '../state/state.js'
-import { loadUserStoresWithPoints } from '../services/members.js'
 import { renderUserStores } from './renderUser.js'
 
 export function renderStores(stores) {
@@ -57,9 +56,13 @@ export function renderStores(stores) {
         return
       }
 
-      await loadUserStoresWithPoints(state.user.id)
+      state.userStores = [...(state.userStores || []), {
+        store_id:   store.id,
+        store_name: store.name ?? 'Unknown Store',
+        balance:    0
+      }]
+      try { localStorage.removeItem(`libber_home_${state.user?.id}`) } catch {}
       renderUserStores()
-      try { localStorage.removeItem(`libber_home_${state.user.id}`) } catch {}
 
       card.remove()
       if (!listDiv.children.length && section) section.style.display = 'none'

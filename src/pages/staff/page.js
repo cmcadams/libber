@@ -6,6 +6,7 @@ import { state } from '../../state/state.js'
 import { loadSelectedStore } from '../../lib/storage.js'
 import { renderCustomers, initCustomerHandlers } from '../../ui/renderCustomers.js'
 import { toHumanId } from '../../lib/format.js'
+import { $ } from '../../lib/dom.js'
 
 async function boot() {
   const user = await initAuth()
@@ -15,16 +16,16 @@ async function boot() {
   loadSelectedStore()
 
   if (!state.selectedStoreId) {
-    document.getElementById('storeName').textContent = 'No store selected'
+    $('storeName').textContent = 'No store selected'
     return
   }
 
   // render store name + staff badge
-  document.getElementById('storeName').textContent = state.selectedStoreName || 'Store'
+  $('storeName').textContent = state.selectedStoreName || 'Store'
 
   const profile = await loadUserProfile(user.id)
   const publicId = toHumanId(profile?.public_id, user.id)
-  document.getElementById('staffBadge').textContent = `Staff: ${publicId}`
+  $('staffBadge').textContent = `Staff: ${publicId}`
 
   // load members and reward rules for this store
   const [, { data: rules }, { data: cap }] = await Promise.all([
@@ -39,7 +40,7 @@ async function boot() {
   renderCustomers()
   initCustomerHandlers()
 
-  const refreshBtn = document.getElementById('refreshBtn')
+  const refreshBtn = $('refreshBtn')
   if (refreshBtn) {
     refreshBtn.addEventListener('click', async () => {
       refreshBtn.classList.add('loading')
