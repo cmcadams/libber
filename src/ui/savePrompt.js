@@ -22,6 +22,7 @@ function mount() {
     btn.classList.remove('glowing')
     _animating = false
   })
+  btn.addEventListener('click', () => { location.href = '/apps/customer/save.html' })
   _mounted = true
 }
 
