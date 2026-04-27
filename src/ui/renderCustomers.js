@@ -7,6 +7,7 @@ let selectedMember = null
 let bonusPts       = null
 let bonusReason    = null
 let _reRenderTimer = null
+let _statusTimer   = null
 
 function scheduleReRender() {
   clearTimeout(_reRenderTimer)
@@ -190,44 +191,44 @@ async function handleQuickAward(btn) {
   const pts = parseInt(btn.dataset.pts)
 
   btn.disabled = true
-  try {
-    await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, btn.dataset.label, btn.dataset.ruleId)
-    selectedMember.balance += pts
-    $('panelBalance').textContent = selectedMember.balance
-    btn.classList.add('done')
-    btn.querySelector('.btn-label').textContent = 'awarded'
-    btn.querySelector('.btn-pts').textContent   = `+${pts} pts`
-    scheduleReRender()
-  } catch (err) {
+  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, btn.dataset.label, btn.dataset.ruleId)
+  if (error) {
     btn.disabled = false
-    setStatus(err.message || 'Could not award points.')
+    setStatus(error.message || 'Could not award points.')
+    return
   }
+  selectedMember.balance += pts
+  $('panelBalance').textContent = selectedMember.balance
+  btn.classList.add('done')
+  btn.querySelector('.btn-label').textContent = 'awarded'
+  btn.querySelector('.btn-pts').textContent   = `+${pts} pts`
+  scheduleReRender()
 }
 
 async function handleBonusAward() {
   if (!selectedMember || !bonusPts || !bonusReason || !state.selectedStoreId) return
 
   $('awardBtn').disabled = true
-  try {
-    await awardPoints(selectedMember.user_id, state.selectedStoreId, bonusPts, bonusReason)
-    selectedMember.balance += bonusPts
-    $('panelBalance').textContent = selectedMember.balance
-    $('awardBtn').textContent     = `+${bonusPts} pts awarded`
-    $('awardBtn').className       = 'award-btn success'
-    bonusPts    = null
-    bonusReason = null
-    $('bonusBtns').querySelectorAll('.bonus-btn').forEach(b => b.classList.remove('selected'))
-    $('bonusReasonBtns').querySelectorAll('.bonus-reason-btn').forEach(b => b.classList.remove('selected'))
-    scheduleReRender()
-    setTimeout(() => {
-      $('awardBtn').textContent = 'Award bonus'
-      $('awardBtn').className   = 'award-btn'
-      $('awardBtn').disabled    = true
-    }, 1500)
-  } catch (err) {
+  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, bonusPts, bonusReason)
+  if (error) {
     $('awardBtn').disabled = false
-    setStatus(err.message || 'Could not award bonus.')
+    setStatus(error.message || 'Could not award bonus.')
+    return
   }
+  selectedMember.balance += bonusPts
+  $('panelBalance').textContent = selectedMember.balance
+  $('awardBtn').textContent     = `+${bonusPts} pts awarded`
+  $('awardBtn').className       = 'award-btn success'
+  bonusPts    = null
+  bonusReason = null
+  $('bonusBtns').querySelectorAll('.bonus-btn').forEach(b => b.classList.remove('selected'))
+  $('bonusReasonBtns').querySelectorAll('.bonus-reason-btn').forEach(b => b.classList.remove('selected'))
+  scheduleReRender()
+  setTimeout(() => {
+    $('awardBtn').textContent = 'Award bonus'
+    $('awardBtn').className   = 'award-btn'
+    $('awardBtn').disabled    = true
+  }, 1500)
 }
 
 async function handleAdjust() {
@@ -238,23 +239,23 @@ async function handleAdjust() {
 
   const btn = $('adjustBtn')
   btn.disabled = true
-  try {
-    await adjustPoints(selectedMember.user_id, state.selectedStoreId, pts, reason)
-    selectedMember.balance += pts
-    $('panelBalance').textContent = selectedMember.balance
-    btn.textContent               = pts > 0 ? `+${pts} pts applied` : `${pts} pts applied`
-    btn.className                 = 'award-btn success'
-    $('adjustInput').value        = ''
-    scheduleReRender()
-    setTimeout(() => {
-      btn.textContent = 'Apply adjustment'
-      btn.className   = 'award-btn'
-      updateAdjustBtn()
-    }, 1500)
-  } catch (err) {
+  const { error } = await adjustPoints(selectedMember.user_id, state.selectedStoreId, pts, reason)
+  if (error) {
     btn.disabled = false
-    setStatus(err.message || 'Could not apply adjustment.')
+    setStatus(error.message || 'Could not apply adjustment.')
+    return
   }
+  selectedMember.balance += pts
+  $('panelBalance').textContent = selectedMember.balance
+  btn.textContent               = pts > 0 ? `+${pts} pts applied` : `${pts} pts applied`
+  btn.className                 = 'award-btn success'
+  $('adjustInput').value        = ''
+  scheduleReRender()
+  setTimeout(() => {
+    btn.textContent = 'Apply adjustment'
+    btn.className   = 'award-btn'
+    updateAdjustBtn()
+  }, 1500)
 }
 
 async function handleRedeem(btn) {
@@ -268,18 +269,18 @@ async function handleRedeem(btn) {
   }
 
   btn.disabled = true
-  try {
-    await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label)
-    selectedMember.balance -= pts
-    $('panelBalance').textContent = selectedMember.balance
-    btn.classList.add('done')
-    btn.querySelector('.redeem-btn-label').textContent = 'Redeemed'
-    btn.querySelector('.redeem-btn-cost').textContent  = `−${pts} pts`
-    scheduleReRender()
-  } catch (err) {
+  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label)
+  if (error) {
     btn.disabled = false
-    setStatus(err.message || 'Could not redeem.')
+    setStatus(error.message || 'Could not redeem.')
+    return
   }
+  selectedMember.balance -= pts
+  $('panelBalance').textContent = selectedMember.balance
+  btn.classList.add('done')
+  btn.querySelector('.redeem-btn-label').textContent = 'Redeemed'
+  btn.querySelector('.redeem-btn-cost').textContent  = `−${pts} pts`
+  scheduleReRender()
 }
 
 function updateAwardBtn() {
@@ -293,6 +294,7 @@ function updateAdjustBtn() {
 }
 
 function setStatus(msg) {
+  clearTimeout(_statusTimer)
   $('status').textContent = msg
-  setTimeout(() => { $('status').textContent = '' }, 3000)
+  _statusTimer = setTimeout(() => { $('status').textContent = '' }, 3000)
 }

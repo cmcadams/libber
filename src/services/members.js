@@ -9,12 +9,8 @@ export async function loadUserProfile(userId) {
     .eq('user_id', userId)
     .single()
 
-  if (error) {
-    console.error('loadUserProfile: error', error)
-    return null
-  }
-
-  return profile
+  if (error) console.error('loadUserProfile: error', error)
+  return { data: profile ?? null, error }
 }
 
 
@@ -32,11 +28,8 @@ export async function loadCustomerHome(includeStores = true) {
   const { data, error } = await supabase.rpc('load_customer_home', {
     p_include_stores: includeStores
   })
-  if (error) {
-    console.error('loadCustomerHome error', error)
-    return null
-  }
-  return data
+  if (error) console.error('loadCustomerHome error', error)
+  return { data: data ?? null, error }
 }
 
 export function subscribeToPointsInserts(userId, onInsert) {
@@ -70,9 +63,8 @@ export async function loadMembers(storeId) {
 export async function awardPoints(userId, storeId, points, reason, ruleId = null) {
   const params = { p_user_id: userId, p_store_id: storeId, p_points: points, p_reason: reason }
   if (ruleId) params.p_rule_id = ruleId
-
   const { error } = await supabase.rpc('award_points', params)
-  if (error) throw error
+  return { error }
 }
 
 export async function adjustPoints(userId, storeId, points, reason) {
@@ -82,5 +74,5 @@ export async function adjustPoints(userId, storeId, points, reason) {
     p_points:   points,
     p_reason:   reason
   })
-  if (error) throw error
+  return { error }
 }

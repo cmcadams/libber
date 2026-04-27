@@ -38,7 +38,7 @@ async function init() {
 async function renderManagerId(userId) {
   const idEl = $('myId')
   if (!idEl || !userId) return
-  const profile = await loadUserProfile(userId)
+  const { data: profile } = await loadUserProfile(userId)
   idEl.textContent = toHumanId(profile?.public_id, userId)
 }
 

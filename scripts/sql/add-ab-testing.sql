@@ -51,7 +51,7 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS interaction_count        int         NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS one_time_prompt_shown_at timestamptz,
   ADD COLUMN IF NOT EXISTS prompt_dismissed_at      timestamptz,
-  ADD COLUMN IF NOT EXISTS email_saved_at           timestamptz;
+  ADD COLUMN IF NOT EXISTS account_linked_at         timestamptz;
 
 -- ── Update create_profile trigger ─────────────────────────────────────────────
 -- Variant assignment uses pow(random(), 1.0/weight) — Efraimidis-Spirakis
@@ -118,24 +118,24 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_user_id     uuid;
-  v_public_id   text;
-  v_variant     text;
-  v_email_saved boolean;
+  v_user_id        uuid;
+  v_public_id      text;
+  v_variant        text;
+  v_account_linked boolean;
 BEGIN
   v_user_id := auth.uid();
   IF v_user_id IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
 
   SELECT public_id,
          save_prompt_variant,
-         (email_saved_at IS NOT NULL)
-  INTO   v_public_id, v_variant, v_email_saved
+         (account_linked_at IS NOT NULL)
+  INTO   v_public_id, v_variant, v_account_linked
   FROM   public.profiles
   WHERE  user_id = v_user_id;
 
   RETURN json_build_object(
-    'public_id',   v_public_id,
-    'email_saved', COALESCE(v_email_saved, false),
+    'public_id',      v_public_id,
+    'account_linked', COALESCE(v_account_linked, false),
     'save_prompt', (
       SELECT json_build_object(
         'variant',  v.variant,

@@ -1,9 +1,9 @@
 import { $ } from '../lib/dom.js'
 
-let _visible    = false  // prompt is currently shown
-let _emailSaved = false  // user has already saved their email
-let _animating  = false  // glow animation is in progress
-let _mounted    = false  // animationend listener has been attached
+let _visible        = false  // prompt is currently shown
+let _accountLinked  = false  // user has already linked an account
+let _animating      = false  // glow animation is in progress
+let _mounted        = false  // animationend listener has been attached
 
 function getEls() {
   return {
@@ -53,8 +53,8 @@ export function render(data) {
   if (!data) return
   mount()
 
-  if (data.email_saved) {
-    _emailSaved = true
+  if (data.account_linked || data.email_saved) {
+    _accountLinked = true
     hide()
     return
   }
@@ -92,7 +92,7 @@ export function render(data) {
 // Triggers the glow animation when new points are detected.
 // No-ops when the prompt is hidden, email is saved, or animation is running.
 export function glow() {
-  if (!_visible || _emailSaved || _animating) return
+  if (!_visible || _accountLinked || _animating) return
   const { btn } = getEls()
   if (!btn) return
   btn.classList.add('glowing')

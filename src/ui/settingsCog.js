@@ -1,8 +1,8 @@
 import { $ } from '../lib/dom.js'
 
-let _emailSaved = false
-let _animating  = false
-let _mounted    = false
+let _accountLinked = false
+let _animating     = false
+let _mounted       = false
 
 function mount() {
   if (_mounted) return
@@ -18,11 +18,11 @@ function mount() {
 export function render(data) {
   if (!data) return
   mount()
-  if (data.email_saved) _emailSaved = true
+  if (data.account_linked || data.email_saved) _accountLinked = true
 }
 
 export function glow() {
-  if (_emailSaved || _animating) return
+  if (_accountLinked || _animating) return
   const btn = $('settings-btn')
   if (!btn) return
   btn.classList.add('glowing')

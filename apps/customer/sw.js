@@ -1,7 +1,7 @@
 // Minimal service worker — enables PWA installability.
 // The app uses localStorage for data caching; the SW handles the shell.
 
-const CACHE = 'libber-customer-v1'
+const CACHE = 'libber-customer-v__SW_CACHE_VERSION__'
 const SHELL = ['/apps/customer/', '/apps/customer/index.html']
 
 self.addEventListener('install', e => {

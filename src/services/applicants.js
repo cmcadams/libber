@@ -64,24 +64,8 @@ export async function rejectApplicant(userId, storeId) {
 }
 
 export async function loadStaff(storeId) {
-  const { data: staff, error } = await supabase
-    .from('store_staff')
-    .select('user_id, created_at')
-    .eq('store_id', storeId)
-    .order('created_at', { ascending: true })
-
-  if (error || !staff?.length) return { data: staff ?? [], error }
-
-  const userIds = staff.map(s => s.user_id)
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('user_id, public_id')
-    .in('user_id', userIds)
-
-  const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.user_id, p.public_id]))
-
-  return {
-    data: staff.map(s => ({ ...s, public_id: profileMap[s.user_id] ?? null })),
-    error: null
-  }
+  const { data, error } = await supabase.rpc('load_store_staff_profiles', {
+    p_store_id: storeId
+  })
+  return { data: data ?? [], error }
 }

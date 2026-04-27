@@ -176,7 +176,7 @@ async function init() {
     initShowStaff()
 
     // 2. Fetch fresh data. Skip the stores query when the cache is still valid.
-    const data = await loadCustomerHome(!cachedStores)
+    const { data } = await loadCustomerHome(!cachedStores)
     if (data) {
       if (cachedStores) {
         data.stores = cachedStores
@@ -194,7 +194,7 @@ async function init() {
     // 4. Real-time: re-fetch when a points row is inserted.
     subscribeToPointsInserts(user.id, async row => {
       const stores = readStoresCache()
-      const fresh  = await loadCustomerHome(!stores)
+      const { data: fresh } = await loadCustomerHome(!stores)
       if (!fresh) return
 
       if (stores) fresh.stores = stores
@@ -216,7 +216,7 @@ async function init() {
         refreshBtn.disabled = true
         try {
           const prevRefBal = getTotalBalance(readHomeCache(user.id))
-          const fresh = await loadCustomerHome(true)
+          const { data: fresh } = await loadCustomerHome(true)
           if (fresh) {
             writeStoresCache(fresh.stores)
             writeHomeCache(user.id, fresh)

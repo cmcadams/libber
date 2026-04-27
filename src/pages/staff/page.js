@@ -23,7 +23,7 @@ async function boot() {
   // render store name + staff badge
   $('storeName').textContent = state.selectedStoreName || 'Store'
 
-  const profile = await loadUserProfile(user.id)
+  const { data: profile } = await loadUserProfile(user.id)
   const publicId = toHumanId(profile?.public_id, user.id)
   $('staffBadge').textContent = `Staff: ${publicId}`
 

@@ -6,8 +6,8 @@ const HOME_URL     = '/apps/customer/'
 
 // ── RPC ──────────────────────────────────────────────────────────────────────
 
-async function markEmailSaved() {
-  await supabase.rpc('mark_email_saved')
+async function markAccountLinked() {
+  await supabase.rpc('mark_account_linked')
 }
 
 // ── View switching ─────────────────────────────────────────────────────────
@@ -29,19 +29,26 @@ function handleCallback() {
   showView('view-success')
 
   // Check session state rather than event name: with detectSessionInUrl=true
-  // Supabase processes the hash before our listener attaches, so INITIAL_SESSION
-  // (not SIGNED_IN) is often the only event we receive here.
+  // Supabase processes the code/hash before our listener attaches, so
+  // INITIAL_SESSION (not SIGNED_IN) is often the only event we receive here.
+  let redirected = false
   const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
     if (session?.user && !session.user.is_anonymous) {
+      redirected = true
       subscription.unsubscribe()
       try {
-        await markEmailSaved()
+        await markAccountLinked()
       } catch (err) {
-        console.error('mark_email_saved failed:', err)
+        console.error('mark_account_linked failed:', err)
       }
       setTimeout(() => { location.href = HOME_URL }, 1500)
     }
   })
+
+  // Fallback: if auth state never fires (e.g. code already consumed), redirect anyway.
+  setTimeout(() => {
+    if (!redirected) location.href = HOME_URL
+  }, 10000)
 }
 
 // ── Provider buttons ──────────────────────────────────────────────────────
@@ -116,7 +123,8 @@ function initMagicLink() {
 // ── Boot ──────────────────────────────────────────────────────────────────
 
 async function init() {
-  if (location.hash.includes('access_token=')) {
+  const params = new URLSearchParams(location.search)
+  if (params.has('code') || params.has('token_hash') || location.hash.includes('access_token=')) {
     handleCallback()
     return
   }
