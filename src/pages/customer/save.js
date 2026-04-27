@@ -34,7 +34,11 @@ function handleCallback() {
   const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
     if (session?.user && !session.user.is_anonymous) {
       subscription.unsubscribe()
-      await markEmailSaved()
+      try {
+        await markEmailSaved()
+      } catch (err) {
+        console.error('mark_email_saved failed:', err)
+      }
       setTimeout(() => { location.href = HOME_URL }, 1500)
     }
   })
@@ -112,27 +116,27 @@ function initMagicLink() {
 // ── Boot ──────────────────────────────────────────────────────────────────
 
 async function init() {
+  if (location.hash.includes('access_token=')) {
+    handleCallback()
+    return
+  }
+
   try {
-    if (location.hash.includes('access_token=')) {
-      handleCallback()
-      return
-    }
-
     const { data: { user } } = await supabase.auth.getUser()
-
     if (user && !user.is_anonymous) {
       showView('view-already-saved')
       return
     }
-
-    showView('view-main')
-    initProviders()
-    initMagicLink()
   } catch (err) {
     console.error(err)
     setError('Something went wrong. Please try again.')
-    showView('view-main')
   }
+
+  // Reached for both the normal path and the getUser() error path — in both
+  // cases we show view-main and need the buttons wired up.
+  showView('view-main')
+  initProviders()
+  initMagicLink()
 }
 
 init()
