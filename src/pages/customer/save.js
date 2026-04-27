@@ -28,8 +28,11 @@ function setError(msg) {
 function handleCallback() {
   showView('view-success')
 
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-    if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+  // Check session state rather than event name: with detectSessionInUrl=true
+  // Supabase processes the hash before our listener attaches, so INITIAL_SESSION
+  // (not SIGNED_IN) is often the only event we receive here.
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    if (session?.user && !session.user.is_anonymous) {
       subscription.unsubscribe()
       await markEmailSaved()
       setTimeout(() => { location.href = HOME_URL }, 1500)
@@ -75,7 +78,7 @@ function initMagicLink() {
 
   sendBtn?.addEventListener('click', async () => {
     const email = input?.value.trim() || ''
-    if (!email) { input?.focus(); return }
+    if (!email || !input.validity.valid) { input?.focus(); return }
 
     sendBtn.disabled    = true
     sendBtn.textContent = 'Sending…'
@@ -109,21 +112,27 @@ function initMagicLink() {
 // ── Boot ──────────────────────────────────────────────────────────────────
 
 async function init() {
-  if (location.hash.includes('access_token=')) {
-    handleCallback()
-    return
+  try {
+    if (location.hash.includes('access_token=')) {
+      handleCallback()
+      return
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user && !user.is_anonymous) {
+      showView('view-already-saved')
+      return
+    }
+
+    showView('view-main')
+    initProviders()
+    initMagicLink()
+  } catch (err) {
+    console.error(err)
+    setError('Something went wrong. Please try again.')
+    showView('view-main')
   }
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (user && !user.is_anonymous) {
-    showView('view-already-saved')
-    return
-  }
-
-  showView('view-main')
-  initProviders()
-  initMagicLink()
 }
 
 init()
