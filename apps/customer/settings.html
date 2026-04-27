@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Libber — Account</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    button { touch-action: manipulation; }
+
+    :root {
+      --bg: #f9f9f7;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.2);
+      --text: #1a1a18;
+      --text-muted: #888780;
+      --text-hint: #b4b2a9;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font-ui: system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1rem 1rem 3rem;
+    }
+
+    @media (min-width: 640px) {
+      .page { max-width: 540px; padding: 1.5rem 1rem 3rem; }
+    }
+
+    @media (min-width: 1024px) {
+      .page { max-width: 600px; padding: 2rem 1rem 3rem; }
+    }
+
+    .back-link {
+      display: inline-block;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 1.75rem;
+    }
+
+    .back-link:hover { color: var(--text); }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 12px;
+      color: var(--text-hint);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    /* ── Identity list ────────────────────────────────────────────────────── */
+
+    .identities-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 1.25rem;
+    }
+
+    .identity-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+
+    .identity-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ── Save link ────────────────────────────────────────────────────────── */
+
+    .save-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      background: var(--surface);
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      text-decoration: none;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      transition: background 0.1s, border-color 0.1s;
+      margin-bottom: 1.5rem;
+    }
+
+    .save-link:hover {
+      background: #f4f4f1;
+      border-color: var(--border-strong);
+    }
+
+    .save-link-arrow {
+      color: var(--text-hint);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    /* ── Unlinked state ───────────────────────────────────────────────────── */
+
+    .unlinked-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Error ────────────────────────────────────────────────────────────── */
+
+    .error-msg {
+      font-size: 14px;
+      color: #b91c1c;
+      margin-top: 1rem;
+    }
+
+    .error-msg[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a href="/apps/customer/" class="back-link">← My points</a>
+    <h1 class="page-title">Account</h1>
+
+    <div id="linked-section" hidden>
+      <p class="section-title">Linked accounts</p>
+      <div id="identities-list" class="identities-list"></div>
+      <a href="/apps/customer/save.html" class="save-link">
+        Link another account
+        <span class="save-link-arrow" aria-hidden="true">›</span>
+      </a>
+    </div>
+
+    <div id="unlinked-section" hidden>
+      <p class="unlinked-desc">Your points aren't saved yet. Link an account so you never lose them — even if you clear your browser or switch devices.</p>
+      <a href="/apps/customer/save.html" class="save-link">
+        Save your points
+        <span class="save-link-arrow" aria-hidden="true">›</span>
+      </a>
+    </div>
+
+    <p id="error-msg" class="error-msg" hidden>Could not load account details.</p>
+  </div>
+  <script type="module" src="/src/pages/customer/settings.js"></script>
+</body>
+</html>
