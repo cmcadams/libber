@@ -2,7 +2,8 @@ import { initAuth, resetSession } from '../../services/auth.js'
 import { loadCustomerHome, subscribeToPointsInserts } from '../../services/members.js'
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
-import * as savePrompt from '../../ui/savePrompt.js'
+import * as savePrompt   from '../../ui/savePrompt.js'
+import * as settingsCog  from '../../ui/settingsCog.js'
 import { state } from '../../state/state.js'
 import { $ } from '../../lib/dom.js'
 
@@ -41,6 +42,7 @@ function writeStoresCache(stores) { writeJson(STORES_KEY, { stores, ts: Date.now
 
 function applyHomeData(data, uuid) {
   savePrompt.render(data)
+  settingsCog.render(data)
   renderUser(data.public_id, uuid)
 
   state.userStores = (data.memberships || []).map(m => ({
@@ -181,7 +183,7 @@ async function init() {
       }
       writeHomeCache(user.id, data)
       applyHomeData(data, user.id)
-      if (hasNewPoints(prevBal, data, hadCache)) savePrompt.glow()
+      if (hasNewPoints(prevBal, data, hadCache)) { savePrompt.glow(); settingsCog.glow() }
     }
 
     // 3. Request notification permission after a brief delay.
@@ -200,7 +202,7 @@ async function init() {
       const prevRtBal = getTotalBalance(readHomeCache(user.id))
       writeHomeCache(user.id, fresh)
       applyHomeData(fresh, user.id)
-      if (hasNewPoints(prevRtBal, fresh, true)) savePrompt.glow()
+      if (hasNewPoints(prevRtBal, fresh, true)) { savePrompt.glow(); settingsCog.glow() }
       maybeNotify(row)
     })
 
@@ -217,7 +219,7 @@ async function init() {
             writeStoresCache(fresh.stores)
             writeHomeCache(user.id, fresh)
             applyHomeData(fresh, user.id)
-            if (hasNewPoints(prevRefBal, fresh, true)) savePrompt.glow()
+            if (hasNewPoints(prevRefBal, fresh, true)) { savePrompt.glow(); settingsCog.glow() }
           }
         } catch (err) {
           console.error('Refresh failed:', err)
