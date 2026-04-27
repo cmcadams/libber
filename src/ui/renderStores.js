@@ -40,7 +40,7 @@ export function renderStores(stores) {
     btn.textContent   = joined ? 'Unjoin' : 'Join'
 
     btn.addEventListener('click', () => {
-      if (btn.className === 'unjoin-btn') handleUnjoin(store, btn)
+      if (btn.classList.contains('unjoin-btn')) handleUnjoin(store, btn)
       else handleJoin(store, btn)
     })
 
@@ -70,7 +70,8 @@ async function handleJoin(store, btn) {
   state.userStores = [...(state.userStores || []), {
     store_id:   store.id,
     store_name: store.name ?? 'Unknown Store',
-    balance:    prevBalances.get(store.id) ?? 0
+    balance:    prevBalances.get(store.id) ?? 0,
+    logo_url:   store.logo_url
   }]
   prevBalances.delete(store.id)
 

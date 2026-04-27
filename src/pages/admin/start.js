@@ -615,10 +615,13 @@ async function handleMoveRule(ruleId, direction) {
   currentRules.forEach((r, i) => { r.sort_order = i + 1 })
   renderRulesList()
 
-  await Promise.all([
+  const [{ error: e1 }, { error: e2 }] = await Promise.all([
     updateRewardRuleOrder(currentRules[idx].id, currentRules[idx].sort_order),
     updateRewardRuleOrder(currentRules[swapIdx].id, currentRules[swapIdx].sort_order)
   ])
+  if (e1 || e2) {
+    await loadAndRenderRules(selectedRulesStoreId, $('rulesStoreName').textContent)
+  }
 }
 
 async function handleAddRule() {
