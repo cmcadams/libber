@@ -50,14 +50,15 @@ export async function loadMembers(storeId) {
   if (error) {
     console.error('loadMembers error', error)
     state.members = []
-    return
+  } else {
+    state.members = (data || []).map(m => ({
+      user_id: m.user_id,
+      public_id: toHumanId(m.public_id, m.user_id),
+      balance: m.balance ?? 0
+    }))
   }
 
-  state.members = (data || []).map(m => ({
-    user_id: m.user_id,
-    public_id: toHumanId(m.public_id, m.user_id),
-    balance: m.balance ?? 0
-  }))
+  return { error }
 }
 
 export async function awardPoints(userId, storeId, points, reason, ruleId = null) {
