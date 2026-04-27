@@ -28,10 +28,15 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
+DECLARE
+  v_user_id uuid;
 BEGIN
+  v_user_id := auth.uid();
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
+
   UPDATE public.profiles
   SET    account_linked_at = now()
-  WHERE  user_id           = auth.uid()
+  WHERE  user_id           = v_user_id
     AND  account_linked_at IS NULL;
 END;
 $$;

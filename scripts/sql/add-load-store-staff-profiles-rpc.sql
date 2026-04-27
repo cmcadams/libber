@@ -10,10 +10,15 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
+DECLARE
+  v_caller_id uuid;
 BEGIN
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
+
   IF NOT EXISTS (
     SELECT 1 FROM public.store_managers
-    WHERE store_id = p_store_id AND user_id = auth.uid()
+    WHERE store_id = p_store_id AND user_id = v_caller_id
   ) THEN
     RAISE EXCEPTION 'not authorized';
   END IF;
