@@ -429,8 +429,8 @@ async function handleCreateStore() {
   const { data, error } = await createStore(name)
   btn.disabled = false
 
-  if (error) {
-    setStatus('createStoreStatus', error.message || 'Could not create store.', true)
+  if (error || !data) {
+    setStatus('createStoreStatus', error?.message || 'Could not create store.', true)
     return
   }
 
@@ -491,8 +491,8 @@ async function handleSaveStoreName(saveBtn) {
   const { data, error } = await updateStoreName(storeId, name)
   saveBtn.disabled = false
 
-  if (error) {
-    setStatus('allStoresStatus', error.message || 'Could not update name.', true)
+  if (error || !data) {
+    setStatus('allStoresStatus', error?.message || 'Could not update name.', true)
     return
   }
 
