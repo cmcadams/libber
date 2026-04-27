@@ -6,6 +6,7 @@ import * as savePrompt   from '../../ui/savePrompt.js'
 import * as settingsCog  from '../../ui/settingsCog.js'
 import { state } from '../../state/state.js'
 import { $ } from '../../lib/dom.js'
+import { applyTheme } from '../../lib/theme.js'
 
 // ── Balance helpers ───────────────────────────────────────────────────────────
 
@@ -241,5 +242,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/customer/sw.js').catch(() => {})
 }
 
+applyTheme()
 initDevSection()
 init()

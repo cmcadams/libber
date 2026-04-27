@@ -205,6 +205,14 @@
       justify-content: space-between;
     }
 
+    .store-card-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
     .store-card-right {
       display: flex;
       align-items: center;
@@ -227,6 +235,30 @@
       font-size: 16px;
       font-weight: 500;
       color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Store avatar (mid / max theme) ──────────────────────────────────── */
+
+    .store-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      object-fit: cover;
+    }
+
+    .store-avatar--initials {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: hsl(var(--hue), 55%, 88%);
+      color: hsl(var(--hue), 40%, 35%);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font-ui);
     }
 
     .store-points {

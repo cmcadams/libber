@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabase.js'
 import { $, $$ } from '../../lib/dom.js'
 import { escapeHtml } from '../../lib/escape.js'
+import { getTheme, setTheme } from '../../lib/theme.js'
 
 // ── Provider metadata ─────────────────────────────────────────────────────
 
@@ -57,6 +58,68 @@ function render(identities) {
   $('linked-section').hidden = false
 }
 
+// ── Notifications ─────────────────────────────────────────────────────────
+
+function initNotifications() {
+  if (!('Notification' in window)) return
+  const section = $('notifications-section')
+  if (!section) return
+  section.hidden = false
+
+  const btn    = $('notifications-btn')
+  const status = $('notifications-status')
+
+  function updateState() {
+    const p = Notification.permission
+    if (p === 'granted') {
+      if (btn)    btn.hidden = true
+      if (status) status.textContent = 'Enabled'
+    } else if (p === 'denied') {
+      if (btn)    btn.hidden = true
+      if (status) status.textContent = 'Blocked — enable notifications in your browser settings.'
+    } else {
+      if (btn)    btn.hidden = false
+      if (status) status.textContent = ''
+    }
+  }
+
+  updateState()
+
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      await Notification.requestPermission()
+      updateState()
+    })
+  }
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────────
+
+const THEME_LABELS = {
+  min: 'Clean view. Just the essentials.',
+  mid: 'Adds icons next to your stores.',
+  max: 'Full detail view.',
+}
+
+function initTheme() {
+  const current = getTheme()
+  const desc    = $('theme-desc')
+
+  function applyActive(theme) {
+    $$('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === theme))
+    if (desc) desc.textContent = THEME_LABELS[theme] || ''
+  }
+
+  applyActive(current)
+
+  $$('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.dataset.theme)
+      applyActive(btn.dataset.theme)
+    })
+  })
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────
 
 async function init() {
@@ -71,4 +134,6 @@ async function init() {
   }
 }
 
+initNotifications()
+initTheme()
 init()

@@ -5,6 +5,21 @@ import { loadRewardRules } from '../services/admin.js'
 import { toHumanId } from '../lib/format.js'
 import { $ } from '../lib/dom.js'
 
+function nameToColor(name) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0
+  return 160 + (Math.abs(h) % 180)
+}
+
+function storeAvatar(store) {
+  if (store.logo_url) {
+    return `<img class="store-avatar" src="${escapeHtml(store.logo_url)}" width="36" height="36" alt="" aria-hidden="true" loading="lazy">`
+  }
+  const initials = escapeHtml((store.store_name || '?').slice(0, 2).toUpperCase())
+  const hue      = nameToColor(store.store_name || '')
+  return `<span class="store-avatar store-avatar--initials" style="--hue:${hue}" aria-hidden="true">${initials}</span>`
+}
+
 export function renderUser(publicId, uuid) {
   const el = $('user-id')
   if (!el) return
@@ -35,6 +50,9 @@ export function renderUserStores() {
 
   if (header) header.style.display = ''
 
+  const theme      = document.documentElement.dataset.theme
+  const showAvatar = theme === 'mid' || theme === 'max'
+
   const openIds = new Set(
     [...el.querySelectorAll('.store-card.open')].map(c => c.dataset.storeId)
   )
@@ -44,7 +62,10 @@ export function renderUserStores() {
       ${stores.map(store => `
         <div class="store-card" data-store-id="${escapeHtml(store.store_id)}">
           <div class="store-card-main">
-            <span class="store-name">${escapeHtml(store.store_name)}</span>
+            <div class="store-card-left">
+              ${showAvatar ? storeAvatar(store) : ''}
+              <span class="store-name">${escapeHtml(store.store_name)}</span>
+            </div>
             <div class="store-card-right">
               <span class="store-points">${store.balance} pts</span>
               <span class="chevron">›</span>

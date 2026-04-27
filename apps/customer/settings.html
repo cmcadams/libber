@@ -141,6 +141,78 @@
     }
 
     .error-msg[hidden] { display: none; }
+
+    /* ── Pref sections ───────────────────────────────────────────────────── */
+
+    .pref-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .pref-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 0.75rem;
+    }
+
+    .pref-status {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .pref-status:empty { display: none; }
+
+    .pref-btn {
+      padding: 10px 18px;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: opacity 0.15s;
+      min-height: 44px;
+    }
+
+    .pref-btn:hover { opacity: 0.85; }
+    .pref-btn[hidden] { display: none; }
+
+    /* ── Theme picker ─────────────────────────────────────────────────────── */
+
+    .theme-picker {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 0.75rem;
+    }
+
+    .theme-btn {
+      flex: 1;
+      padding: 9px 0;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
+      min-height: 44px;
+    }
+
+    .theme-btn:hover {
+      background: #f4f4f1;
+      color: var(--text);
+    }
+
+    .theme-btn.active {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+    }
   </style>
 </head>
 <body>
@@ -163,6 +235,23 @@
         Save your points
         <span class="save-link-arrow" aria-hidden="true">›</span>
       </a>
+    </div>
+
+    <div id="notifications-section" class="pref-section" hidden>
+      <p class="section-title">Notifications</p>
+      <p class="pref-desc">Get notified when you earn points, even when the app isn't open.</p>
+      <p id="notifications-status" class="pref-status"></p>
+      <button id="notifications-btn" class="pref-btn" hidden>Enable notifications</button>
+    </div>
+
+    <div class="pref-section">
+      <p class="section-title">Display</p>
+      <div class="theme-picker">
+        <button class="theme-btn" data-theme="min">Min</button>
+        <button class="theme-btn" data-theme="mid">Mid</button>
+        <button class="theme-btn" data-theme="max">Max</button>
+      </div>
+      <p id="theme-desc" class="pref-desc"></p>
     </div>
 
     <p id="error-msg" class="error-msg" hidden>Could not load account details.</p>
