@@ -31,7 +31,7 @@ AS $$
 BEGIN
   UPDATE public.profiles
   SET    account_linked_at = now()
-  WHERE  id                = auth.uid()
+  WHERE  user_id           = auth.uid()
     AND  account_linked_at IS NULL;
 END;
 $$;
