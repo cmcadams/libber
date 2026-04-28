@@ -1,3 +1,4 @@
+import { captureError } from '../../lib/sentry.js'
 import { supabase } from '../../lib/supabase.js'
 import { $, $$ } from '../../lib/dom.js'
 
@@ -39,7 +40,7 @@ function handleCallback() {
       try {
         await markAccountLinked()
       } catch (err) {
-        console.error('mark_account_linked failed:', err)
+        captureError(err, { fn: 'mark_account_linked' })
       }
       setTimeout(() => { location.href = HOME_URL }, 1500)
     }
@@ -136,7 +137,7 @@ async function init() {
       return
     }
   } catch (err) {
-    console.error(err)
+    captureError(err)
     setError('Something went wrong. Please try again.')
   }
 

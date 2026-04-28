@@ -1,3 +1,4 @@
+import { captureError } from '../../lib/sentry.js'
 import { supabase } from '../../lib/supabase.js'
 import { $, $$ } from '../../lib/dom.js'
 import { escapeHtml } from '../../lib/escape.js'
@@ -128,7 +129,7 @@ async function init() {
     if (error) throw error
     render(data.identities)
   } catch (err) {
-    console.error(err)
+    captureError(err)
     $('error-msg').hidden = false
     $('unlinked-section').hidden = false
   }

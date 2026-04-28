@@ -1,3 +1,4 @@
+import { captureError } from '../../lib/sentry.js'
 import { initAuth } from '../../services/auth.js'
 import { loadMembers, loadUserProfile } from '../../services/members.js'
 import { loadRewardRules } from '../../services/admin.js'
@@ -52,7 +53,7 @@ async function boot() {
           if (error) throw error
           renderCustomers()
         } catch (err) {
-          console.error('Refresh failed:', err)
+          captureError(err, { fn: 'refresh' })
         } finally {
           refreshBtn.classList.remove('loading')
           refreshBtn.disabled = false
@@ -60,7 +61,7 @@ async function boot() {
       })
     }
   } catch (err) {
-    console.error(err)
+    captureError(err)
     alert('Something went wrong loading the page.')
   }
 }

@@ -1,3 +1,4 @@
+import { captureError } from '../../lib/sentry.js'
 import { initAuth, resetSession } from '../../services/auth.js'
 import { loadCustomerHome, subscribeToPointsInserts } from '../../services/members.js'
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
@@ -224,7 +225,7 @@ async function init() {
             if (hasNewPoints(prevRefBal, fresh, true)) { savePrompt.glow(); settingsCog.glow() }
           }
         } catch (err) {
-          console.error('Refresh failed:', err)
+          captureError(err, { fn: 'refresh' })
         } finally {
           refreshBtn.classList.remove('loading')
           refreshBtn.disabled = false
@@ -233,7 +234,7 @@ async function init() {
     }
 
   } catch (err) {
-    console.error(err)
+    captureError(err)
     alert('Something went wrong')
   }
 }

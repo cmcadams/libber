@@ -1,6 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { resolve } from 'path'
 import { readFileSync, writeFileSync } from 'fs'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 function swPlugin() {
   return {
@@ -23,17 +24,28 @@ function swPlugin() {
   }
 }
 
-export default defineConfig({
-  plugins: [swPlugin()],
-  build: {
-    rollupOptions: {
-      input: {
-        customer:         resolve(__dirname, 'apps/customer/index.html'),
-        customerSave:     resolve(__dirname, 'apps/customer/save.html'),
-        customerSettings: resolve(__dirname, 'apps/customer/settings.html'),
-        staffApply:   resolve(__dirname, 'apps/staff/index.html'),
-        staffPage:    resolve(__dirname, 'apps/staff/page.html'),
-        staffManager: resolve(__dirname, 'apps/staff/manager.html'),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  return {
+    plugins: [
+      swPlugin(),
+      sentryVitePlugin({
+        org: 'libber-xf',
+        project: 'javascript',
+        authToken: env.SENTRY_AUTH_TOKEN,
+      }),
+    ],
+    build: {
+      sourcemap: 'hidden',
+      rollupOptions: {
+        input: {
+          customer:         resolve(__dirname, 'apps/customer/index.html'),
+          customerSave:     resolve(__dirname, 'apps/customer/save.html'),
+          customerSettings: resolve(__dirname, 'apps/customer/settings.html'),
+          staffApply:   resolve(__dirname, 'apps/staff/index.html'),
+          staffPage:    resolve(__dirname, 'apps/staff/page.html'),
+          staffManager: resolve(__dirname, 'apps/staff/manager.html'),
+        }
       }
     }
   }

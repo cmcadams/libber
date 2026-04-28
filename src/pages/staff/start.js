@@ -1,3 +1,4 @@
+import { captureError } from '../../lib/sentry.js'
 import { initAuth } from '../../services/auth.js'
 import { getStores } from '../../services/stores.js'
 import { applyForStaff, loadMyApplications, loadManagedStores } from '../../services/applicants.js'
@@ -33,7 +34,7 @@ async function init() {
     bindEvents()
     updateApplyButton()
   } catch (err) {
-    console.error(err)
+    captureError(err)
     setStatus(err.message || 'Could not load page.', true)
   }
 }
@@ -117,7 +118,7 @@ async function handleApply() {
     updateApplyButton()
     setStatus('Applied. Ask the manager to approve you on their screen.')
   } catch (err) {
-    console.error(err)
+    captureError(err)
     setStatus(err.message || 'Could not apply.', true)
     updateApplyButton()
   }

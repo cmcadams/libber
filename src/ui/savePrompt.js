@@ -26,15 +26,6 @@ function mount() {
   _mounted = true
 }
 
-function show(text, position) {
-  const { el, btn } = getEls()
-  if (!el || !btn) return
-  btn.textContent     = text
-  el.dataset.position = position || 'middle'
-  el.classList.add('is-visible')
-  _visible = true
-}
-
 function hide() {
   if (!_visible) return
   const { el, btn } = getEls()

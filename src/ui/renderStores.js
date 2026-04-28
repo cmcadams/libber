@@ -2,6 +2,7 @@ import { joinStore, unjoinStore } from '../services/stores.js'
 import { state } from '../state/state.js'
 import { renderUserStores } from './renderUser.js'
 import { $ } from '../lib/dom.js'
+import { captureError } from '../lib/sentry.js'
 
 const prevBalances = new Map()
 
@@ -61,7 +62,7 @@ async function handleJoin(store, btn) {
   const { error } = await joinStore(store.id)
 
   if (error) {
-    console.error(error)
+    captureError(error, { fn: 'joinStore' })
     btn.textContent = 'Failed'
     setTimeout(() => { btn.disabled = false; btn.textContent = 'Join' }, 2000)
     return
@@ -92,7 +93,7 @@ async function handleUnjoin(store, btn) {
   const { error } = await unjoinStore(store.id)
 
   if (error) {
-    console.error(error)
+    captureError(error, { fn: 'unjoinStore' })
     btn.textContent = 'Failed'
     setTimeout(() => { btn.disabled = false; btn.textContent = 'Unjoin' }, 2000)
     return

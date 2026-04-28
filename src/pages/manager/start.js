@@ -1,3 +1,4 @@
+import { captureError } from '../../lib/sentry.js'
 import { initAuth } from '../../services/auth.js'
 import { approveApplicant, demoteStaff, loadApplicants, loadManagedStores, loadStaff, rejectApplicant, applyForManager, loadMyManagerApplications } from '../../services/applicants.js'
 import { loadUserProfile } from '../../services/members.js'
@@ -30,7 +31,7 @@ async function init() {
     renderApplyStores(allStores ?? [])
     bindEvents()
   } catch (err) {
-    console.error(err)
+    captureError(err)
     setStatus(err.message || 'Could not load manager tools.', true)
   }
 }
@@ -169,7 +170,7 @@ function bindEvents() {
     try {
       await Promise.all([renderApplicants(), renderStaff()])
     } catch (err) {
-      console.error(err)
+      captureError(err)
       setStatus(err.message || 'Could not load store data.', true)
     }
   })
@@ -188,7 +189,7 @@ function bindEvents() {
       setStatus('Staff member removed.')
       await renderStaff()
     } catch (err) {
-      console.error(err)
+      captureError(err)
       setStatus(err.message || 'Could not remove staff member.', true)
       button.disabled = false
       button.textContent = 'Remove'
@@ -207,7 +208,7 @@ function bindEvents() {
         setStatus('Applicant promoted to staff.')
         await Promise.all([renderApplicants(), renderStaff()])
       } catch (err) {
-        console.error(err)
+        captureError(err)
         setStatus(err.message || 'Could not approve applicant.', true)
         approveBtn.disabled = false
         approveBtn.textContent = 'Approve'
@@ -226,7 +227,7 @@ function bindEvents() {
         setStatus('Applicant rejected.')
         await renderApplicants()
       } catch (err) {
-        console.error(err)
+        captureError(err)
         setStatus(err.message || 'Could not reject applicant.', true)
         rejectBtn.disabled = false
         rejectBtn.textContent = 'Reject'
@@ -257,7 +258,7 @@ function bindEvents() {
     try {
       await Promise.all([renderApplicants(), renderStaff()])
     } catch (err) {
-      console.error(err)
+      captureError(err)
       setStatus(err.message || 'Could not refresh.', true)
     }
     btn.classList.remove('loading')
@@ -280,7 +281,7 @@ async function handleApply() {
     updateApplyButton()
     setApplyStatus('Applied. Ask the admin to approve you.')
   } catch (err) {
-    console.error(err)
+    captureError(err)
     setApplyStatus(err.message || 'Could not apply.', true)
     updateApplyButton()
   }

@@ -1,9 +1,10 @@
 import { supabase } from '../lib/supabase.js'
 import { state } from '../state/state.js'
+import { setSentryUser } from '../lib/sentry.js'
 
 export async function initAuth() {
   async function signInAnonOrThrow() {
-    const { data, error } = await supabase.auth.signInAnonymously()
+    const { error } = await supabase.auth.signInAnonymously()
     if (error) {
       throw new Error(`Anonymous sign-in failed: ${error.message}`)
     }
@@ -33,6 +34,7 @@ export async function initAuth() {
     throw new Error('Auth succeeded but no user was returned.')
   }
   state.user = userData.user
+  setSentryUser(state.user)
   return state.user
 }
 

@@ -2,6 +2,7 @@ import { state } from '../state/state.js'
 import { awardPoints, adjustPoints } from '../services/members.js'
 import { escapeHtml } from '../lib/escape.js'
 import { $ } from '../lib/dom.js'
+import { captureError } from '../lib/sentry.js'
 
 let selectedMember = null
 let bonusPts       = null
@@ -193,6 +194,7 @@ async function handleQuickAward(btn) {
   btn.disabled = true
   const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, btn.dataset.label, btn.dataset.ruleId)
   if (error) {
+    captureError(error, { fn: 'awardPoints' })
     btn.disabled = false
     setStatus(error.message || 'Could not award points.')
     return
@@ -211,6 +213,7 @@ async function handleBonusAward() {
   $('awardBtn').disabled = true
   const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, bonusPts, bonusReason)
   if (error) {
+    captureError(error, { fn: 'awardBonus' })
     $('awardBtn').disabled = false
     setStatus(error.message || 'Could not award bonus.')
     return
@@ -241,6 +244,7 @@ async function handleAdjust() {
   btn.disabled = true
   const { error } = await adjustPoints(selectedMember.user_id, state.selectedStoreId, pts, reason)
   if (error) {
+    captureError(error, { fn: 'adjustPoints' })
     btn.disabled = false
     setStatus(error.message || 'Could not apply adjustment.')
     return
@@ -271,6 +275,7 @@ async function handleRedeem(btn) {
   btn.disabled = true
   const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label)
   if (error) {
+    captureError(error, { fn: 'redeemPoints' })
     btn.disabled = false
     setStatus(error.message || 'Could not redeem.')
     return

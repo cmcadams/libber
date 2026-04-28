@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js'
 import { state } from '../state/state.js'
 import { toHumanId } from '../lib/format.js'
+import { captureError } from '../lib/sentry.js'
 
 export async function loadUserProfile(userId) {
   const { data: profile, error } = await supabase
@@ -9,7 +10,7 @@ export async function loadUserProfile(userId) {
     .eq('user_id', userId)
     .single()
 
-  if (error) console.error('loadUserProfile: error', error)
+  if (error) captureError(error, { fn: 'loadUserProfile' })
   return { data: profile ?? null, error }
 }
 
@@ -28,7 +29,7 @@ export async function loadCustomerHome(includeStores = true) {
   const { data, error } = await supabase.rpc('load_customer_home', {
     p_include_stores: includeStores
   })
-  if (error) console.error('loadCustomerHome error', error)
+  if (error) captureError(error, { fn: 'loadCustomerHome' })
   return { data: data ?? null, error }
 }
 
@@ -48,7 +49,7 @@ export async function loadMembers(storeId) {
   const { data, error } = await supabase.rpc('load_store_members', { p_store_id: storeId })
 
   if (error) {
-    console.error('loadMembers error', error)
+    captureError(error, { fn: 'loadMembers' })
     state.members = []
   } else {
     state.members = (data || []).map(m => ({
