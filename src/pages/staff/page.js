@@ -9,52 +9,59 @@ import { toHumanId } from '../../lib/format.js'
 import { $ } from '../../lib/dom.js'
 
 async function boot() {
-  const user = await initAuth()
-  if (!user) return
+  try {
+    const user = await initAuth()
+    if (!user) return
 
-  // load selected store from localStorage
-  loadSelectedStore()
+    // load selected store from localStorage
+    loadSelectedStore()
 
-  if (!state.selectedStoreId) {
-    $('storeName').textContent = 'No store selected'
-    return
-  }
+    if (!state.selectedStoreId) {
+      $('storeName').textContent = 'No store selected'
+      return
+    }
 
-  // render store name + staff badge
-  $('storeName').textContent = state.selectedStoreName || 'Store'
+    // render store name + staff badge
+    $('storeName').textContent = state.selectedStoreName || 'Store'
 
-  const { data: profile } = await loadUserProfile(user.id)
-  const publicId = toHumanId(profile?.public_id, user.id)
-  $('staffBadge').textContent = `Staff: ${publicId}`
+    const { data: profile } = await loadUserProfile(user.id)
+    const publicId = toHumanId(profile?.public_id, user.id)
+    $('staffBadge').textContent = `Staff: ${publicId}`
 
-  // load members and reward rules for this store
-  const [, { data: rules }, { data: cap }] = await Promise.all([
-    loadMembers(state.selectedStoreId),
-    loadRewardRules(state.selectedStoreId),
-    getStoreBonusCap(state.selectedStoreId)
-  ])
-  state.rewardRules = rules || []
-  state.bonusCap = cap
+    // load members and reward rules for this store
+    const [{ error: membersError }, { data: rules }, { data: cap }] = await Promise.all([
+      loadMembers(state.selectedStoreId),
+      loadRewardRules(state.selectedStoreId),
+      getStoreBonusCap(state.selectedStoreId)
+    ])
+    if (membersError) throw membersError
+    state.rewardRules = rules || []
+    state.bonusCap = cap
 
-  // render list + wire all handlers
-  renderCustomers()
-  initCustomerHandlers()
+    // render list + wire all handlers
+    renderCustomers()
+    initCustomerHandlers()
 
-  const refreshBtn = $('refreshBtn')
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', async () => {
-      refreshBtn.classList.add('loading')
-      refreshBtn.disabled = true
-      try {
-        await loadMembers(state.selectedStoreId)
-        renderCustomers()
-      } catch (err) {
-        console.error('Refresh failed:', err)
-      } finally {
-        refreshBtn.classList.remove('loading')
-        refreshBtn.disabled = false
-      }
-    })
+    const refreshBtn = $('refreshBtn')
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async () => {
+        refreshBtn.classList.add('loading')
+        refreshBtn.disabled = true
+        try {
+          const { error } = await loadMembers(state.selectedStoreId)
+          if (error) throw error
+          renderCustomers()
+        } catch (err) {
+          console.error('Refresh failed:', err)
+        } finally {
+          refreshBtn.classList.remove('loading')
+          refreshBtn.disabled = false
+        }
+      })
+    }
+  } catch (err) {
+    console.error(err)
+    alert('Something went wrong loading the page.')
   }
 }
 

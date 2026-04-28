@@ -19,11 +19,12 @@ async function init() {
     const { data: profile } = user?.id ? await loadUserProfile(user.id) : { data: null }
     $('myId').textContent = toHumanId(profile?.public_id, user?.id)
     if (user?.id) {
-      const [, { data: applications }, { data: managedStores }] = await Promise.all([
+      const [{ error: storesError }, { data: applications }, { data: managedStores }] = await Promise.all([
         loadStaffStores(user.id),
         loadMyApplications(user.id),
         loadManagedStores()
       ])
+      if (storesError) throw storesError
       pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
       if (managedStores?.length) $('managerLink').style.display = ''
     }
