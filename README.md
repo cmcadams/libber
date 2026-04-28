@@ -175,7 +175,7 @@ Deployed via Vercel — auto-deploys on push to `main`.
 
 | Variable | Value |
 |---|---|
-| `VITE_SUPABASE_URL` | `https://flghcbrwqtburdywgcvk.supabase.co` |
+| `VITE_SUPABASE_URL` | Your Supabase project URL (Dashboard → Project Settings → API) |
 | `VITE_SUPABASE_ANON_KEY` | Supabase publishable key (Dashboard → Project Settings → API) |
 
 The root redirect (`/` → `/apps/customer/`) is handled by `vercel.json`:
@@ -424,14 +424,14 @@ All tables readable by the client have explicit SELECT policies:
 
 | Table | Policy |
 |---|---|
-| `profiles` | `USING (true)` — public IDs are intentionally shareable |
+| `profiles` | `USING (auth.uid() = user_id)` — own row only |
 | `stores` | `USING (true)` |
 | `store_reward_rules` | `USING (true)` |
-| `store_staff` | `USING (true)` |
-| `store_staff_applicants` | `USING (true)` |
+| `store_staff` | Self, manager-of-store, or admin |
+| `store_staff_applicants` | Manager-of-store or applicant-self |
 | `ab_variants` | `USING (true)` — variant data is non-sensitive |
 | `store_memberships` | `USING (user_id = auth.uid())` — own rows only |
-| `points_ledger` | `USING (user_id = auth.uid())` — own rows only |
+| `points_ledger` | Own rows + staff/manager of the store |
 | `store_managers` | `USING (user_id = auth.uid() OR is_admin())` |
 | `store_manager_applicants` | `USING (user_id = auth.uid() OR is_admin())` |
 | `admins` | Service role only — `is_admin()` reads this as SECURITY DEFINER |
