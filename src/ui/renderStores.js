@@ -62,8 +62,8 @@ async function handleJoin(store, btn) {
 
   if (error) {
     console.error(error)
-    btn.disabled    = false
-    btn.textContent = 'Join'
+    btn.textContent = 'Failed'
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Join' }, 2000)
     return
   }
 
@@ -93,8 +93,8 @@ async function handleUnjoin(store, btn) {
 
   if (error) {
     console.error(error)
-    btn.disabled    = false
-    btn.textContent = 'Unjoin'
+    btn.textContent = 'Failed'
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Unjoin' }, 2000)
     return
   }
 

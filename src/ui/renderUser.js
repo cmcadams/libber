@@ -12,7 +12,7 @@ function nameToColor(name) {
 }
 
 function storeAvatar(store) {
-  if (store.logo_url) {
+  if (store.logo_url && store.logo_url.startsWith('https://')) {
     return `<img class="store-avatar" src="${escapeHtml(store.logo_url)}" width="36" height="36" alt="" aria-hidden="true" loading="lazy">`
   }
   const initials = escapeHtml((store.store_name || '?').slice(0, 2).toUpperCase())
