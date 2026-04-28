@@ -462,6 +462,10 @@ All scripts in `scripts/sql/` — paste into Supabase Dashboard → SQL Editor a
 | `add-reject-applicant-rpc.sql` | `reject_staff_applicant` RPC |
 | `add-ab-testing.sql` | `ab_variants` table + RLS, new profile columns, updated `create_profile` trigger with weighted variant assignment, updated `load_customer_home` with save prompt fields, backfill for existing profiles |
 | `add-bonus-adjust.sql` | Extends `store_reward_rules_kind_check` to include `bonus_reason` and `bonus_amount`, drops stale `points > 0` constraint if present, adds `adjust_points` RPC |
+| `add-save-account.sql` | `mark_account_linked` RPC used by the Save Your Points page after OAuth or magic-link identity linking |
+| `add-load-store-staff-profiles-rpc.sql` | `load_store_staff_profiles` RPC — single-query replacement for the two-round-trip staff profile load |
+| `rename-account-linked.sql` | Renames `email_saved_at` → `account_linked_at` and `mark_email_saved` → `mark_account_linked` throughout the schema |
+| `harden-rls-and-grants.sql` | Security hardening: scoped RLS policies on profiles/staff/applicants, anon grants revoked, function grants restricted to authenticated only |
 | `assign-admin.sql` | Grants admin access to a user by their human-readable public ID |
 | `delete-store.sql` | Deletes one store and all its memberships, staff, rules, and ledger entries |
 | `delete-user.sql` | Deletes one user and all their data by public ID |
@@ -486,7 +490,11 @@ Run scripts in this order:
 8. `add-reject-applicant-rpc.sql`
 9. `add-ab-testing.sql`
 10. `add-bonus-adjust.sql`
-11. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
+11. `add-save-account.sql`
+12. `add-load-store-staff-profiles-rpc.sql`
+13. `rename-account-linked.sql`
+14. `harden-rls-and-grants.sql`
+15. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
 12. Reload admin tool — create stores, configure rules, assign managers
 
 ### After a full reset (`reset-all.sql`)
