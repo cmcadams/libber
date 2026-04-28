@@ -18,7 +18,7 @@ export async function initAuth() {
   let { data: userData, error: userError } = await supabase.auth.getUser()
 
   // Common after manual cleanup: stored JWT points to a deleted auth user.
-  if (userError?.message?.includes('does not exist')) {
+  if (userError?.code === 'user_not_found') {
     await supabase.auth.signOut()
     await signInAnonOrThrow()
     const retry = await supabase.auth.getUser()
