@@ -112,13 +112,20 @@ export function initCustomerHandlers() {
     updateBonusState()
   })
 
+  $('adjustToggle')?.addEventListener('click', () => {
+    const body    = $('adjustBody')
+    const chevron = $('adjustChevron')
+    const open    = body.style.display !== 'none'
+    body.style.display = open ? 'none' : ''
+    if (chevron) chevron.textContent = open ? '▾' : '▴'
+  })
+
   $('adjustDirBtns')?.addEventListener('click', e => {
     const btn = e.target.closest('.adjust-dir-btn')
     if (!btn) return
     adjustDirection = parseInt(btn.dataset.dir)
     $('adjustDirBtns').querySelectorAll('.adjust-dir-btn').forEach(b => b.classList.toggle('selected', b === btn))
     updateAdjustDisplay()
-    updateAdjustBtn()
   })
 
   $('adjustPad')?.addEventListener('click', e => {
@@ -135,7 +142,6 @@ export function initCustomerHandlers() {
       adjustAmount += key
     }
     updateAdjustDisplay()
-    updateAdjustBtn()
   })
 
   $('adjustBtn')?.addEventListener('click', handleAdjust)
@@ -214,9 +220,12 @@ function openPanel(member) {
   $('panelBalance').textContent = member.balance
   $('adjustReason').value       = ''
   $('status').textContent       = ''
-  $('adjustBtn').disabled       = true
+  $('adjustBtn').disabled       = false
   $('adjustBtn').textContent    = 'Apply adjustment'
   $('adjustBtn').className      = 'award-btn'
+  $('adjustBody').style.display = 'none'
+  const chevron = $('adjustChevron')
+  if (chevron) chevron.textContent = '▾'
   $('adjustDirBtns').querySelectorAll('.adjust-dir-btn').forEach(b => b.classList.remove('selected'))
   updateAdjustDisplay()
 
@@ -285,7 +294,9 @@ async function handleBonusAward() {
 async function handleAdjust() {
   if (!selectedMember || !state.selectedStoreId) return
   const amount = parseInt(adjustAmount || '0')
-  if (!adjustDirection || amount === 0) return
+
+  if (!adjustDirection) { setStatus('Choose Add or Deduct first.'); return }
+  if (amount === 0)     { setStatus('Enter an amount.'); return }
 
   const pts    = adjustDirection * amount
   const reason = ($('adjustReason').value || '').trim() || 'Adjustment'
@@ -293,8 +304,8 @@ async function handleAdjust() {
   const sign   = pts > 0 ? `+${pts}` : `${pts}`
 
   btn.disabled = true
-  const ok = await showConfirm(`Adjust ${sign} pts`, `for ${selectedMember.public_id}`)
-  if (!ok) { updateAdjustBtn(); return }
+  const ok = await showConfirm(`Adjust ${sign} pts`, `${reason} · ${selectedMember.public_id}`)
+  if (!ok) { btn.disabled = false; return }
 
   const { error } = await adjustPoints(selectedMember.user_id, state.selectedStoreId, pts, reason)
   if (error) {
@@ -316,7 +327,7 @@ async function handleAdjust() {
   setTimeout(() => {
     btn.textContent = 'Apply adjustment'
     btn.className   = 'award-btn'
-    updateAdjustBtn()
+    btn.disabled    = false
   }, 1500)
 }
 
@@ -359,11 +370,6 @@ function updateBonusState() {
   } else {
     confirmEl.style.display = 'none'
   }
-}
-
-function updateAdjustBtn() {
-  const amount = parseInt(adjustAmount || '0')
-  $('adjustBtn').disabled = !(adjustDirection !== null && amount > 0)
 }
 
 function updateAdjustDisplay() {

@@ -254,6 +254,23 @@
       margin-bottom: 8px;
     }
 
+    .adjust-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .adjust-chevron {
+      font-size: 11px;
+      color: var(--text-hint);
+    }
+
     .quick-btns {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -759,28 +776,33 @@
         <hr class="divider" />
 
         <div id="adjustSection">
-          <div class="section-label">Adjust</div>
-          <div class="adjust-dir-btns" id="adjustDirBtns">
-            <button class="adjust-dir-btn" data-dir="1">+ Add</button>
-            <button class="adjust-dir-btn" data-dir="-1">− Deduct</button>
+          <button class="adjust-toggle" id="adjustToggle">
+            <span class="section-label" style="margin-bottom:0">Adjust</span>
+            <span class="adjust-chevron" id="adjustChevron">▾</span>
+          </button>
+          <div id="adjustBody" style="display:none">
+            <div class="adjust-dir-btns" id="adjustDirBtns">
+              <button class="adjust-dir-btn" data-dir="1">+ Add</button>
+              <button class="adjust-dir-btn" data-dir="-1">− Deduct</button>
+            </div>
+            <div class="adjust-display" id="adjustDisplay">0</div>
+            <div class="adjust-pad" id="adjustPad">
+              <button class="pad-btn" data-key="1">1</button>
+              <button class="pad-btn" data-key="2">2</button>
+              <button class="pad-btn" data-key="3">3</button>
+              <button class="pad-btn" data-key="4">4</button>
+              <button class="pad-btn" data-key="5">5</button>
+              <button class="pad-btn" data-key="6">6</button>
+              <button class="pad-btn" data-key="7">7</button>
+              <button class="pad-btn" data-key="8">8</button>
+              <button class="pad-btn" data-key="9">9</button>
+              <button class="pad-btn" data-key="clear">C</button>
+              <button class="pad-btn" data-key="0">0</button>
+              <button class="pad-btn" data-key="back">⌫</button>
+            </div>
+            <textarea class="reason-input" id="adjustReason" placeholder="Reason (optional)"></textarea>
+            <button class="award-btn" id="adjustBtn">Apply adjustment</button>
           </div>
-          <div class="adjust-display" id="adjustDisplay">0</div>
-          <div class="adjust-pad" id="adjustPad">
-            <button class="pad-btn" data-key="1">1</button>
-            <button class="pad-btn" data-key="2">2</button>
-            <button class="pad-btn" data-key="3">3</button>
-            <button class="pad-btn" data-key="4">4</button>
-            <button class="pad-btn" data-key="5">5</button>
-            <button class="pad-btn" data-key="6">6</button>
-            <button class="pad-btn" data-key="7">7</button>
-            <button class="pad-btn" data-key="8">8</button>
-            <button class="pad-btn" data-key="9">9</button>
-            <button class="pad-btn" data-key="clear">C</button>
-            <button class="pad-btn" data-key="0">0</button>
-            <button class="pad-btn" data-key="back">⌫</button>
-          </div>
-          <textarea class="reason-input" id="adjustReason" placeholder="Reason — leave blank to use 'Adjustment'"></textarea>
-          <button class="award-btn" id="adjustBtn" disabled>Apply adjustment</button>
         </div>
 
         <div id="status"></div>
