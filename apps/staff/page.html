@@ -186,11 +186,21 @@
     .panel {
       background: var(--surface);
       border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-      padding: 0 1.25rem 2.5rem;
+      padding: 0;
       width: 100%;
       max-width: 480px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       border: 0.5px solid var(--border);
       border-bottom: none;
+    }
+
+    .panel-scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding: 0 1.25rem 2.5rem;
     }
 
     .panel-handle {
@@ -199,6 +209,7 @@
       background: var(--border-strong);
       border-radius: 2px;
       margin: 14px auto 1.25rem;
+      flex-shrink: 0;
     }
 
     .panel-header {
@@ -206,6 +217,8 @@
       align-items: flex-start;
       justify-content: space-between;
       margin-bottom: 1.5rem;
+      padding: 0 1.25rem;
+      flex-shrink: 0;
     }
 
     .panel-id {
@@ -506,37 +519,39 @@
         <button class="close-btn" id="closeBtn">×</button>
       </div>
 
-      <div id="quickSection">
-        <div class="section-label">Quick award</div>
-        <div class="quick-btns" id="quickBtns"></div>
+      <div class="panel-scroll">
+        <div id="quickSection">
+          <div class="section-label">Quick award</div>
+          <div class="quick-btns" id="quickBtns"></div>
+        </div>
+
+        <hr class="divider" id="sectionDivider" />
+
+        <div id="bonusSection">
+          <div class="section-label">Bonus</div>
+          <div class="bonus-reason-btns" id="bonusReasonBtns"></div>
+          <div class="bonus-btns" id="bonusBtns"></div>
+          <button class="award-btn" id="awardBtn" disabled>Award bonus</button>
+        </div>
+
+        <hr class="divider" id="redeemDivider" style="display:none" />
+
+        <div id="redeemSection" style="display:none">
+          <div class="section-label">Redeem</div>
+          <div class="redeem-btns" id="redeemBtns"></div>
+        </div>
+
+        <hr class="divider" />
+
+        <div id="adjustSection">
+          <div class="section-label">Adjust</div>
+          <input type="number" class="adjust-input" id="adjustInput" placeholder="e.g. 5 or -10" />
+          <textarea class="reason-input" id="adjustReason" placeholder="Reason..."></textarea>
+          <button class="award-btn" id="adjustBtn" disabled>Apply adjustment</button>
+        </div>
+
+        <div id="status"></div>
       </div>
-
-      <hr class="divider" id="sectionDivider" />
-
-      <div id="bonusSection">
-        <div class="section-label">Bonus</div>
-        <div class="bonus-reason-btns" id="bonusReasonBtns"></div>
-        <div class="bonus-btns" id="bonusBtns"></div>
-        <button class="award-btn" id="awardBtn" disabled>Award bonus</button>
-      </div>
-
-      <hr class="divider" />
-
-      <div id="adjustSection">
-        <div class="section-label">Adjust</div>
-        <input type="number" class="adjust-input" id="adjustInput" placeholder="e.g. 5 or -10" />
-        <textarea class="reason-input" id="adjustReason" placeholder="Reason..."></textarea>
-        <button class="award-btn" id="adjustBtn" disabled>Apply adjustment</button>
-      </div>
-
-      <hr class="divider" id="redeemDivider" style="display:none" />
-
-      <div id="redeemSection" style="display:none">
-        <div class="section-label">Redeem</div>
-        <div class="redeem-btns" id="redeemBtns"></div>
-      </div>
-
-      <div id="status"></div>
     </div>
   </div>
 
