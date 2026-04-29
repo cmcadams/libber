@@ -39,6 +39,7 @@ async function init() {
     bindEvents()
   } catch (err) {
     captureError(err)
+    $('applicantsPanel').style.display = ''
     setStatus(err.message || 'Could not load manager tools.', true)
   }
 }
