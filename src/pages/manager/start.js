@@ -173,6 +173,8 @@ function bindEvents() {
       node.classList.toggle('selected', node === button)
     })
     $('selectedStore').textContent = storeName
+    $('applicantsPanel').style.display = ''
+    $('staffPanel').style.display = ''
     setStatus('')
     try {
       await Promise.all([renderApplicants(), renderStaff()])

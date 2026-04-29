@@ -304,6 +304,18 @@
       font-size: 13px;
       line-height: 1.5;
     }
+
+    .my-id {
+      margin-top: 14px;
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 12px 14px;
+      background: rgba(252, 255, 252, 0.7);
+      border: 1px dashed var(--border-strong);
+      border-radius: 16px;
+      word-break: break-all;
+      color: var(--text);
+    }
   </style>
 </head>
 <body>
@@ -316,7 +328,7 @@
         </div>
         <button class="cog-btn" id="cogBtn" aria-label="Settings">⚙</button>
       </div>
-      <p>Manager ID: <strong id="myId">Loading...</strong></p>
+      <div class="my-id">Manager ID: <span id="myId">Loading...</span></div>
       <div class="cog-menu" id="cogMenu" style="display:none"></div>
       <button class="staff-link" id="staffPageBtn">Go to staff page</button>
     </section>
@@ -330,7 +342,7 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="applicantsPanel" style="display:none">
         <div class="panel-header-row">
           <h2>Applicants</h2>
           <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
@@ -343,7 +355,7 @@
       </section>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="staffPanel" style="display:none">
       <h2>Current staff</h2>
       <p>Selected store: <strong id="selectedStoreStaff">None selected</strong></p>
       <div class="picker staff-grid" id="staffList">
