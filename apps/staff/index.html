@@ -177,6 +177,34 @@
       color: var(--accent);
     }
 
+    .ios-banner {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--accent-soft);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      font-size: 13px;
+      color: var(--text);
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ios-banner.visible { display: flex; }
+
+    .ios-banner-text { flex: 1; line-height: 1.4; }
+
+    .ios-banner-dismiss {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--muted);
+      padding: 0;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
     .panel-header-row {
       display: flex;
       align-items: center;
@@ -209,6 +237,10 @@
       <div class="my-id">Your ID: <span id="myId">Loading...</span></div>
       <a href="/apps/staff/manager.html" class="manager-link" id="managerLink" style="display:none">Go to manager tools →</a>
       <button class="install-btn" id="installBtn">Add to home screen</button>
+      <div class="ios-banner" id="iosBanner">
+        <span class="ios-banner-text">Tap <strong>Share</strong> then <strong>Add to Home Screen</strong> to install</span>
+        <button class="ios-banner-dismiss" id="iosBannerDismiss" aria-label="Dismiss">✕</button>
+      </div>
     </section>
 
     <section class="panel" id="staffStoresSection">

@@ -29,6 +29,21 @@ window.addEventListener('appinstalled', () => {
   if (btn) btn.style.display = 'none'
 })
 
+function initIosBanner() {
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const isStandalone = window.navigator.standalone === true
+  if (!isIos || isStandalone) return
+  try { if (localStorage.getItem('libber_staff_ios_banner_dismissed')) return } catch {}
+  const banner = $('iosBanner')
+  if (banner) banner.classList.add('visible')
+  $('iosBannerDismiss')?.addEventListener('click', () => {
+    if (banner) banner.classList.remove('visible')
+    try { localStorage.setItem('libber_staff_ios_banner_dismissed', '1') } catch {}
+  })
+}
+
+initIosBanner()
+
 let selectedStoreId = null
 let isPendingForSelectedStore = false
 let pendingStoreIds = new Set()
