@@ -10,6 +10,25 @@ import { state } from '../../state/state.js'
 import { $, $$ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
 
+let deferredPrompt = null
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault()
+  deferredPrompt = e
+  const btn = $('installBtn')
+  if (btn) btn.style.display = ''
+})
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null
+  const btn = $('installBtn')
+  if (btn) btn.style.display = 'none'
+})
+
 let selectedStoreId = null
 let isPendingForSelectedStore = false
 let pendingStoreIds = new Set()
@@ -101,6 +120,13 @@ function bindEvents() {
 
   $('applyBtn')?.addEventListener('click', handleApply)
   $('refreshBtn')?.addEventListener('click', handleRefresh)
+  $('installBtn')?.addEventListener('click', async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    deferredPrompt = null
+    if (outcome === 'accepted') $('installBtn').style.display = 'none'
+  })
 }
 
 async function handleRefresh() {

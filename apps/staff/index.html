@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Libber Staff</title>
+  <link rel="manifest" href="/apps/staff/manifest.json" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 
@@ -158,6 +159,24 @@
 
     .manager-link:hover { text-decoration: underline; }
 
+    .install-btn {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 18px;
+      border: 1.5px solid var(--border-strong);
+      background: transparent;
+      border-radius: 999px;
+      font-size: 14px;
+      cursor: pointer;
+      color: var(--text);
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .install-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
     .panel-header-row {
       display: flex;
       align-items: center;
@@ -189,6 +208,7 @@
       <p class="sub">Pick a store to open the staff tools, or apply to join a new one.</p>
       <div class="my-id">Your ID: <span id="myId">Loading...</span></div>
       <a href="/apps/staff/manager.html" class="manager-link" id="managerLink" style="display:none">Go to manager tools →</a>
+      <button class="install-btn" id="installBtn">Add to home screen</button>
     </section>
 
     <section class="panel" id="staffStoresSection">

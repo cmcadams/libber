@@ -1,0 +1,16 @@
+{
+  "name": "Libber Staff",
+  "short_name": "Libber Staff",
+  "description": "Staff tools for Libber",
+  "start_url": "/apps/staff/",
+  "display": "standalone",
+  "background_color": "#f3f0ea",
+  "theme_color": "#1a1a18",
+  "icons": [
+    {
+      "src": "/apps/customer/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

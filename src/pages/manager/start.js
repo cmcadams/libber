@@ -1,4 +1,8 @@
 import { captureError } from '../../lib/sentry.js'
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
+}
 import { initAuth } from '../../services/auth.js'
 import { approveApplicant, demoteStaff, loadApplicants, loadManagedStores, loadStaff, rejectApplicant, applyForManager, loadMyManagerApplications } from '../../services/applicants.js'
 import { loadUserProfile } from '../../services/members.js'
