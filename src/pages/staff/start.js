@@ -100,6 +100,28 @@ function bindEvents() {
   })
 
   $('applyBtn')?.addEventListener('click', handleApply)
+  $('refreshBtn')?.addEventListener('click', handleRefresh)
+}
+
+async function handleRefresh() {
+  const btn = $('refreshBtn')
+  btn.classList.add('loading')
+  try {
+    const [{ error: storesError }, { data: applications }, { data: managedStores }] = await Promise.all([
+      loadStaffStores(state.user?.id),
+      loadMyApplications(state.user?.id),
+      loadManagedStores()
+    ])
+    if (storesError) throw storesError
+    pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
+    $('managerLink').style.display = managedStores?.length ? '' : 'none'
+    renderStaffStores()
+  } catch (err) {
+    captureError(err)
+    setStatus(err.message || 'Could not refresh.', true)
+  } finally {
+    btn.classList.remove('loading')
+  }
 }
 
 async function handleApply() {

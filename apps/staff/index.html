@@ -157,6 +157,29 @@
     }
 
     .manager-link:hover { text-decoration: underline; }
+
+    .panel-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .refresh-btn {
+      font-size: 16px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      transition: color 0.15s, transform 0.3s;
+    }
+
+    .refresh-btn:hover { color: var(--text); }
+    .refresh-btn.loading { animation: spin 0.7s linear infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -169,7 +192,10 @@
     </section>
 
     <section class="panel" id="staffStoresSection">
-      <h2>Your stores</h2>
+      <div class="panel-header-row">
+        <h2>Your stores</h2>
+        <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
+      </div>
       <p>Stores you're approved to work at.</p>
       <div class="picker" id="staffStoreList"></div>
     </section>
