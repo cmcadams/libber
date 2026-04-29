@@ -25,15 +25,15 @@ Two separate web apps built from one codebase, deployed to one Vercel project.
 |---|---|
 | `index.html` | Home — user ID, joined store balances, join/unjoin stores, save-prompt button, points history per store |
 | `save.html` | Save account — shown after identity linking via magic link or OAuth |
-| `settings.html` | Settings — account options |
+| `settings.html` | Settings — linked accounts, notifications, display theme, install to home screen |
 
 ### Staff (`apps/staff/`)
 
 | File | Purpose |
 |---|---|
-| `index.html` | Store picker — shows approved stores, apply for new ones |
-| `page.html` | Staff tools — load members, award points |
-| `manager.html` | Manager tools — approve/reject applicants, manage staff |
+| `index.html` | Store picker — shows approved stores, apply for new ones, install to home screen |
+| `page.html` | Staff tools — load members, award/bonus/adjust points, redeem |
+| `manager.html` | Manager tools — approve/reject applicants, manage staff, apply to manage stores |
 
 ### Admin (local only)
 
@@ -60,6 +60,8 @@ scripts/
   sql/                  All DB scripts (see SQL Scripts section)
 src/
   lib/
+    cog.js              PWA install logic — initCog() (dropdown toggle) + initInstallSection() (static section)
+    confirm.js          showConfirm(title, detail) — reusable Promise-based confirm dialog
     dom.js              $ (getElementById), $q (querySelector), $$ (querySelectorAll)
     escape.js           escapeHtml — used before any user value hits the DOM
     format.js           Shared formatting helpers
