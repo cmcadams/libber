@@ -252,6 +252,7 @@ function bindEvents() {
     updateApplyButton()
   })
 
+  $('staffPageBtn')?.addEventListener('click', () => { window.location.href = '/apps/staff/' })
   $('applyManagerBtn')?.addEventListener('click', handleApply)
 
   $('refreshBtn')?.addEventListener('click', async () => {

@@ -149,14 +149,24 @@
     }
 
     .staff-link {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       margin-top: 14px;
+      padding: 10px 18px;
+      border: 1.5px solid var(--border-strong);
+      background: transparent;
+      border-radius: 999px;
       font-size: 14px;
-      color: var(--accent);
-      text-decoration: none;
+      font-family: inherit;
+      cursor: pointer;
+      color: var(--text);
+      transition: border-color 0.15s, color 0.15s;
     }
 
-    .staff-link:hover { text-decoration: underline; }
+    .staff-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
 
     .panel-header-row {
       display: flex;
@@ -252,7 +262,7 @@
       <h1>Approve staff applicants.</h1>
       <p>Choose one of your stores, review the people who applied from the staff start page, then promote them to staff.</p>
       <p>Manager ID: <strong id="myId">Loading...</strong></p>
-      <a href="/apps/staff/" class="staff-link">Go to staff page →</a>
+      <button class="staff-link" id="staffPageBtn">Go to staff page</button>
     </section>
 
     <section class="grid">

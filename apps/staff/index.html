@@ -149,15 +149,23 @@
       padding: 16px 4px;
     }
 
-    .manager-link {
-      display: inline-block;
-      margin-top: 14px;
-      font-size: 14px;
-      color: var(--accent);
-      text-decoration: none;
+    .manager-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 999px;
+      background: var(--text);
+      color: white;
+      font-size: 15px;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.15s;
     }
 
-    .manager-link:hover { text-decoration: underline; }
+    .manager-btn:hover { opacity: 0.85; }
 
     .install-btn {
       display: none;
@@ -235,12 +243,17 @@
       <h1>Staff.</h1>
       <p class="sub">Pick a store to open the staff tools, or apply to join a new one.</p>
       <div class="my-id">Your ID: <span id="myId">Loading...</span></div>
-      <a href="/apps/staff/manager.html" class="manager-link" id="managerLink" style="display:none">Go to manager tools →</a>
       <button class="install-btn" id="installBtn">Add to home screen</button>
       <div class="ios-banner" id="iosBanner">
         <span class="ios-banner-text">Tap <strong>Share</strong> then <strong>Add to Home Screen</strong> to install</span>
         <button class="ios-banner-dismiss" id="iosBannerDismiss" aria-label="Dismiss">✕</button>
       </div>
+    </section>
+
+    <section class="panel" id="managerSection" style="display:none">
+      <h2>Manager tools</h2>
+      <p>Approve applicants, manage staff, and apply to manage new stores.</p>
+      <button class="manager-btn" id="managerBtn">Go to manager tools</button>
     </section>
 
     <section class="panel" id="staffStoresSection">

@@ -14,6 +14,7 @@ if ('serviceWorker' in navigator) {
 }
 
 async function boot() {
+  $('backBtn')?.addEventListener('click', () => { window.location.href = '/apps/staff/' })
   try {
     const user = await initAuth()
     if (!user) return

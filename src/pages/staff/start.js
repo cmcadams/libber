@@ -57,7 +57,7 @@ async function init() {
       ])
       if (storesError) throw storesError
       pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
-      if (managedStores?.length) $('managerLink').style.display = ''
+      if (managedStores?.length) $('managerSection').style.display = ''
     }
     renderStaffStores()
     await renderApplyStores()
@@ -129,6 +129,7 @@ function bindEvents() {
     updateApplyButton()
   })
 
+  $('managerBtn')?.addEventListener('click', () => { window.location.href = '/apps/staff/manager.html' })
   $('applyBtn')?.addEventListener('click', handleApply)
   $('refreshBtn')?.addEventListener('click', handleRefresh)
   $('iosBannerDismiss')?.addEventListener('click', () => {
@@ -156,7 +157,7 @@ async function handleRefresh() {
     ])
     if (storesError) throw storesError
     pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
-    $('managerLink').style.display = managedStores?.length ? '' : 'none'
+    $('managerSection').style.display = managedStores?.length ? '' : 'none'
     renderStaffStores()
   } catch (err) {
     captureError(err)
