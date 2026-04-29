@@ -36,10 +36,6 @@ function initIosBanner() {
   try { if (localStorage.getItem('libber_staff_ios_banner_dismissed')) return } catch {}
   const banner = $('iosBanner')
   if (banner) banner.classList.add('visible')
-  $('iosBannerDismiss')?.addEventListener('click', () => {
-    if (banner) banner.classList.remove('visible')
-    try { localStorage.setItem('libber_staff_ios_banner_dismissed', '1') } catch {}
-  })
 }
 
 initIosBanner()
@@ -135,6 +131,11 @@ function bindEvents() {
 
   $('applyBtn')?.addEventListener('click', handleApply)
   $('refreshBtn')?.addEventListener('click', handleRefresh)
+  $('iosBannerDismiss')?.addEventListener('click', () => {
+    $('iosBanner')?.classList.remove('visible')
+    try { localStorage.setItem('libber_staff_ios_banner_dismissed', '1') } catch {}
+  })
+
   $('installBtn')?.addEventListener('click', async () => {
     if (!deferredPrompt) return
     deferredPrompt.prompt()
