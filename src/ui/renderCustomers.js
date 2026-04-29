@@ -3,6 +3,7 @@ import { awardPoints, adjustPoints } from '../services/members.js'
 import { escapeHtml } from '../lib/escape.js'
 import { $ } from '../lib/dom.js'
 import { captureError } from '../lib/sentry.js'
+import { showConfirm } from '../lib/confirm.js'
 
 let selectedMember = null
 let bonusPts       = null
@@ -189,10 +190,14 @@ function closePanel() {
 
 async function handleQuickAward(btn) {
   if (!selectedMember || !state.selectedStoreId) return
-  const pts = parseInt(btn.dataset.pts)
+  const pts   = parseInt(btn.dataset.pts)
+  const label = btn.dataset.label
 
   btn.disabled = true
-  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, btn.dataset.label, btn.dataset.ruleId)
+  const ok = await showConfirm(`Award ${label}`, `+${pts} pts for ${selectedMember.public_id}`)
+  if (!ok) { btn.disabled = false; return }
+
+  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, label, btn.dataset.ruleId)
   if (error) {
     captureError(error, { fn: 'awardPoints' })
     btn.disabled = false
@@ -211,6 +216,9 @@ async function handleBonusAward() {
   if (!selectedMember || !bonusPts || !bonusReason || !state.selectedStoreId) return
 
   $('awardBtn').disabled = true
+  const ok = await showConfirm(`Award ${bonusReason} bonus`, `+${bonusPts} pts for ${selectedMember.public_id}`)
+  if (!ok) { $('awardBtn').disabled = false; return }
+
   const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, bonusPts, bonusReason)
   if (error) {
     captureError(error, { fn: 'awardBonus' })
@@ -240,8 +248,12 @@ async function handleAdjust() {
   const reason = $('adjustReason').value.trim()
   if (!Number.isInteger(pts) || pts === 0 || !reason) return
 
-  const btn = $('adjustBtn')
+  const btn  = $('adjustBtn')
+  const sign = pts > 0 ? `+${pts}` : `${pts}`
   btn.disabled = true
+  const ok = await showConfirm(`Adjust ${sign} pts`, `for ${selectedMember.public_id}`)
+  if (!ok) { updateAdjustBtn(); return }
+
   const { error } = await adjustPoints(selectedMember.user_id, state.selectedStoreId, pts, reason)
   if (error) {
     captureError(error, { fn: 'adjustPoints' })
@@ -273,6 +285,9 @@ async function handleRedeem(btn) {
   }
 
   btn.disabled = true
+  const ok = await showConfirm(`Redeem ${label}`, `−${pts} pts for ${selectedMember.public_id}`)
+  if (!ok) { btn.disabled = false; return }
+
   const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label)
   if (error) {
     captureError(error, { fn: 'redeemPoints' })

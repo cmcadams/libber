@@ -490,6 +490,76 @@
       padding: 0.75rem 0 0;
       min-height: 1.5rem;
     }
+
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .confirm-overlay.open { display: flex; }
+
+    .confirm-dialog {
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 320px;
+      border: 0.5px solid var(--border);
+    }
+
+    .confirm-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .confirm-detail {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .confirm-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 1.25rem;
+    }
+
+    .confirm-cancel {
+      padding: 11px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 14px;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s;
+    }
+
+    .confirm-cancel:hover { background: #f4f4f1; border-color: var(--border-strong); }
+
+    .confirm-ok {
+      padding: 11px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--text);
+      color: var(--surface);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: opacity 0.1s;
+    }
+
+    .confirm-ok:hover { opacity: 0.82; }
   </style>
 </head>
 <body>
@@ -551,6 +621,17 @@
         </div>
 
         <div id="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-dialog">
+      <div class="confirm-title" id="confirmTitle"></div>
+      <div class="confirm-detail" id="confirmDetail"></div>
+      <div class="confirm-actions">
+        <button class="confirm-cancel" id="confirmCancel">Cancel</button>
+        <button class="confirm-ok" id="confirmOk">Confirm</button>
       </div>
     </div>
   </div>
