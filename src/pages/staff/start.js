@@ -33,7 +33,8 @@ async function init() {
         loadManagedStores()
       ])
       if (storesError) throw storesError
-      pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
+      const staffStoreIds = new Set((state.staffStores || []).map(s => s.store_id))
+      pendingStoreIds = new Set((applications ?? []).filter(a => !staffStoreIds.has(a.store_id)).map(a => a.store_id))
       if (managedStores?.length) $('managerSection').style.display = ''
     }
     renderStaffStores()
@@ -121,7 +122,8 @@ async function handleRefresh() {
       loadManagedStores()
     ])
     if (storesError) throw storesError
-    pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
+    const staffStoreIds = new Set((state.staffStores || []).map(s => s.store_id))
+    pendingStoreIds = new Set((applications ?? []).filter(a => !staffStoreIds.has(a.store_id)).map(a => a.store_id))
     $('managerSection').style.display = managedStores?.length ? '' : 'none'
     renderStaffStores()
     $$('[data-store-id]').forEach(card => {
