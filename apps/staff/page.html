@@ -568,6 +568,55 @@
 
     .back-btn:hover { color: var(--text); }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cog-btn {
+      font-size: 15px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 4px 6px;
+      font-family: var(--font-ui);
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .cog-btn:hover { color: var(--text); }
+
+    .cog-menu {
+      margin-bottom: 10px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    .cog-install-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border: 0.5px solid var(--border-strong);
+      background: transparent;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      color: var(--text);
+      transition: background 0.1s, border-color 0.1s;
+    }
+
+    .cog-install-btn:hover { background: #f4f4f1; }
+
+    .cog-instructions {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
     #status {
       font-size: 13px;
       color: var(--text-hint);
@@ -652,8 +701,12 @@
     <button class="back-btn" id="backBtn">← My Stores</button>
     <div class="header">
       <span class="staff-badge" id="staffBadge">Staff</span>
-      <button class="refresh-btn" id="refreshBtn">Refresh</button>
+      <div class="header-right">
+        <button class="refresh-btn" id="refreshBtn">Refresh</button>
+        <button class="cog-btn" id="cogBtn" aria-label="Settings">⚙</button>
+      </div>
     </div>
+    <div class="cog-menu" id="cogMenu" style="display:none"></div>
 
     <input class="search" type="text" id="search" placeholder="Filter by ID..." autocomplete="off" spellcheck="false" />
     <div class="member-count-row">

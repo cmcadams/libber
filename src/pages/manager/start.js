@@ -7,10 +7,13 @@ import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
 import { $, $$ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
+import { initCog } from '../../lib/cog.js'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
 }
+
+initCog()
 
 let selectedStoreId = null
 let selectedApplyStoreId = null

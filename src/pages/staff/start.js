@@ -9,40 +9,17 @@ import { escapeHtml } from '../../lib/escape.js'
 import { state } from '../../state/state.js'
 import { $, $$ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
-
-let deferredPrompt = null
+import { initCog } from '../../lib/cog.js'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
 }
 
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault()
-  deferredPrompt = e
-  const btn = $('installBtn')
-  if (btn) btn.style.display = ''
-})
+initCog()
 
-window.addEventListener('appinstalled', () => {
-  deferredPrompt = null
-  const btn = $('installBtn')
-  if (btn) btn.style.display = 'none'
-})
-
-function initIosBanner() {
-  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
-  const isStandalone = window.navigator.standalone === true
-  if (!isIos || isStandalone) return
-  try { if (localStorage.getItem('libber_staff_ios_banner_dismissed')) return } catch {}
-  const banner = $('iosBanner')
-  if (banner) banner.classList.add('visible')
-}
-
-initIosBanner()
-
-let selectedStoreId = null
+let selectedStoreId           = null
 let isPendingForSelectedStore = false
-let pendingStoreIds = new Set()
+let pendingStoreIds           = new Set()
 
 async function init() {
   try {
@@ -70,9 +47,9 @@ async function init() {
 }
 
 function renderStaffStores() {
-  const list = $('staffStoreList')
+  const list    = $('staffStoreList')
   const section = $('staffStoresSection')
-  const stores = state.staffStores || []
+  const stores  = state.staffStores || []
 
   if (!stores.length) {
     section.style.display = 'none'
@@ -118,7 +95,6 @@ function bindEvents() {
   $('storeList')?.addEventListener('click', event => {
     const button = event.target.closest('[data-store-id]')
     if (!button) return
-
     selectedStoreId = button.dataset.storeId
     isPendingForSelectedStore = pendingStoreIds.has(selectedStoreId)
     $$('[data-store-id]').forEach(node => {
@@ -132,18 +108,6 @@ function bindEvents() {
   $('managerBtn')?.addEventListener('click', () => { window.location.href = '/apps/staff/manager.html' })
   $('applyBtn')?.addEventListener('click', handleApply)
   $('refreshBtn')?.addEventListener('click', handleRefresh)
-  $('iosBannerDismiss')?.addEventListener('click', () => {
-    $('iosBanner')?.classList.remove('visible')
-    try { localStorage.setItem('libber_staff_ios_banner_dismissed', '1') } catch {}
-  })
-
-  $('installBtn')?.addEventListener('click', async () => {
-    if (!deferredPrompt) return
-    deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
-    deferredPrompt = null
-    if (outcome === 'accepted') $('installBtn').style.display = 'none'
-  })
 }
 
 async function handleRefresh() {
@@ -171,13 +135,12 @@ async function handleApply() {
   if (!selectedStoreId) return
 
   const button = $('applyBtn')
-  button.disabled = true
+  button.disabled    = true
   button.textContent = 'Applying...'
 
   try {
     const { error } = await applyForStaff(selectedStoreId)
     if (error) throw error
-
     pendingStoreIds.add(selectedStoreId)
     isPendingForSelectedStore = true
     updateApplyButton()
@@ -195,25 +158,24 @@ function updateApplyButton() {
 
   if (!selectedStoreId) {
     button.textContent = 'Apply for staff'
-    button.disabled = true
+    button.disabled    = true
     return
   }
 
   if (isPendingForSelectedStore) {
     button.textContent = 'Pending approval'
-    button.disabled = true
+    button.disabled    = true
     setStatus('Your application is waiting for manager approval.')
     return
   }
 
   button.textContent = 'Apply for staff'
-  button.disabled = false
+  button.disabled    = false
 }
 
 function setStatus(message, isError = false) {
   const status = $('status')
   if (!status) return
-
   status.textContent = message
   status.classList.toggle('error', isError)
 }

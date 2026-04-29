@@ -8,10 +8,13 @@ import { loadSelectedStore } from '../../lib/storage.js'
 import { renderCustomers, initCustomerHandlers } from '../../ui/renderCustomers.js'
 import { toHumanId } from '../../lib/format.js'
 import { $ } from '../../lib/dom.js'
+import { initCog } from '../../lib/cog.js'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
 }
+
+initCog()
 
 async function boot() {
   $('backBtn')?.addEventListener('click', () => { window.location.href = '/apps/staff/' })

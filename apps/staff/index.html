@@ -167,50 +167,53 @@
 
     .manager-btn:hover { opacity: 0.85; }
 
-    .install-btn {
-      display: none;
+    .hero-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .cog-btn {
+      font-size: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 4px;
+      line-height: 1;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .cog-btn:hover { color: var(--text); }
+
+    .cog-menu {
       margin-top: 12px;
-      padding: 10px 18px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.65);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .cog-install-btn {
+      width: 100%;
+      padding: 10px 16px;
       border: 1.5px solid var(--border-strong);
       background: transparent;
       border-radius: 999px;
       font-size: 14px;
+      font-family: inherit;
       cursor: pointer;
       color: var(--text);
       transition: border-color 0.15s, color 0.15s;
     }
 
-    .install-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
+    .cog-install-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-    .ios-banner {
-      display: none;
-      margin-top: 12px;
-      padding: 10px 14px;
-      background: var(--accent-soft);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      font-size: 13px;
-      color: var(--text);
-      align-items: center;
-      gap: 10px;
-    }
-
-    .ios-banner.visible { display: flex; }
-
-    .ios-banner-text { flex: 1; line-height: 1.4; }
-
-    .ios-banner-dismiss {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
+    .cog-instructions {
       color: var(--muted);
-      padding: 0;
-      line-height: 1;
-      flex-shrink: 0;
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     .panel-header-row {
@@ -240,14 +243,15 @@
 <body>
   <main class="page">
     <section class="panel">
-      <h1>Staff.</h1>
-      <p class="sub">Pick a store to open the staff tools, or apply to join a new one.</p>
-      <div class="my-id">Your ID: <span id="myId">Loading...</span></div>
-      <button class="install-btn" id="installBtn">Add to home screen</button>
-      <div class="ios-banner" id="iosBanner">
-        <span class="ios-banner-text">Tap <strong>Share</strong> then <strong>Add to Home Screen</strong> to install</span>
-        <button class="ios-banner-dismiss" id="iosBannerDismiss" aria-label="Dismiss">✕</button>
+      <div class="hero-header">
+        <div>
+          <h1>Staff.</h1>
+          <p class="sub">Pick a store to open the staff tools, or apply to join a new one.</p>
+        </div>
+        <button class="cog-btn" id="cogBtn" aria-label="Settings">⚙</button>
       </div>
+      <div class="my-id">Your ID: <span id="myId">Loading...</span></div>
+      <div class="cog-menu" id="cogMenu" style="display:none"></div>
     </section>
 
     <section class="panel" id="managerSection" style="display:none">
