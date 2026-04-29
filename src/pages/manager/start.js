@@ -1,8 +1,4 @@
 import { captureError } from '../../lib/sentry.js'
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
-}
 import { initAuth } from '../../services/auth.js'
 import { approveApplicant, demoteStaff, loadApplicants, loadManagedStores, loadStaff, rejectApplicant, applyForManager, loadMyManagerApplications } from '../../services/applicants.js'
 import { loadUserProfile } from '../../services/members.js'
@@ -11,6 +7,10 @@ import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
 import { $, $$ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
+}
 
 let selectedStoreId = null
 let selectedApplyStoreId = null

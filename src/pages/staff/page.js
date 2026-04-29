@@ -1,8 +1,4 @@
 import { captureError } from '../../lib/sentry.js'
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
-}
 import { initAuth } from '../../services/auth.js'
 import { loadMembers, loadUserProfile } from '../../services/members.js'
 import { loadRewardRules } from '../../services/admin.js'
@@ -12,6 +8,10 @@ import { loadSelectedStore } from '../../lib/storage.js'
 import { renderCustomers, initCustomerHandlers } from '../../ui/renderCustomers.js'
 import { toHumanId } from '../../lib/format.js'
 import { $ } from '../../lib/dom.js'
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
+}
 
 async function boot() {
   try {
