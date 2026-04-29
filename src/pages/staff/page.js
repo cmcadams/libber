@@ -22,13 +22,7 @@ async function boot() {
     // load selected store from localStorage
     loadSelectedStore()
 
-    if (!state.selectedStoreId) {
-      $('storeName').textContent = 'No store selected'
-      return
-    }
-
-    // render store name + staff badge
-    $('storeName').textContent = state.selectedStoreName || 'Store'
+    if (!state.selectedStoreId) return
 
     const { data: profile } = await loadUserProfile(user.id)
     const publicId = toHumanId(profile?.public_id, user.id)
@@ -51,8 +45,8 @@ async function boot() {
     const refreshBtn = $('refreshBtn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
-        refreshBtn.classList.add('loading')
-        refreshBtn.disabled = true
+        refreshBtn.textContent = 'Refreshing…'
+        refreshBtn.disabled    = true
         try {
           const { error } = await loadMembers(state.selectedStoreId)
           if (error) throw error
@@ -60,8 +54,8 @@ async function boot() {
         } catch (err) {
           captureError(err, { fn: 'refresh' })
         } finally {
-          refreshBtn.classList.remove('loading')
-          refreshBtn.disabled = false
+          refreshBtn.textContent = 'Refresh'
+          refreshBtn.disabled    = false
         }
       })
     }

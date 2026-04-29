@@ -63,12 +63,6 @@
       margin-bottom: 0.75rem;
     }
 
-    .store-name {
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--text);
-    }
-
     .staff-badge {
       font-size: 12px;
       color: var(--text-muted);
@@ -109,20 +103,18 @@
     }
 
     .refresh-btn {
-      font-size: 15px;
-      color: var(--text-hint);
+      font-size: 13px;
+      color: var(--text-muted);
       background: none;
       border: none;
       cursor: pointer;
-      padding: 0 2px;
-      line-height: 1;
-      transition: color 0.15s, transform 0.3s;
+      padding: 4px 10px;
+      font-family: var(--font-ui);
+      transition: color 0.15s;
     }
 
     .refresh-btn:hover { color: var(--text); }
-    .refresh-btn.loading { animation: spin 0.7s linear infinite; }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .customer-list {
       display: flex;
@@ -362,25 +354,118 @@
       background: #f4f4f1;
     }
 
-    .adjust-input {
-      width: 100%;
-      padding: 10px 12px;
+    .bonus-confirm {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-top: 10px;
+    }
+
+    .bonus-confirm-msg {
       font-size: 14px;
-      font-family: var(--font-ui);
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .bonus-confirm-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .bonus-confirm-cancel {
+      padding: 10px;
       border: 0.5px solid var(--border);
       border-radius: var(--radius-md);
       background: var(--surface);
       color: var(--text);
-      margin-bottom: 10px;
-      outline: none;
-      transition: border-color 0.15s;
-      -moz-appearance: textfield;
+      font-size: 13px;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s;
     }
 
-    .adjust-input:focus { border-color: var(--border-strong); }
-    .adjust-input::placeholder { color: var(--text-hint); }
-    .adjust-input::-webkit-inner-spin-button,
-    .adjust-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .bonus-confirm-cancel:hover { background: #f4f4f1; border-color: var(--border-strong); }
+    .bonus-confirm-cancel:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .bonus-confirm-ok {
+      padding: 10px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--text);
+      color: var(--surface);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: opacity 0.1s;
+    }
+
+    .bonus-confirm-ok:hover { opacity: 0.82; }
+    .bonus-confirm-ok:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .adjust-dir-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .adjust-dir-btn {
+      padding: 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
+    }
+
+    .adjust-dir-btn:hover { background: #f4f4f1; border-color: var(--border-strong); }
+
+    .adjust-dir-btn.selected {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--surface);
+    }
+
+    .adjust-display {
+      font-size: 36px;
+      font-weight: 500;
+      font-family: var(--font);
+      color: var(--text);
+      text-align: center;
+      padding: 14px 0 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .adjust-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .pad-btn {
+      padding: 14px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.1s, border-color 0.1s;
+    }
+
+    .pad-btn:hover { background: #f4f4f1; border-color: var(--border-strong); }
+    .pad-btn:active { transform: scale(0.96); }
 
     .reason-input {
       width: 100%;
@@ -566,14 +651,13 @@
   <div class="page">
     <button class="back-btn" id="backBtn">← My Stores</button>
     <div class="header">
-      <span class="store-name" id="storeName">—</span>
       <span class="staff-badge" id="staffBadge">Staff</span>
+      <button class="refresh-btn" id="refreshBtn">Refresh</button>
     </div>
 
     <input class="search" type="text" id="search" placeholder="Filter by ID..." autocomplete="off" spellcheck="false" />
     <div class="member-count-row">
       <div class="member-count" id="memberCount"></div>
-      <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
     </div>
     <div class="customer-list" id="customerList"></div>
   </div>
@@ -601,7 +685,13 @@
           <div class="section-label">Bonus</div>
           <div class="bonus-reason-btns" id="bonusReasonBtns"></div>
           <div class="bonus-btns" id="bonusBtns"></div>
-          <button class="award-btn" id="awardBtn" disabled>Award bonus</button>
+          <div class="bonus-confirm" id="bonusConfirm" style="display:none">
+            <p class="bonus-confirm-msg" id="bonusConfirmMsg"></p>
+            <div class="bonus-confirm-actions">
+              <button class="bonus-confirm-cancel" id="bonusConfirmCancel">Cancel</button>
+              <button class="bonus-confirm-ok" id="bonusConfirmOk">Confirm</button>
+            </div>
+          </div>
         </div>
 
         <hr class="divider" id="redeemDivider" style="display:none" />
@@ -615,8 +705,26 @@
 
         <div id="adjustSection">
           <div class="section-label">Adjust</div>
-          <input type="number" class="adjust-input" id="adjustInput" placeholder="e.g. 5 or -10" />
-          <textarea class="reason-input" id="adjustReason" placeholder="Reason..."></textarea>
+          <div class="adjust-dir-btns" id="adjustDirBtns">
+            <button class="adjust-dir-btn" data-dir="1">+ Add</button>
+            <button class="adjust-dir-btn" data-dir="-1">− Deduct</button>
+          </div>
+          <div class="adjust-display" id="adjustDisplay">0</div>
+          <div class="adjust-pad" id="adjustPad">
+            <button class="pad-btn" data-key="1">1</button>
+            <button class="pad-btn" data-key="2">2</button>
+            <button class="pad-btn" data-key="3">3</button>
+            <button class="pad-btn" data-key="4">4</button>
+            <button class="pad-btn" data-key="5">5</button>
+            <button class="pad-btn" data-key="6">6</button>
+            <button class="pad-btn" data-key="7">7</button>
+            <button class="pad-btn" data-key="8">8</button>
+            <button class="pad-btn" data-key="9">9</button>
+            <button class="pad-btn" data-key="clear">C</button>
+            <button class="pad-btn" data-key="0">0</button>
+            <button class="pad-btn" data-key="back">⌫</button>
+          </div>
+          <textarea class="reason-input" id="adjustReason" placeholder="Reason — leave blank to use 'Adjustment'"></textarea>
           <button class="award-btn" id="adjustBtn" disabled>Apply adjustment</button>
         </div>
 

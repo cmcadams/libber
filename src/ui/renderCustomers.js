@@ -5,11 +5,13 @@ import { $ } from '../lib/dom.js'
 import { captureError } from '../lib/sentry.js'
 import { showConfirm } from '../lib/confirm.js'
 
-let selectedMember = null
-let bonusPts       = null
-let bonusReason    = null
-let _reRenderTimer = null
-let _statusTimer   = null
+let selectedMember  = null
+let bonusPts        = null
+let bonusReason     = null
+let adjustAmount    = ''
+let adjustDirection = null
+let _reRenderTimer  = null
+let _statusTimer    = null
 
 function scheduleReRender() {
   clearTimeout(_reRenderTimer)
@@ -23,9 +25,9 @@ export function renderCustomers() {
   const container = $('customerList')
   if (!container) return
 
-  const members = state.members || []
+  const members    = state.members || []
   const showSearch = members.length >= 10
-  const searchEl = $('search')
+  const searchEl   = $('search')
   if (searchEl) searchEl.style.display = showSearch ? '' : 'none'
 
   const query = (showSearch ? searchEl?.value || '' : '').toUpperCase().replace(/[-\s]/g, '').trim()
@@ -51,7 +53,7 @@ export function renderCustomers() {
 
 export function initCustomerHandlers() {
   const overlay = $('overlay')
-  const search = $('search')
+  const search  = $('search')
 
   search?.focus()
   search?.addEventListener('input', () => renderCustomers())
@@ -76,25 +78,66 @@ export function initCustomerHandlers() {
   $('bonusReasonBtns')?.addEventListener('click', e => {
     const btn = e.target.closest('.bonus-reason-btn')
     if (!btn) return
+    const alreadySelected = btn.classList.contains('selected')
     $('bonusReasonBtns').querySelectorAll('.bonus-reason-btn').forEach(b => b.classList.remove('selected'))
-    btn.classList.add('selected')
-    bonusReason = btn.dataset.reason
-    updateAwardBtn()
+    if (alreadySelected) {
+      bonusReason = null
+    } else {
+      btn.classList.add('selected')
+      bonusReason = btn.dataset.reason
+    }
+    updateBonusState()
   })
 
   $('bonusBtns')?.addEventListener('click', e => {
     const btn = e.target.closest('.bonus-btn')
     if (!btn) return
+    const alreadySelected = btn.classList.contains('selected')
     $('bonusBtns').querySelectorAll('.bonus-btn').forEach(b => b.classList.remove('selected'))
-    btn.classList.add('selected')
-    bonusPts = parseInt(btn.dataset.pts)
-    updateAwardBtn()
+    if (alreadySelected) {
+      bonusPts = null
+    } else {
+      btn.classList.add('selected')
+      bonusPts = parseInt(btn.dataset.pts)
+    }
+    updateBonusState()
   })
 
-  $('awardBtn')?.addEventListener('click', handleBonusAward)
+  $('bonusConfirmOk')?.addEventListener('click', handleBonusAward)
+  $('bonusConfirmCancel')?.addEventListener('click', () => {
+    bonusPts    = null
+    bonusReason = null
+    $('bonusBtns').querySelectorAll('.bonus-btn').forEach(b => b.classList.remove('selected'))
+    $('bonusReasonBtns').querySelectorAll('.bonus-reason-btn').forEach(b => b.classList.remove('selected'))
+    updateBonusState()
+  })
 
-  $('adjustInput')?.addEventListener('input', updateAdjustBtn)
-  $('adjustReason')?.addEventListener('input', updateAdjustBtn)
+  $('adjustDirBtns')?.addEventListener('click', e => {
+    const btn = e.target.closest('.adjust-dir-btn')
+    if (!btn) return
+    adjustDirection = parseInt(btn.dataset.dir)
+    $('adjustDirBtns').querySelectorAll('.adjust-dir-btn').forEach(b => b.classList.toggle('selected', b === btn))
+    updateAdjustDisplay()
+    updateAdjustBtn()
+  })
+
+  $('adjustPad')?.addEventListener('click', e => {
+    const btn = e.target.closest('.pad-btn')
+    if (!btn) return
+    const key = btn.dataset.key
+    if (key === 'clear') {
+      adjustAmount = ''
+    } else if (key === 'back') {
+      adjustAmount = adjustAmount.slice(0, -1)
+    } else if (adjustAmount === '' && key === '0') {
+      // no leading zero
+    } else if (adjustAmount.length < 4) {
+      adjustAmount += key
+    }
+    updateAdjustDisplay()
+    updateAdjustBtn()
+  })
+
   $('adjustBtn')?.addEventListener('click', handleAdjust)
 
   $('redeemBtns')?.addEventListener('click', e => {
@@ -105,17 +148,17 @@ export function initCustomerHandlers() {
 }
 
 function renderRuleButtons() {
-  const rules = state.rewardRules || []
-  const quickRules        = rules.filter(r => r.kind === 'award')
-  const redeemRules       = rules.filter(r => r.kind === 'redeem')
-  const bonusReasonRules  = rules.filter(r => r.kind === 'bonus_reason')
-  const bonusAmountRules  = rules.filter(r => r.kind === 'bonus_amount')
-  const balance = selectedMember?.balance ?? 0
+  const rules            = state.rewardRules || []
+  const quickRules       = rules.filter(r => r.kind === 'award')
+  const redeemRules      = rules.filter(r => r.kind === 'redeem')
+  const bonusReasonRules = rules.filter(r => r.kind === 'bonus_reason')
+  const bonusAmountRules = rules.filter(r => r.kind === 'bonus_amount')
+  const balance          = selectedMember?.balance ?? 0
 
-  if ($('quickSection')) $('quickSection').style.display = quickRules.length ? '' : 'none'
-  if ($('sectionDivider')) $('sectionDivider').style.display = quickRules.length ? '' : 'none'
-  if ($('redeemSection')) $('redeemSection').style.display = redeemRules.length ? '' : 'none'
-  if ($('redeemDivider')) $('redeemDivider').style.display = redeemRules.length ? '' : 'none'
+  if ($('quickSection'))   $('quickSection').style.display   = quickRules.length  ? '' : 'none'
+  if ($('sectionDivider')) $('sectionDivider').style.display = quickRules.length  ? '' : 'none'
+  if ($('redeemSection'))  $('redeemSection').style.display  = redeemRules.length ? '' : 'none'
+  if ($('redeemDivider'))  $('redeemDivider').style.display  = redeemRules.length ? '' : 'none'
 
   $('quickBtns').innerHTML = quickRules.map(r => `
     <button class="quick-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}" data-rule-id="${escapeHtml(r.id)}">
@@ -134,10 +177,8 @@ function renderRuleButtons() {
     })
   }
 
-  const cap = state.bonusCap
-  const validAmounts = cap != null
-    ? bonusAmountRules.filter(r => r.points <= cap)
-    : bonusAmountRules
+  const cap          = state.bonusCap
+  const validAmounts = cap != null ? bonusAmountRules.filter(r => r.points <= cap) : bonusAmountRules
 
   $('bonusBtns').innerHTML = validAmounts.length
     ? validAmounts.map(r => `<button class="bonus-btn" data-pts="${r.points}">+${r.points}</button>`).join('')
@@ -158,24 +199,26 @@ function renderRuleButtons() {
       <span class="redeem-btn-cost">−${r.points} pts</span>
     </button>
   `).join('')
+
+  updateBonusState()
 }
 
 function openPanel(member) {
-  selectedMember = member
-  bonusPts       = null
-  bonusReason    = null
+  selectedMember  = member
+  bonusPts        = null
+  bonusReason     = null
+  adjustAmount    = ''
+  adjustDirection = null
 
   $('panelId').textContent      = member.public_id
   $('panelBalance').textContent = member.balance
-  $('adjustInput').value        = ''
-  $('adjustReason').value       = 'Adjustment'
+  $('adjustReason').value       = ''
   $('status').textContent       = ''
-  $('awardBtn').disabled        = true
-  $('awardBtn').textContent     = 'Award bonus'
-  $('awardBtn').className       = 'award-btn'
   $('adjustBtn').disabled       = true
   $('adjustBtn').textContent    = 'Apply adjustment'
   $('adjustBtn').className      = 'award-btn'
+  $('adjustDirBtns').querySelectorAll('.adjust-dir-btn').forEach(b => b.classList.remove('selected'))
+  updateAdjustDisplay()
 
   renderRuleButtons()
   $('overlay').classList.add('open')
@@ -183,9 +226,11 @@ function openPanel(member) {
 
 function closePanel() {
   $('overlay').classList.remove('open')
-  selectedMember = null
-  bonusPts       = null
-  bonusReason    = null
+  selectedMember  = null
+  bonusPts        = null
+  bonusReason     = null
+  adjustAmount    = ''
+  adjustDirection = null
 }
 
 async function handleQuickAward(btn) {
@@ -215,41 +260,38 @@ async function handleQuickAward(btn) {
 async function handleBonusAward() {
   if (!selectedMember || !bonusPts || !bonusReason || !state.selectedStoreId) return
 
-  $('awardBtn').disabled = true
-  const ok = await showConfirm(`Award ${bonusReason} bonus`, `+${bonusPts} pts for ${selectedMember.public_id}`)
-  if (!ok) { $('awardBtn').disabled = false; return }
+  $('bonusConfirmOk').disabled     = true
+  $('bonusConfirmCancel').disabled = true
 
   const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, bonusPts, bonusReason)
   if (error) {
     captureError(error, { fn: 'awardBonus' })
-    $('awardBtn').disabled = false
+    $('bonusConfirmOk').disabled     = false
+    $('bonusConfirmCancel').disabled = false
     setStatus(error.message || 'Could not award bonus.')
     return
   }
   selectedMember.balance += bonusPts
   $('panelBalance').textContent = selectedMember.balance
-  $('awardBtn').textContent     = `+${bonusPts} pts awarded`
-  $('awardBtn').className       = 'award-btn success'
   bonusPts    = null
   bonusReason = null
   $('bonusBtns').querySelectorAll('.bonus-btn').forEach(b => b.classList.remove('selected'))
   $('bonusReasonBtns').querySelectorAll('.bonus-reason-btn').forEach(b => b.classList.remove('selected'))
+  updateBonusState()
+  setStatus('Bonus awarded')
   scheduleReRender()
-  setTimeout(() => {
-    $('awardBtn').textContent = 'Award bonus'
-    $('awardBtn').className   = 'award-btn'
-    $('awardBtn').disabled    = true
-  }, 1500)
 }
 
 async function handleAdjust() {
   if (!selectedMember || !state.selectedStoreId) return
-  const pts    = parseInt($('adjustInput').value)
-  const reason = $('adjustReason').value.trim()
-  if (!Number.isInteger(pts) || pts === 0 || !reason) return
+  const amount = parseInt(adjustAmount || '0')
+  if (!adjustDirection || amount === 0) return
 
-  const btn  = $('adjustBtn')
-  const sign = pts > 0 ? `+${pts}` : `${pts}`
+  const pts    = adjustDirection * amount
+  const reason = ($('adjustReason').value || '').trim() || 'Adjustment'
+  const btn    = $('adjustBtn')
+  const sign   = pts > 0 ? `+${pts}` : `${pts}`
+
   btn.disabled = true
   const ok = await showConfirm(`Adjust ${sign} pts`, `for ${selectedMember.public_id}`)
   if (!ok) { updateAdjustBtn(); return }
@@ -265,7 +307,11 @@ async function handleAdjust() {
   $('panelBalance').textContent = selectedMember.balance
   btn.textContent               = pts > 0 ? `+${pts} pts applied` : `${pts} pts applied`
   btn.className                 = 'award-btn success'
-  $('adjustInput').value        = ''
+  adjustAmount    = ''
+  adjustDirection = null
+  $('adjustDirBtns').querySelectorAll('.adjust-dir-btn').forEach(b => b.classList.remove('selected'))
+  updateAdjustDisplay()
+  $('adjustReason').value = ''
   scheduleReRender()
   setTimeout(() => {
     btn.textContent = 'Apply adjustment'
@@ -303,14 +349,30 @@ async function handleRedeem(btn) {
   scheduleReRender()
 }
 
-function updateAwardBtn() {
-  $('awardBtn').disabled = !(bonusReason !== null && bonusPts !== null)
+function updateBonusState() {
+  const ready     = bonusReason !== null && bonusPts !== null
+  const confirmEl = $('bonusConfirm')
+  if (!confirmEl) return
+  if (ready) {
+    $('bonusConfirmMsg').textContent = `Award ${bonusReason} — +${bonusPts} pts`
+    confirmEl.style.display = ''
+  } else {
+    confirmEl.style.display = 'none'
+  }
 }
 
 function updateAdjustBtn() {
-  const pts    = parseInt($('adjustInput').value)
-  const reason = ($('adjustReason').value || '').trim()
-  $('adjustBtn').disabled = !(Number.isInteger(pts) && pts !== 0 && reason.length > 0)
+  const amount = parseInt(adjustAmount || '0')
+  $('adjustBtn').disabled = !(adjustDirection !== null && amount > 0)
+}
+
+function updateAdjustDisplay() {
+  const display = $('adjustDisplay')
+  if (!display) return
+  const num = adjustAmount || '0'
+  if (adjustDirection === 1)       display.textContent = `+${num}`
+  else if (adjustDirection === -1) display.textContent = `−${num}`
+  else                             display.textContent = num
 }
 
 function setStatus(msg) {
