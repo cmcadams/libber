@@ -134,6 +134,10 @@ async function handleRefresh() {
         badge.remove()
       }
     })
+    if (selectedStoreId) {
+      isPendingForSelectedStore = pendingStoreIds.has(selectedStoreId)
+      updateApplyButton()
+    }
   } catch (err) {
     captureError(err)
     setStatus(err.message || 'Could not refresh.', true)
