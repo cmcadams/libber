@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase.js'
 import { $, $$ } from '../../lib/dom.js'
 import { escapeHtml } from '../../lib/escape.js'
 import { getTheme, setTheme } from '../../lib/theme.js'
+import { initInstallSection } from '../../lib/cog.js'
 
 // ── Provider metadata ─────────────────────────────────────────────────────
 
@@ -135,6 +136,7 @@ async function init() {
   }
 }
 
+initInstallSection()
 initNotifications()
 initTheme()
 init()

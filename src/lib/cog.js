@@ -6,6 +6,7 @@ window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault()
   deferredPrompt = e
   updateCogMenu()
+  updateInstallSection()
 })
 
 window.addEventListener('appinstalled', () => {
@@ -14,6 +15,8 @@ window.addEventListener('appinstalled', () => {
   const cogMenu = $('cogMenu')
   if (cogBtn)  cogBtn.style.display  = 'none'
   if (cogMenu) cogMenu.style.display = 'none'
+  const installSection = $('installSection')
+  if (installSection) installSection.hidden = true
 })
 
 function updateCogMenu() {
@@ -27,6 +30,25 @@ function updateCogMenu() {
       ? 'Tap <strong>Share ↑</strong> then <strong>Add to Home Screen</strong> to install.'
       : 'Open your browser menu and tap <strong>Add to Home Screen</strong> to install.'
     menu.innerHTML = `<p class="cog-instructions">${text}</p>`
+  }
+}
+
+function updateInstallSection() {
+  const section = $('installSection')
+  if (!section) return
+  const status = $('installStatus')
+  const btn    = $('installBtn')
+  if (!status || !btn) return
+
+  if (deferredPrompt) {
+    status.textContent = ''
+    btn.hidden = false
+  } else {
+    btn.hidden = true
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    status.textContent = isIos
+      ? 'Tap Share ↑ then Add to Home Screen to install.'
+      : 'Open your browser menu and tap Add to Home Screen to install.'
   }
 }
 
@@ -60,4 +82,28 @@ export function initCog() {
   }
   updateCogMenu()
   wireCog()
+}
+
+export function initInstallSection() {
+  const section = $('installSection')
+  if (!section) return
+
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    section.hidden = true
+    return
+  }
+
+  updateInstallSection()
+
+  $('installBtn')?.addEventListener('click', async () => {
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    deferredPrompt = null
+    if (outcome === 'accepted') {
+      section.hidden = true
+    } else {
+      updateInstallSection()
+    }
+  })
 }
