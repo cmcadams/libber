@@ -42,6 +42,7 @@ async function init() {
     updateApplyButton()
   } catch (err) {
     captureError(err)
+    $('applyAction').style.display = ''
     setStatus(err.message || 'Could not load page.', true)
   }
 }
@@ -60,7 +61,6 @@ function renderStaffStores() {
   list.innerHTML = stores.map(store => `
     <button class="pick-card" data-open-store-id="${escapeHtml(store.store_id)}" data-open-store-name="${escapeHtml(store.stores?.name || 'Store')}">
       <span class="pick-title">${escapeHtml(store.stores?.name || 'Untitled store')}</span>
-      <span class="pick-sub">${escapeHtml(store.store_id)}</span>
     </button>
   `).join('')
 }
@@ -76,12 +76,14 @@ async function renderApplyStores() {
     return
   }
 
-  list.innerHTML = data.map(store => `
-    <button class="pick-card" data-store-id="${escapeHtml(store.id)}">
-      <span class="pick-title">${escapeHtml(store.name || 'Untitled store')}</span>
-      <span class="pick-sub">${escapeHtml(store.id)}</span>
-    </button>
-  `).join('')
+  list.innerHTML = data.map(store => {
+    const pending = pendingStoreIds.has(store.id)
+    return `
+      <button class="pick-card${pending ? ' pending' : ''}" data-store-id="${escapeHtml(store.id)}">
+        <span class="pick-title">${escapeHtml(store.name || 'Untitled store')}</span>
+        ${pending ? '<span class="pending-badge">Pending</span>' : ''}
+      </button>`
+  }).join('')
 }
 
 function bindEvents() {
@@ -100,7 +102,6 @@ function bindEvents() {
     $$('[data-store-id]').forEach(node => {
       node.classList.toggle('selected', node === button)
     })
-    $('selectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedStoreId
     setStatus('')
     updateApplyButton()
   })
@@ -123,6 +124,16 @@ async function handleRefresh() {
     pendingStoreIds = new Set((applications ?? []).map(a => a.store_id))
     $('managerSection').style.display = managedStores?.length ? '' : 'none'
     renderStaffStores()
+    $$('[data-store-id]').forEach(card => {
+      const isPending = pendingStoreIds.has(card.dataset.storeId)
+      card.classList.toggle('pending', isPending)
+      const badge = card.querySelector('.pending-badge')
+      if (isPending && !badge) {
+        card.insertAdjacentHTML('beforeend', '<span class="pending-badge">Pending</span>')
+      } else if (!isPending && badge) {
+        badge.remove()
+      }
+    })
   } catch (err) {
     captureError(err)
     setStatus(err.message || 'Could not refresh.', true)
@@ -143,6 +154,13 @@ async function handleApply() {
     if (error) throw error
     pendingStoreIds.add(selectedStoreId)
     isPendingForSelectedStore = true
+    $$('[data-store-id]').forEach(card => {
+      if (card.dataset.storeId !== selectedStoreId) return
+      card.classList.add('pending')
+      if (!card.querySelector('.pending-badge')) {
+        card.insertAdjacentHTML('beforeend', '<span class="pending-badge">Pending</span>')
+      }
+    })
     updateApplyButton()
     setStatus('Applied. Ask the manager to approve you on their screen.')
   } catch (err) {
@@ -154,13 +172,15 @@ async function handleApply() {
 
 function updateApplyButton() {
   const button = $('applyBtn')
+  const action = $('applyAction')
   if (!button) return
 
   if (!selectedStoreId) {
-    button.textContent = 'Apply for staff'
-    button.disabled    = true
+    if (action) action.style.display = 'none'
     return
   }
+
+  if (action) action.style.display = ''
 
   if (isPendingForSelectedStore) {
     button.textContent = 'Pending approval'
