@@ -284,6 +284,8 @@ async function handleBonusAward() {
   $('panelBalance').textContent = selectedMember.balance
   bonusPts    = null
   bonusReason = null
+  $('bonusConfirmOk').disabled     = false
+  $('bonusConfirmCancel').disabled = false
   $('bonusBtns').querySelectorAll('.bonus-btn').forEach(b => b.classList.remove('selected'))
   $('bonusReasonBtns').querySelectorAll('.bonus-reason-btn').forEach(b => b.classList.remove('selected'))
   updateBonusState()
