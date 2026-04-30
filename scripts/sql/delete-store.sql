@@ -11,7 +11,6 @@ BEGIN
   DELETE FROM store_memberships      WHERE store_id = v_store_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_memberships:      %', n;
   DELETE FROM store_staff            WHERE store_id = v_store_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff:            %', n;
   DELETE FROM store_managers         WHERE store_id = v_store_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_managers:         %', n;
-  DELETE FROM store_staff_applicants WHERE store_id = v_store_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff_applicants: %', n;
   DELETE FROM store_reward_rules     WHERE store_id = v_store_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_reward_rules:     %', n;
   DELETE FROM stores                 WHERE id        = v_store_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'stores:                 %', n;
 

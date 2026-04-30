@@ -10,7 +10,6 @@ BEGIN
   DELETE FROM store_memberships;      GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_memberships:      %', n;
   DELETE FROM store_staff;            GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff:            %', n;
   DELETE FROM store_managers;         GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_managers:         %', n;
-  DELETE FROM store_staff_applicants; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff_applicants: %', n;
   DELETE FROM profiles;               GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'profiles:               %', n;
   DELETE FROM auth.users;             GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'auth.users:             %', n;
 

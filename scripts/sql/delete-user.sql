@@ -16,8 +16,6 @@ BEGIN
   DELETE FROM store_memberships      WHERE user_id = v_user_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_memberships:      %', n;
   DELETE FROM store_staff            WHERE user_id = v_user_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff:            %', n;
   DELETE FROM store_managers         WHERE user_id = v_user_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_managers:         %', n;
-  DELETE FROM store_staff_applicants    WHERE user_id = v_user_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_staff_applicants:    %', n;
-  DELETE FROM store_manager_applicants  WHERE user_id = v_user_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'store_manager_applicants:  %', n;
   DELETE FROM profiles               WHERE user_id = v_user_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'profiles:               %', n;
   DELETE FROM auth.users             WHERE id       = v_user_id; GET DIAGNOSTICS n = ROW_COUNT; RAISE NOTICE 'auth.users:             %', n;
 

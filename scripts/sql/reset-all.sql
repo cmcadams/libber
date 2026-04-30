@@ -6,8 +6,6 @@ DELETE FROM public.points_ledger;
 DELETE FROM public.store_memberships;
 DELETE FROM public.store_staff;
 DELETE FROM public.store_managers;
-DELETE FROM public.store_staff_applicants;
-DELETE FROM public.store_manager_applicants;
 DELETE FROM public.store_reward_rules;
 DELETE FROM public.stores;
 DELETE FROM public.profiles;
