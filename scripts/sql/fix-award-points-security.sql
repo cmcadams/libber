@@ -44,6 +44,11 @@ BEGIN
     RAISE EXCEPTION 'not authorized: not staff or manager for this store';
   END IF;
 
+  -- Serialize concurrent calls for the same (user, store) pair.
+  -- Placed after auth so unauthorized requests are rejected before acquiring any lock.
+  -- Transaction-scoped: PostgreSQL releases it automatically on commit or rollback.
+  PERFORM pg_advisory_xact_lock(hashtext(p_user_id::text), hashtext(p_store_id::text));
+
   IF p_points = 0 THEN RAISE EXCEPTION 'points cannot be zero'; END IF;
 
   IF p_points > 0 THEN
