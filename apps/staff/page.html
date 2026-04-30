@@ -587,6 +587,19 @@
 
     .back-btn:hover { color: var(--text); }
 
+    .store-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .store-pick-row {
+      border-top: 0.5px solid var(--border);
+      margin-top: 10px;
+      padding-top: 10px;
+    }
+
     .header-right {
       display: flex;
       align-items: center;
@@ -717,9 +730,12 @@
 </head>
 <body>
   <div class="page">
-    <button class="back-btn" id="backBtn">← My Stores</button>
+    <button class="back-btn" id="backBtn">← Stores</button>
     <div class="header">
-      <span class="staff-badge" id="staffBadge">Staff</span>
+      <div>
+        <div class="store-title" id="storeTitle"></div>
+        <span class="staff-badge" id="staffBadge">Staff</span>
+      </div>
       <div class="header-right">
         <button class="refresh-btn" id="refreshBtn">Refresh</button>
         <button class="cog-btn" id="cogBtn" aria-label="Settings">⚙</button>
@@ -818,6 +834,17 @@
         <button class="confirm-cancel" id="confirmCancel">Cancel</button>
         <button class="confirm-ok" id="confirmOk">Confirm</button>
       </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="storePicker">
+    <div class="panel">
+      <div class="panel-handle"></div>
+      <div class="panel-header">
+        <div class="panel-id">Your stores</div>
+        <button class="close-btn" id="storePickerClose">×</button>
+      </div>
+      <div class="panel-scroll" id="storePickerList"></div>
     </div>
   </div>
 
