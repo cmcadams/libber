@@ -48,12 +48,6 @@
       padding: 22px;
     }
 
-    h1 {
-      font-size: clamp(30px, 5vw, 48px);
-      line-height: 0.95;
-      margin-bottom: 10px;
-    }
-
     h2 {
       font-size: 16px;
       font-weight: 600;
@@ -65,9 +59,22 @@
       font-size: 14px;
     }
 
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
     .id-block {
-      margin-top: 16px;
-      text-align: center;
+      min-width: 0;
     }
 
     .id-label {
@@ -174,29 +181,20 @@
       padding: 16px 4px;
     }
 
-    .manager-btn {
-      display: block;
-      width: 100%;
-      margin-top: 16px;
-      padding: 14px 20px;
-      border: none;
+    .manager-inline-btn {
+      padding: 8px 16px;
+      border: 1.5px solid var(--border-strong);
+      background: transparent;
       border-radius: 999px;
-      background: var(--text);
-      color: white;
-      font-size: 15px;
+      font-size: 13px;
       font-family: inherit;
+      color: var(--text);
       cursor: pointer;
-      text-align: center;
-      transition: opacity 0.15s;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
     }
 
-    .manager-btn:hover { opacity: 0.85; }
-
-    .hero-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-    }
+    .manager-inline-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     .cog-btn {
       font-size: 20px;
@@ -268,22 +266,19 @@
 <body>
   <main class="page">
     <section class="panel">
-      <div class="hero-header">
-        <div>
-          <h1>Staff.</h1>
-          <p class="sub">Pick a store to open the staff tools, or apply to join a new one.</p>
+      <div class="top-bar">
+        <div class="id-block">
+          <span class="id-label">Your ID</span>
+          <span class="id-value" id="myId">Loading...</span>
         </div>
-        <button class="cog-btn" id="cogBtn" aria-label="Settings">⚙</button>
-      </div>
-      <div class="id-block">
-        <span class="id-label">Your ID</span>
-        <span class="id-value" id="myId">Loading...</span>
+        <div class="top-actions">
+          <div id="managerSection" style="display:none">
+            <button class="manager-inline-btn" id="managerBtn">Manager tools</button>
+          </div>
+          <button class="cog-btn" id="cogBtn" aria-label="Settings">⚙</button>
+        </div>
       </div>
       <div class="cog-menu" id="cogMenu" style="display:none"></div>
-    </section>
-
-    <section class="panel" id="managerSection" style="display:none">
-      <button class="manager-btn" id="managerBtn">Manager tools</button>
     </section>
 
     <section class="panel" id="staffStoresSection" style="display:none">
