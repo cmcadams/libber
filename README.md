@@ -11,7 +11,7 @@ Two separate web apps built from one codebase, deployed to one Vercel project.
 | App | Audience | Root |
 |---|---|---|
 | **Customer** | End users — join stores, view balances, earn and redeem points | `apps/customer/` |
-| **Staff** | Staff, managers — award points, approve applicants, manage staff | `apps/staff/` |
+| **Staff** | Staff, managers — award points, promote/demote staff | `apps/staff/` |
 
 **Admin tool** (`adminstart.html`) — local only, never deployed. Used to create stores, configure reward rules, and assign managers.
 
@@ -31,9 +31,9 @@ Two separate web apps built from one codebase, deployed to one Vercel project.
 
 | File | Purpose |
 |---|---|
-| `index.html` | Store picker — shows approved stores, apply for new ones, install to home screen |
+| `index.html` | Store picker — shows approved stores, install to home screen |
 | `page.html` | Staff tools — load members, award/bonus/adjust points, redeem |
-| `manager.html` | Manager tools — approve/reject applicants, manage staff, apply to manage stores |
+| `manager.html` | Manager tools — view store members, promote to staff, demote staff |
 
 ### Admin (local only)
 
@@ -81,7 +81,7 @@ src/
       page.js           Staff tools controller
   services/
     admin.js            Store, rule, and admin RPC calls
-    applicants.js       apply_for_staff/manager, approve, reject, demote
+    applicants.js       loadManagedStores, approveApplicant (promote), demoteStaff, loadStaff
     auth.js             Anonymous auth bootstrap, resetSession() (dev only)
     members.js          loadUserProfile, loadCustomerHome, loadMembers, loadPointsHistory
     staff.js            loadStaffStores (unions store_staff + store_managers)
@@ -233,9 +233,8 @@ Anonymous Supabase auth (`src/services/auth.js`):
 ### Manager
 
 1. Open `apps/staff/manager.html`
-2. Your managed stores are listed — click one to load applicants and staff
-3. Approve or reject applicants; remove staff members
-4. Apply to manage additional stores from the bottom section
+2. Your managed stores are listed — click one to load all store members
+3. Promote members to staff or demote existing staff members
 
 ### Admin (local)
 
@@ -318,8 +317,6 @@ A persistent button on the customer home page that encourages users to save thei
 | `store_memberships` | Which users are members of which stores |
 | `store_staff` | Approved staff per store |
 | `store_managers` | Approved managers per store |
-| `store_staff_applicants` | Pending staff applications |
-| `store_manager_applicants` | Pending manager applications |
 | `points_ledger` | Every points transaction. On `supabase_realtime` publication |
 | `store_reward_rules` | Award and redeem rules per store |
 | `ab_variants` | A/B test variant definitions |
@@ -335,10 +332,7 @@ All write operations go through RPCs. No direct client writes.
 |---|---|---|
 | `join_store` | `auth.uid()` | Creates store membership (ON CONFLICT DO NOTHING) |
 | `unjoin_store` | `auth.uid()` | Removes caller's membership |
-| `apply_for_staff` | `auth.uid()` | Creates staff applicant record |
-| `apply_for_manager` | `auth.uid()` | Creates manager applicant record |
-| `approve_staff_applicant` | Manager of store | Promotes applicant to staff, removes applicant record |
-| `reject_staff_applicant` | Manager of store | Rejects and removes a staff applicant |
+| `approve_staff_applicant` | Manager of store | Promotes a user to staff |
 | `demote_store_staff` | Manager of store | Removes a user from store staff |
 | `award_points` | Staff or manager of store | Inserts ledger entry, enforces bonus cap |
 | `adjust_points` | Staff or manager of store | Inserts positive or negative correction, no cap |
@@ -357,9 +351,6 @@ All write operations go through RPCs. No direct client writes.
 | `admin_remove_manager` | Admin | Removes a manager |
 | `admin_assign_staff` | Admin | Directly assigns a user as staff |
 | `admin_remove_staff` | Admin | Removes a user from store staff |
-| `admin_approve_applicant` | Admin | Approves a staff applicant |
-| `admin_reject_applicant` | Admin | Rejects a staff applicant |
-| `admin_reject_manager_applicant` | Admin | Rejects a manager applicant |
 | `is_admin` | — | Helper: returns true if caller is in `admins` table |
 
 **Views**
@@ -367,7 +358,6 @@ All write operations go through RPCs. No direct client writes.
 | View | Purpose |
 |---|---|
 | `admin_user_directory` | All users with public IDs |
-| `staff_applicant_directory` | Applicants per store with public IDs |
 
 **Trigger**
 
@@ -397,8 +387,6 @@ All SECURITY DEFINER RPCs use `SET search_path = ''` and fully qualified `public
 | `store_memberships` | ✓ | `join_store`, `unjoin_store` |
 | `store_staff` | ✓ | `approve_staff_applicant`, `demote_store_staff`, `admin_assign_staff`, `admin_remove_staff` |
 | `store_managers` | ✓ | `admin_assign_manager`, `admin_remove_manager` |
-| `store_staff_applicants` | ✓ | `apply_for_staff`, `approve_staff_applicant`, `reject_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` |
-| `store_manager_applicants` | ✓ | `apply_for_manager`, `admin_assign_manager`, `admin_reject_manager_applicant` |
 | `points_ledger` | ✓ | `award_points`, `adjust_points` |
 | `ab_variants` | ✓ | Supabase dashboard only |
 
@@ -413,9 +401,7 @@ All SECURITY DEFINER RPCs use `SET search_path = ''` and fully qualified `public
 | `store_memberships` | Own rows — `user_id = auth.uid()` |
 | `points_ledger` | Own rows + staff/manager of the store |
 | `store_staff` | Self, manager-of-store, or admin |
-| `store_staff_applicants` | Manager-of-store, applicant-self, or admin |
 | `store_managers` | `user_id = auth.uid()` or admin |
-| `store_manager_applicants` | `user_id = auth.uid()` or admin |
 | `admins` | Service role only — `is_admin()` reads via SECURITY DEFINER |
 
 ### Function grants
@@ -464,20 +450,22 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 | Script | What it does |
 |---|---|
 | `admin-rpcs.sql` | `admins` table, `is_admin()` helper, RESTRICTIVE RLS on `stores` and `store_reward_rules`, all admin RPCs |
-| `staff-rpcs.sql` | RESTRICTIVE RLS on `store_memberships`, `store_staff`, `store_staff_applicants`, `points_ledger`. Staff and manager RPCs |
-| `add-manager-applicants.sql` | `store_manager_applicants` table, `apply_for_manager`, `admin_assign_manager`, `admin_remove_store` |
+| `staff-rpcs.sql` | RESTRICTIVE RLS on `store_memberships`, `store_staff`, `points_ledger`. Staff and manager RPCs |
+| `add-manager-applicants.sql` | Historical — originally created applicant tables and related RPCs (superseded by `remove-applicant-table-refs.sql` + `drop-applicant-system.sql`) |
 | `add-bonus-cap.sql` | `max_bonus_points` on `stores`, `award_points` RPC with cap logic, `admin_set_bonus_cap` |
 | `add-rls-select-policies.sql` | SELECT RLS policies for all client-read tables |
 | `add-load-customer-home-rpc.sql` | `load_customer_home` RPC baseline (superseded by `add-ab-testing.sql`) |
 | `add-load-store-members-rpc.sql` | `load_store_members` RPC |
-| `add-reject-applicant-rpc.sql` | `reject_staff_applicant` RPC |
+| `add-reject-applicant-rpc.sql` | Historical — originally created `reject_staff_applicant` (dropped by `drop-applicant-system.sql`) |
 | `add-ab-testing.sql` | `ab_variants` table + RLS, new profile columns, weighted variant assignment trigger, updated `load_customer_home` |
 | `add-bonus-adjust.sql` | Extends `store_reward_rules` kind check, adds `adjust_points` RPC |
 | `add-save-account.sql` | `mark_account_linked` RPC |
 | `add-load-store-staff-profiles-rpc.sql` | `load_store_staff_profiles` RPC |
 | `rename-account-linked.sql` | Renames `email_saved_at` → `account_linked_at` and `mark_email_saved` → `mark_account_linked` throughout |
-| `harden-rls-and-grants.sql` | Security hardening: scoped RLS on profiles/staff/applicants, anon grants revoked, function grants restricted to authenticated |
+| `harden-rls-and-grants.sql` | Security hardening: scoped RLS on profiles/staff, anon grants revoked, function grants restricted to authenticated |
 | `fix-default-privileges.sql` | Re-revokes anon/PUBLIC execute on all public functions and re-grants to authenticated. Re-run after any migration that creates or replaces functions |
+| `remove-applicant-table-refs.sql` | Redefines `approve_staff_applicant`, `admin_assign_manager`, `admin_remove_store` — removes all applicant table references |
+| `drop-applicant-system.sql` | Drops dead applicant RPCs, views, and tables (`store_staff_applicants`, `store_manager_applicants`) |
 | `assign-admin.sql` | Grants admin access by public ID |
 | `delete-store.sql` | Deletes one store and all its data |
 | `delete-user.sql` | Deletes one user by public ID |
@@ -505,8 +493,11 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 13. `rename-account-linked.sql`
 14. `harden-rls-and-grants.sql`
 15. `fix-default-privileges.sql`
-16. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
-17. Reload admin tool — create stores, configure rules, assign managers
+16. `remove-applicant-table-refs.sql`
+17. `drop-applicant-system.sql`
+18. `fix-default-privileges.sql` _(re-run — new RPCs were created/replaced in steps 16–17)_
+19. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
+20. Reload admin tool — create stores, configure rules, assign managers
 
 ### After a full reset (`reset-all.sql`)
 
