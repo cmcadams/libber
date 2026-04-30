@@ -2,21 +2,18 @@ import { captureError } from '../../lib/sentry.js'
 import { initAuth } from '../../services/auth.js'
 import { approveApplicant, demoteStaff, loadManagedStores, loadStaff } from '../../services/applicants.js'
 import { loadUserProfile, loadMembers } from '../../services/members.js'
-import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
 import { state } from '../../state/state.js'
 import { $, $$ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
-import { initCog } from '../../lib/cog.js'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
 }
 
-initCog()
-
 let selectedStoreId = null
 let staffIds = new Set()
+let loadToken = 0
 
 async function init() {
   try {
@@ -47,17 +44,18 @@ function renderStores(data) {
   }
   list.innerHTML = data.map(store => `
     <button class="pick-card" data-store-id="${escapeHtml(store.store_id)}">
-      <span class="pick-title">${escapeHtml(store.stores?.name || 'Untitled store')}</span>
-      <span class="pick-sub">${escapeHtml(store.store_id)}</span>
+      ${escapeHtml(store.stores?.name || 'Untitled store')}
     </button>
   `).join('')
 }
 
 async function loadStoreData(storeId) {
+  const token = ++loadToken
   const [membersResult, staffResult] = await Promise.all([
     loadMembers(storeId),
     loadStaff(storeId)
   ])
+  if (token !== loadToken) return
   if (membersResult.error) throw membersResult.error
   if (staffResult.error) throw staffResult.error
   staffIds = new Set((staffResult.data || []).map(s => s.user_id))
@@ -83,15 +81,15 @@ function renderMembers() {
   list.innerHTML = sorted.map(m => {
     const isStaff = staffIds.has(m.user_id)
     return `
-      <div class="applicant-card" data-user-id="${escapeHtml(m.user_id)}">
-        <div>
-          <div class="pick-title">${escapeHtml(m.public_id)}</div>
-          ${isStaff ? '<div class="pick-sub">Staff</div>' : ''}
+      <div class="member-card${isStaff ? ' is-staff' : ''}" data-user-id="${escapeHtml(m.user_id)}">
+        <div class="member-info">
+          <span class="member-id">${escapeHtml(m.public_id)}</span>
+          ${isStaff ? '<span class="staff-badge">Staff</span>' : ''}
         </div>
-        <div class="applicant-actions">
+        <div>
           ${isStaff
-            ? `<button class="remove-btn" data-demote-user-id="${escapeHtml(m.user_id)}">Demote</button>`
-            : `<button class="approve-btn" data-promote-user-id="${escapeHtml(m.user_id)}">Promote</button>`
+            ? `<button class="demote-btn" data-demote-user-id="${escapeHtml(m.user_id)}">Demote</button>`
+            : `<button class="promote-btn" data-promote-user-id="${escapeHtml(m.user_id)}">Promote to staff</button>`
           }
         </div>
       </div>`
@@ -104,8 +102,7 @@ function bindEvents() {
     if (!button) return
 
     selectedStoreId = button.dataset.storeId
-    const storeName = button.querySelector('.pick-title')?.textContent || selectedStoreId
-    saveSelectedStore(selectedStoreId, storeName)
+    const storeName = button.textContent.trim()
     $$('[data-store-id]').forEach(node => node.classList.toggle('selected', node === button))
     $('selectedStore').textContent = storeName
     $('membersPanel').style.display = ''
@@ -135,7 +132,7 @@ function bindEvents() {
         captureError(err)
         setStatus(err.message || 'Could not promote.', true)
         promoteBtn.disabled = false
-        promoteBtn.textContent = 'Promote'
+        promoteBtn.textContent = 'Promote to staff'
       }
       return
     }
@@ -150,7 +147,7 @@ function bindEvents() {
         if (error) throw error
         staffIds.delete(userId)
         renderMembers()
-        setStatus('Removed from staff.')
+        setStatus('Demoted to customer.')
       } catch (err) {
         captureError(err)
         setStatus(err.message || 'Could not demote.', true)

@@ -8,13 +8,10 @@ import { escapeHtml } from '../../lib/escape.js'
 import { state } from '../../state/state.js'
 import { $ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
-import { initCog } from '../../lib/cog.js'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
 }
-
-initCog()
 
 async function init() {
   try {
@@ -27,7 +24,7 @@ async function init() {
         loadManagedStores()
       ])
       if (storesError) throw storesError
-      if (managedStores?.length) $('managerSection').style.display = ''
+      if (managedStores?.length) $('managerBtn').style.display = ''
     }
     renderStaffStores()
     bindEvents()
@@ -48,8 +45,8 @@ function renderStaffStores() {
 
   section.style.display = ''
   list.innerHTML = stores.map(store => `
-    <button class="pick-card" data-open-store-id="${escapeHtml(store.store_id)}" data-open-store-name="${escapeHtml(store.stores?.name || 'Store')}">
-      <span class="pick-title">${escapeHtml(store.stores?.name || 'Untitled store')}</span>
+    <button class="store-card" data-open-store-id="${escapeHtml(store.store_id)}" data-open-store-name="${escapeHtml(store.stores?.name || 'Store')}">
+      <span class="store-name">${escapeHtml(store.stores?.name || 'Untitled store')}</span>
     </button>
   `).join('')
 }
@@ -75,7 +72,7 @@ async function handleRefresh() {
       loadManagedStores()
     ])
     if (storesError) throw storesError
-    $('managerSection').style.display = managedStores?.length ? '' : 'none'
+    $('managerBtn').style.display = managedStores?.length ? '' : 'none'
     renderStaffStores()
   } catch (err) {
     captureError(err)
