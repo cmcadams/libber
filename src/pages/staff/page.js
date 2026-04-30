@@ -11,13 +11,10 @@ import { renderCustomers, initCustomerHandlers } from '../../ui/renderCustomers.
 import { toHumanId } from '../../lib/format.js'
 import { $ } from '../../lib/dom.js'
 import { escapeHtml } from '../../lib/escape.js'
-import { initCog } from '../../lib/cog.js'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
 }
-
-initCog()
 
 let managedStores = []
 let loadToken = 0
@@ -40,7 +37,7 @@ async function boot() {
       loadManagedStores().then(({ data }) => { managedStores = data || [] })
     ])
     const publicId = toHumanId(profile?.public_id, user.id)
-    $('staffBadge').textContent = `Staff: ${publicId}`
+    $('staffId').textContent = publicId
 
     await loadStore(state.selectedStoreId)
     initCustomerHandlers()
@@ -48,15 +45,15 @@ async function boot() {
     const refreshBtn = $('refreshBtn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
-        refreshBtn.textContent = 'Refreshing…'
-        refreshBtn.disabled    = true
+        refreshBtn.classList.add('loading')
+        refreshBtn.disabled = true
         try {
           await loadStore(state.selectedStoreId)
         } catch (err) {
           captureError(err, { fn: 'refresh' })
         } finally {
-          refreshBtn.textContent = 'Refresh'
-          refreshBtn.disabled    = false
+          refreshBtn.classList.remove('loading')
+          refreshBtn.disabled = false
         }
       })
     }
