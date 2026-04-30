@@ -6,9 +6,7 @@ import {
   loadRewardRules, insertRewardRule, deleteRewardRule, updateRewardRuleOrder,
   setBonusCap,
   loadStoreManagers, removeManager,
-  loadStoreStaff, removeStaffAdmin,
-  loadStoreApplicants, loadManagerApplicants, rejectManagerApplicant,
-  loadAllApplicants, approveApplicantAdmin, rejectApplicant
+  loadStoreStaff, removeStaffAdmin
 } from '../../services/admin.js'
 import { getStoreBonusCap } from '../../services/stores.js'
 import { escapeHtml } from '../../lib/escape.js'
@@ -143,7 +141,6 @@ function bindEvents() {
   $$('.action-btn[data-section]').forEach(btn => {
     btn.addEventListener('click', () => {
       showSection(btn.dataset.section, btn)
-      if (btn.dataset.section === 'applicants') loadAndRenderApplicants()
     })
   })
 
@@ -165,7 +162,6 @@ function bindEvents() {
     const userId = btn.dataset.makeManagerId
     const { error } = await assignManager(userId, selectedManagerStoreId)
     if (error) { btn.disabled = false; setStatus('assignManagerStatus', error.message || 'Could not assign.', true); return }
-    await rejectManagerApplicant(userId, selectedManagerStoreId)
     setStatus('assignManagerStatus', 'Manager assigned.')
     await loadAndRenderManagerCandidates(selectedManagerStoreId)
   })
@@ -188,7 +184,6 @@ function bindEvents() {
     const userId = btn.dataset.makeStaffId
     const { error } = await assignStaff(userId, selectedStaffStoreId)
     if (error) { btn.disabled = false; setStatus('assignStaffStatus', error.message || 'Could not assign.', true); return }
-    await rejectApplicant(userId, selectedStaffStoreId)
     setStatus('assignStaffStatus', 'Staff assigned.')
     await loadAndRenderStaffCandidates(selectedStaffStoreId)
   })
@@ -287,24 +282,6 @@ function bindEvents() {
     await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName)
   })
 
-  // Applicants: approve / reject
-  $('applicantsList')?.addEventListener('click', async e => {
-    const approveBtn = e.target.closest('[data-approve-user-id]')
-    if (approveBtn) {
-      approveBtn.disabled = true
-      const { error } = await approveApplicantAdmin(approveBtn.dataset.approveUserId, approveBtn.dataset.storeId)
-      if (error) { approveBtn.disabled = false; setStatus('applicantsStatus', error.message || 'Could not approve.', true); return }
-      await loadAndRenderApplicants()
-      return
-    }
-    const rejectBtn = e.target.closest('[data-reject-user-id]')
-    if (rejectBtn) {
-      rejectBtn.disabled = true
-      const { error } = await rejectApplicant(rejectBtn.dataset.rejectUserId, rejectBtn.dataset.storeId)
-      if (error) { rejectBtn.disabled = false; setStatus('applicantsStatus', error.message || 'Could not reject.', true); return }
-      await loadAndRenderApplicants()
-    }
-  })
 }
 
 // ── Section nav ───────────────────────────────────────────────────────────────
@@ -329,15 +306,10 @@ async function loadAndRenderManagerCandidates(storeId) {
   const el = $('managerCandidatesList')
   el.innerHTML = '<p class="empty">Loading...</p>'
 
-  const [{ data: managers, error: me }, { data: applicants, error: ae }] = await Promise.all([
-    loadStoreManagers(storeId),
-    loadManagerApplicants(storeId)
-  ])
-
-  if (me || ae) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
+  const { data: managers, error } = await loadStoreManagers(storeId)
+  if (error) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
 
   const managerIds = new Set((managers || []).map(m => m.user_id))
-  const pendingRows = (applicants || []).filter(a => !managerIds.has(a.user_id))
 
   const managerHtml = (managers || []).length
     ? (managers || []).map(m => `
@@ -350,24 +322,25 @@ async function loadAndRenderManagerCandidates(storeId) {
         </div>`).join('')
     : '<p class="empty">No managers yet.</p>'
 
-  const pendingHtml = pendingRows.length
-    ? pendingRows.map(a => `
+  const candidates = users.filter(u => !managerIds.has(u.user_id))
+  const candidateHtml = candidates.length
+    ? candidates.map(u => `
         <div class="dir-row">
           <div class="dir-info">
-            <span class="dir-name">${escapeHtml(resolvePublicId(a.user_id))}</span>
-            <span class="dir-sub">${escapeHtml(a.user_id)}</span>
+            <span class="dir-name">${escapeHtml(u.public_id || u.user_id)}</span>
+            <span class="dir-sub">${escapeHtml(u.user_id)}</span>
           </div>
           <div class="dir-actions">
-            <button class="btn-sm" data-make-manager-id="${escapeHtml(a.user_id)}">Make Manager</button>
+            <button class="btn-sm" data-make-manager-id="${escapeHtml(u.user_id)}">Make Manager</button>
           </div>
         </div>`).join('')
-    : '<p class="empty">No pending applicants.</p>'
+    : '<p class="empty">No users available.</p>'
 
   el.innerHTML = `
     <div class="candidate-group-title">Current Managers</div>
     ${managerHtml}
-    <div class="candidate-group-title" style="margin-top:12px">Pending Applicants</div>
-    ${pendingHtml}
+    <div class="candidate-group-title" style="margin-top:12px">All Users</div>
+    ${candidateHtml}
   `
 }
 
@@ -375,15 +348,10 @@ async function loadAndRenderStaffCandidates(storeId) {
   const el = $('staffCandidatesList')
   el.innerHTML = '<p class="empty">Loading...</p>'
 
-  const [{ data: staff, error: se }, { data: applicants, error: ae }] = await Promise.all([
-    loadStoreStaff(storeId),
-    loadStoreApplicants(storeId)
-  ])
-
-  if (se || ae) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
+  const { data: staff, error } = await loadStoreStaff(storeId)
+  if (error) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
 
   const staffIds = new Set((staff || []).map(s => s.user_id))
-  const pendingRows = (applicants || []).filter(a => !staffIds.has(a.user_id))
 
   const staffHtml = (staff || []).length
     ? (staff || []).map(s => `
@@ -396,24 +364,25 @@ async function loadAndRenderStaffCandidates(storeId) {
         </div>`).join('')
     : '<p class="empty">No staff yet.</p>'
 
-  const pendingHtml = pendingRows.length
-    ? pendingRows.map(a => `
+  const candidates = users.filter(u => !staffIds.has(u.user_id))
+  const candidateHtml = candidates.length
+    ? candidates.map(u => `
         <div class="dir-row">
           <div class="dir-info">
-            <span class="dir-name">${escapeHtml(resolvePublicId(a.user_id))}</span>
-            <span class="dir-sub">${escapeHtml(a.user_id)}</span>
+            <span class="dir-name">${escapeHtml(u.public_id || u.user_id)}</span>
+            <span class="dir-sub">${escapeHtml(u.user_id)}</span>
           </div>
           <div class="dir-actions">
-            <button class="btn-sm" data-make-staff-id="${escapeHtml(a.user_id)}">Make Staff</button>
+            <button class="btn-sm" data-make-staff-id="${escapeHtml(u.user_id)}">Make Staff</button>
           </div>
         </div>`).join('')
-    : '<p class="empty">No pending applicants.</p>'
+    : '<p class="empty">No users available.</p>'
 
   el.innerHTML = `
     <div class="candidate-group-title">Current Staff</div>
     ${staffHtml}
-    <div class="candidate-group-title" style="margin-top:12px">Pending Applicants</div>
-    ${pendingHtml}
+    <div class="candidate-group-title" style="margin-top:12px">All Users</div>
+    ${candidateHtml}
   `
 }
 
@@ -677,44 +646,6 @@ async function loadAndRenderManageStore(storeId, storeName) {
 
   if (se) { $('manageStaffList').innerHTML = '<p class="empty">Could not load.</p>' }
   else { renderMemberList('manageStaffList', staff || [], 'data-remove-staff-id') }
-}
-
-// ── Applicants ────────────────────────────────────────────────────────────────
-
-async function loadAndRenderApplicants() {
-  const el = $('applicantsList')
-  el.innerHTML = '<p class="empty">Loading...</p>'
-  setStatus('applicantsStatus', '')
-
-  const { data, error } = await loadAllApplicants()
-  if (error) { el.innerHTML = '<p class="empty">Could not load applicants.</p>'; return }
-
-  const applicants = data || []
-  if (!applicants.length) { el.innerHTML = '<p class="empty">No pending applicants.</p>'; return }
-
-  const grouped = {}
-  applicants.forEach(a => {
-    if (!grouped[a.store_id]) grouped[a.store_id] = []
-    grouped[a.store_id].push(a)
-  })
-
-  el.innerHTML = Object.entries(grouped).map(([storeId, members]) => {
-    const store = stores.find(s => s.id === storeId)
-    const storeName = store ? escapeHtml(store.name) : escapeHtml(storeId)
-    const rows = members.map(a => `
-      <div class="dir-row">
-        <div class="dir-info">
-          <span class="dir-name">${escapeHtml(resolvePublicId(a.user_id))}</span>
-          <span class="dir-sub">${escapeHtml(a.user_id)}</span>
-        </div>
-        <div class="dir-actions">
-          <button class="btn-sm" data-approve-user-id="${escapeHtml(a.user_id)}" data-store-id="${escapeHtml(a.store_id)}">Approve</button>
-          <button class="btn-danger-sm" data-reject-user-id="${escapeHtml(a.user_id)}" data-store-id="${escapeHtml(a.store_id)}">Reject</button>
-        </div>
-      </div>
-    `).join('')
-    return `<div class="applicant-group"><div class="applicant-group-title">${storeName}</div>${rows}</div>`
-  }).join('')
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

@@ -44,32 +44,6 @@ export async function loadStoreStaff(storeId) {
     .eq('store_id', storeId)
 }
 
-export async function loadStoreApplicants(storeId) {
-  return supabase
-    .from('store_staff_applicants')
-    .select('user_id, store_id')
-    .eq('store_id', storeId)
-    .order('created_at', { ascending: false })
-}
-
-export async function loadManagerApplicants(storeId) {
-  return supabase
-    .from('store_manager_applicants')
-    .select('user_id, store_id')
-    .eq('store_id', storeId)
-    .order('created_at', { ascending: false })
-}
-
-export async function rejectManagerApplicant(userId, storeId) {
-  return supabase.rpc('admin_reject_manager_applicant', { p_user_id: userId, p_store_id: storeId })
-}
-
-export async function loadAllApplicants() {
-  return supabase
-    .from('store_staff_applicants')
-    .select('user_id, store_id')
-    .order('created_at', { ascending: false })
-}
 
 // ── Store RPCs ────────────────────────────────────────────────────────────────
 
@@ -123,10 +97,3 @@ export async function removeStaffAdmin(userId, storeId) {
   return supabase.rpc('admin_remove_staff', { p_user_id: userId, p_store_id: storeId })
 }
 
-export async function approveApplicantAdmin(userId, storeId) {
-  return supabase.rpc('admin_approve_applicant', { p_user_id: userId, p_store_id: storeId })
-}
-
-export async function rejectApplicant(userId, storeId) {
-  return supabase.rpc('admin_reject_applicant', { p_user_id: userId, p_store_id: storeId })
-}

@@ -280,7 +280,7 @@
     .btn-danger-sm:hover { background: var(--danger-soft); }
     .btn-danger-sm:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* Directory rows (all stores / manage store / applicants) */
+    /* Directory rows */
     .dir-list {
       display: flex;
       flex-direction: column;
@@ -368,10 +368,8 @@
       padding: 6px 0 4px;
     }
 
-    /* Applicant groups */
-    .applicant-group { margin-bottom: 20px; }
-
-    .applicant-group-title {
+    /* Candidate groups */
+    .candidate-group-title {
       font-size: 13px;
       font-weight: 600;
       color: var(--text);
@@ -518,10 +516,6 @@
         <span class="action-num">07</span>
         <span class="action-label">Manage Store</span>
       </button>
-      <button class="action-btn" data-section="applicants">
-        <span class="action-num">08</span>
-        <span class="action-label">Applicants</span>
-      </button>
     </nav>
 
     <div id="panelArea">
@@ -538,7 +532,7 @@
 
       <section class="panel hidden" id="panel-assignManager">
         <h2>Assign Manager</h2>
-        <p>Pick a store to see its current managers and pending applicants.</p>
+        <p>Pick a store to see its current managers and assign new ones.</p>
         <div class="picker-grid">
           <div>
             <div class="picker-label">Store</div>
@@ -554,7 +548,7 @@
 
       <section class="panel hidden" id="panel-assignStaff">
         <h2>Assign Staff</h2>
-        <p>Pick a store to see its current staff and pending applicants.</p>
+        <p>Pick a store to see its current staff and assign new members.</p>
         <div class="picker-grid">
           <div>
             <div class="picker-label">Store</div>
@@ -634,12 +628,6 @@
         </div>
       </section>
 
-      <section class="panel hidden" id="panel-applicants">
-        <h2>Applicants</h2>
-        <p>All pending staff applications. Approve or reject.</p>
-        <div class="dir-list" id="applicantsList"><p class="empty">Loading...</p></div>
-        <div class="status" id="applicantsStatus"></div>
-      </section>
 
     </div>
   </main>
