@@ -342,36 +342,17 @@
         </div>
       </section>
 
-      <section class="panel" id="applicantsPanel" style="display:none">
+      <section class="panel" id="membersPanel" style="display:none">
         <div class="panel-header-row">
-          <h2>Applicants</h2>
+          <h2>Members</h2>
           <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
         </div>
         <p>Selected store: <strong id="selectedStore">None selected</strong></p>
         <p class="status" id="status"></p>
-        <div class="picker" id="applicantList">
-          <p class="empty">Pick a store to see applicants</p>
+        <div class="picker" id="memberList">
+          <p class="empty">Pick a store to see members</p>
         </div>
       </section>
-    </section>
-
-    <section class="panel" id="staffPanel" style="display:none">
-      <h2>Current staff</h2>
-      <p>Selected store: <strong id="selectedStoreStaff">None selected</strong></p>
-      <div class="picker staff-grid" id="staffList">
-        <p class="empty">Pick a store to see staff</p>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>Apply to manage a store</h2>
-      <p>Pick a store and apply. The admin will approve you.</p>
-      <div class="summary" style="margin-top: 14px;">Selected: <strong id="applySelectedStore">None</strong></div>
-      <button class="apply-btn" id="applyManagerBtn" disabled>Apply</button>
-      <p class="status" id="applyStatus" style="margin-top: 10px;"></p>
-      <div class="picker" id="applyStoreList">
-        <p class="empty">Loading stores...</p>
-      </div>
     </section>
   </main>
 

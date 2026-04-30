@@ -1,10 +1,10 @@
 import { captureError } from '../../lib/sentry.js'
 import { initAuth } from '../../services/auth.js'
-import { approveApplicant, demoteStaff, loadApplicants, loadManagedStores, loadStaff, rejectApplicant, applyForManager, loadMyManagerApplications } from '../../services/applicants.js'
-import { loadUserProfile } from '../../services/members.js'
-import { getStores } from '../../services/stores.js'
+import { approveApplicant, demoteStaff, loadManagedStores, loadStaff } from '../../services/applicants.js'
+import { loadUserProfile, loadMembers } from '../../services/members.js'
 import { saveSelectedStore } from '../../lib/storage.js'
 import { escapeHtml } from '../../lib/escape.js'
+import { state } from '../../state/state.js'
 import { $, $$ } from '../../lib/dom.js'
 import { toHumanId } from '../../lib/format.js'
 import { initCog } from '../../lib/cog.js'
@@ -16,30 +16,18 @@ if ('serviceWorker' in navigator) {
 initCog()
 
 let selectedStoreId = null
-let selectedApplyStoreId = null
-let pendingManagerStoreIds = new Set()
-let managedStoreIds = new Set()
+let staffIds = new Set()
 
 async function init() {
   try {
     const user = await initAuth()
     await renderManagerId(user?.id)
-
-    const [{ data: managed }, { data: allStores }, { data: myApps }] = await Promise.all([
-      loadManagedStores(),
-      getStores(),
-      loadMyManagerApplications(user?.id)
-    ])
-
-    managedStoreIds = new Set((managed ?? []).map(m => m.store_id))
-    pendingManagerStoreIds = new Set((myApps ?? []).map(a => a.store_id))
-
+    const { data: managed } = await loadManagedStores()
     renderStores(managed ?? [])
-    renderApplyStores(allStores ?? [])
     bindEvents()
   } catch (err) {
     captureError(err)
-    $('applicantsPanel').style.display = ''
+    $('membersPanel').style.display = ''
     setStatus(err.message || 'Could not load manager tools.', true)
   }
 }
@@ -65,101 +53,49 @@ function renderStores(data) {
   `).join('')
 }
 
-function renderApplyStores(allStores) {
-  const list = $('applyStoreList')
-  const available = allStores.filter(s => !managedStoreIds.has(s.id))
-  if (!available.length) {
-    list.innerHTML = '<p class="empty">No stores available</p>'
-    return
-  }
-  list.innerHTML = available.map(store => `
-    <button class="pick-card" data-apply-store-id="${escapeHtml(store.id)}">
-      <span class="pick-title">${escapeHtml(store.name || 'Untitled store')}</span>
-      <span class="pick-sub">${escapeHtml(store.id)}</span>
-    </button>
-  `).join('')
+async function loadStoreData(storeId) {
+  const [membersResult, staffResult] = await Promise.all([
+    loadMembers(storeId),
+    loadStaff(storeId)
+  ])
+  if (membersResult.error) throw membersResult.error
+  if (staffResult.error) throw staffResult.error
+  staffIds = new Set((staffResult.data || []).map(s => s.user_id))
+  renderMembers()
 }
 
-async function renderStaff() {
-  const list = $('staffList')
-  const label = $('selectedStoreStaff')
+function renderMembers() {
+  const list = $('memberList')
+  const members = state.members || []
 
-  if (!selectedStoreId) {
-    list.innerHTML = '<p class="empty">Pick a store to see staff</p>'
-    if (label) label.textContent = 'None selected'
+  if (!members.length) {
+    list.innerHTML = '<p class="empty">No members yet</p>'
     return
   }
 
-  if (label) label.textContent = $('selectedStore').textContent
+  const sorted = [...members].sort((a, b) => {
+    const aRank = staffIds.has(a.user_id) ? 0 : 1
+    const bRank = staffIds.has(b.user_id) ? 0 : 1
+    if (aRank !== bRank) return aRank - bRank
+    return a.public_id.localeCompare(b.public_id)
+  })
 
-  const { data, error } = await loadStaff(selectedStoreId)
-  if (error) throw error
-
-  if (!data?.length) {
-    list.innerHTML = '<p class="empty">No staff yet</p>'
-    return
-  }
-
-  list.innerHTML = data.map(member => `
-    <div class="staff-card">
-      <div>
-        <div class="pick-title">${escapeHtml(toHumanId(member.public_id, member.user_id))}</div>
-        <div class="pick-sub">${escapeHtml(member.user_id)}</div>
-      </div>
-      <button class="remove-btn" data-remove-user-id="${escapeHtml(member.user_id)}">Remove</button>
-    </div>
-  `).join('')
-}
-
-async function renderApplicants() {
-  const list = $('applicantList')
-
-  if (!selectedStoreId) {
-    list.innerHTML = '<p class="empty">Pick a store to see applicants</p>'
-    return
-  }
-
-  const { data, error } = await loadApplicants(selectedStoreId)
-  if (error) throw error
-
-  if (!data?.length) {
-    list.innerHTML = '<p class="empty">No applicants yet</p>'
-    return
-  }
-
-  list.innerHTML = data.map(applicant => `
-    <div class="applicant-card" data-user-id="${escapeHtml(applicant.user_id)}">
-      <div>
-        <div class="pick-title">${escapeHtml(toHumanId(applicant.public_id, applicant.user_id))}</div>
-        <div class="pick-sub">Internal: ${escapeHtml(applicant.user_id)}</div>
-      </div>
-      <div class="applicant-actions">
-        <button class="approve-btn" data-approve-user-id="${escapeHtml(applicant.user_id)}">Approve</button>
-        <button class="reject-btn" data-reject-user-id="${escapeHtml(applicant.user_id)}">Reject</button>
-      </div>
-    </div>
-  `).join('')
-}
-
-function updateApplyButton() {
-  const button = $('applyManagerBtn')
-  if (!button) return
-
-  if (!selectedApplyStoreId) {
-    button.textContent = 'Apply'
-    button.disabled = true
-    return
-  }
-
-  if (pendingManagerStoreIds.has(selectedApplyStoreId)) {
-    button.textContent = 'Pending approval'
-    button.disabled = true
-    setApplyStatus('Your application is waiting for admin approval.')
-    return
-  }
-
-  button.textContent = 'Apply'
-  button.disabled = false
+  list.innerHTML = sorted.map(m => {
+    const isStaff = staffIds.has(m.user_id)
+    return `
+      <div class="applicant-card" data-user-id="${escapeHtml(m.user_id)}">
+        <div>
+          <div class="pick-title">${escapeHtml(m.public_id)}</div>
+          ${isStaff ? '<div class="pick-sub">Staff</div>' : ''}
+        </div>
+        <div class="applicant-actions">
+          ${isStaff
+            ? `<button class="remove-btn" data-demote-user-id="${escapeHtml(m.user_id)}">Demote</button>`
+            : `<button class="approve-btn" data-promote-user-id="${escapeHtml(m.user_id)}">Promote</button>`
+          }
+        </div>
+      </div>`
+  }).join('')
 }
 
 function bindEvents() {
@@ -170,96 +106,61 @@ function bindEvents() {
     selectedStoreId = button.dataset.storeId
     const storeName = button.querySelector('.pick-title')?.textContent || selectedStoreId
     saveSelectedStore(selectedStoreId, storeName)
-    $$('[data-store-id]').forEach(node => {
-      node.classList.toggle('selected', node === button)
-    })
+    $$('[data-store-id]').forEach(node => node.classList.toggle('selected', node === button))
     $('selectedStore').textContent = storeName
-    $('applicantsPanel').style.display = ''
-    $('staffPanel').style.display = ''
+    $('membersPanel').style.display = ''
     setStatus('')
+
     try {
-      await Promise.all([renderApplicants(), renderStaff()])
+      await loadStoreData(selectedStoreId)
     } catch (err) {
       captureError(err)
       setStatus(err.message || 'Could not load store data.', true)
     }
   })
 
-  $('staffList')?.addEventListener('click', async event => {
-    const button = event.target.closest('[data-remove-user-id]')
-    if (!button || !selectedStoreId) return
-
-    const userId = button.dataset.removeUserId
-    button.disabled = true
-    button.textContent = 'Removing...'
-
-    try {
-      const { error } = await demoteStaff(userId, selectedStoreId)
-      if (error) throw error
-      setStatus('Staff member removed.')
-      await renderStaff()
-    } catch (err) {
-      captureError(err)
-      setStatus(err.message || 'Could not remove staff member.', true)
-      button.disabled = false
-      button.textContent = 'Remove'
-    }
-  })
-
-  $('applicantList')?.addEventListener('click', async event => {
-    const approveBtn = event.target.closest('[data-approve-user-id]')
-    if (approveBtn && selectedStoreId) {
-      const userId = approveBtn.dataset.approveUserId
-      approveBtn.disabled = true
-      approveBtn.textContent = 'Approving...'
+  $('memberList')?.addEventListener('click', async event => {
+    const promoteBtn = event.target.closest('[data-promote-user-id]')
+    if (promoteBtn && selectedStoreId) {
+      const userId = promoteBtn.dataset.promoteUserId
+      promoteBtn.disabled = true
+      promoteBtn.textContent = 'Promoting...'
       try {
         const { error } = await approveApplicant(userId, selectedStoreId)
         if (error) throw error
-        setStatus('Applicant promoted to staff.')
-        await Promise.all([renderApplicants(), renderStaff()])
+        staffIds.add(userId)
+        renderMembers()
+        setStatus('Promoted to staff.')
       } catch (err) {
         captureError(err)
-        setStatus(err.message || 'Could not approve applicant.', true)
-        approveBtn.disabled = false
-        approveBtn.textContent = 'Approve'
+        setStatus(err.message || 'Could not promote.', true)
+        promoteBtn.disabled = false
+        promoteBtn.textContent = 'Promote'
       }
       return
     }
 
-    const rejectBtn = event.target.closest('[data-reject-user-id]')
-    if (rejectBtn && selectedStoreId) {
-      const userId = rejectBtn.dataset.rejectUserId
-      rejectBtn.disabled = true
-      rejectBtn.textContent = 'Rejecting...'
+    const demoteBtn = event.target.closest('[data-demote-user-id]')
+    if (demoteBtn && selectedStoreId) {
+      const userId = demoteBtn.dataset.demoteUserId
+      demoteBtn.disabled = true
+      demoteBtn.textContent = 'Demoting...'
       try {
-        const { error } = await rejectApplicant(userId, selectedStoreId)
+        const { error } = await demoteStaff(userId, selectedStoreId)
         if (error) throw error
-        setStatus('Applicant rejected.')
-        await renderApplicants()
+        staffIds.delete(userId)
+        renderMembers()
+        setStatus('Removed from staff.')
       } catch (err) {
         captureError(err)
-        setStatus(err.message || 'Could not reject applicant.', true)
-        rejectBtn.disabled = false
-        rejectBtn.textContent = 'Reject'
+        setStatus(err.message || 'Could not demote.', true)
+        demoteBtn.disabled = false
+        demoteBtn.textContent = 'Demote'
       }
     }
   })
 
-  $('applyStoreList')?.addEventListener('click', event => {
-    const button = event.target.closest('[data-apply-store-id]')
-    if (!button) return
-
-    selectedApplyStoreId = button.dataset.applyStoreId
-    $$('[data-apply-store-id]').forEach(node => {
-      node.classList.toggle('selected', node === button)
-    })
-    $('applySelectedStore').textContent = button.querySelector('.pick-title')?.textContent || selectedApplyStoreId
-    setApplyStatus('')
-    updateApplyButton()
-  })
-
   $('staffPageBtn')?.addEventListener('click', () => { window.location.href = '/apps/staff/' })
-  $('applyManagerBtn')?.addEventListener('click', handleApply)
 
   $('refreshBtn')?.addEventListener('click', async () => {
     if (!selectedStoreId) return
@@ -267,7 +168,7 @@ function bindEvents() {
     btn.classList.add('loading')
     btn.disabled = true
     try {
-      await Promise.all([renderApplicants(), renderStaff()])
+      await loadStoreData(selectedStoreId)
     } catch (err) {
       captureError(err)
       setStatus(err.message || 'Could not refresh.', true)
@@ -277,36 +178,8 @@ function bindEvents() {
   })
 }
 
-async function handleApply() {
-  if (!selectedApplyStoreId) return
-
-  const button = $('applyManagerBtn')
-  button.disabled = true
-  button.textContent = 'Applying...'
-
-  try {
-    const { error } = await applyForManager(selectedApplyStoreId)
-    if (error) throw error
-
-    pendingManagerStoreIds.add(selectedApplyStoreId)
-    updateApplyButton()
-    setApplyStatus('Applied. Ask the admin to approve you.')
-  } catch (err) {
-    captureError(err)
-    setApplyStatus(err.message || 'Could not apply.', true)
-    updateApplyButton()
-  }
-}
-
 function setStatus(message, isError = false) {
   const status = $('status')
-  if (!status) return
-  status.textContent = message
-  status.classList.toggle('error', isError)
-}
-
-function setApplyStatus(message, isError = false) {
-  const status = $('applyStatus')
   if (!status) return
   status.textContent = message
   status.classList.toggle('error', isError)
