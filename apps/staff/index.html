@@ -65,15 +65,25 @@
       font-size: 14px;
     }
 
-    .my-id {
-      margin-top: 14px;
+    .id-block {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .id-label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .id-value {
       font-family: var(--mono);
-      font-size: 12px;
-      padding: 12px 14px;
-      background: rgba(255,255,255,0.65);
-      border: 1px dashed var(--border-strong);
-      border-radius: 16px;
-      word-break: break-all;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
     }
 
     .picker {
@@ -265,14 +275,15 @@
         </div>
         <button class="cog-btn" id="cogBtn" aria-label="Settings">⚙</button>
       </div>
-      <div class="my-id">Your ID: <span id="myId">Loading...</span></div>
+      <div class="id-block">
+        <span class="id-label">Your ID</span>
+        <span class="id-value" id="myId">Loading...</span>
+      </div>
       <div class="cog-menu" id="cogMenu" style="display:none"></div>
     </section>
 
     <section class="panel" id="managerSection" style="display:none">
-      <h2>Manager tools</h2>
-      <p>Approve applicants, manage staff, and apply to manage new stores.</p>
-      <button class="manager-btn" id="managerBtn">Go to manager tools</button>
+      <button class="manager-btn" id="managerBtn">Manager tools</button>
     </section>
 
     <section class="panel" id="staffStoresSection" style="display:none">
