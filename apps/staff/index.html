@@ -137,41 +137,6 @@
       word-break: break-all;
     }
 
-    .apply-action {
-      margin-top: 14px;
-    }
-
-    .pending-badge {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.03em;
-      color: var(--accent);
-      background: var(--accent-soft);
-      border-radius: 999px;
-      padding: 2px 8px;
-      margin-top: 4px;
-    }
-
-    .pick-card.pending {
-      border-color: var(--accent);
-    }
-
-    .apply-btn {
-      border: none;
-      border-radius: 999px;
-      background: var(--text);
-      color: white;
-      padding: 14px 20px;
-      font-size: 15px;
-      cursor: pointer;
-    }
-
-    .apply-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
-
     .status.error {
       color: var(--danger);
     }
@@ -290,17 +255,6 @@
       <div class="picker" id="staffStoreList"></div>
     </section>
 
-    <section class="panel">
-      <h2>Apply for a new store</h2>
-      <p>Pick a store below. The manager will approve you.</p>
-      <div class="picker" id="storeList">
-        <p class="empty">Loading stores...</p>
-      </div>
-      <div class="apply-action" id="applyAction" style="display:none">
-        <button class="apply-btn" id="applyBtn">Apply for staff</button>
-        <p class="status" id="status"></p>
-      </div>
-    </section>
   </main>
 
   <script type="module" src="/src/pages/staff/start.js"></script>
