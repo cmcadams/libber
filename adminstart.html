@@ -17,6 +17,7 @@
       --border-strong: rgba(55, 47, 34, 0.38);
       --text: #211d16;
       --muted: #766d60;
+      --hint: rgba(55, 47, 34, 0.38);
       --accent: #1f6a52;
       --accent-soft: #deefe8;
       --danger: #a33d2f;
@@ -41,24 +42,39 @@
       margin: 0 auto;
     }
 
-    /* Header */
-    .header { margin-bottom: 28px; }
+    /* ── Header ─────────────────────────────────────────────────────────────── */
 
-    .eyebrow {
-      font-family: var(--mono);
+    .header {
+      position: relative;
+      margin-bottom: 28px;
+      padding-bottom: 1.5rem;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .header-id { text-align: center; }
+
+    .id-label {
       font-size: 12px;
-      color: var(--muted);
+      color: var(--hint);
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.05em;
+      display: block;
       margin-bottom: 6px;
     }
 
-    h1 {
-      font-size: clamp(32px, 5vw, 52px);
-      line-height: 0.95;
+    #adminId {
+      font-family: var(--mono);
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
     }
 
-    /* Action buttons */
+    /* ── Action buttons ─────────────────────────────────────────────────────── */
+
     .actions {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -110,7 +126,8 @@
       line-height: 1.2;
     }
 
-    /* Panels */
+    /* ── Panels ─────────────────────────────────────────────────────────────── */
+
     .panel {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -132,7 +149,8 @@
       margin-bottom: 20px;
     }
 
-    /* Pickers */
+    /* ── Pickers ────────────────────────────────────────────────────────────── */
+
     .picker-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -196,13 +214,16 @@
       word-break: break-all;
     }
 
-    /* Forms */
+    /* ── Forms ──────────────────────────────────────────────────────────────── */
+
     .form-row {
       display: flex;
       gap: 10px;
       align-items: center;
       margin-bottom: 10px;
     }
+
+    .form-row .picker-label { margin-bottom: 0; flex-shrink: 0; }
 
     .input {
       border: 1px solid var(--border);
@@ -219,7 +240,8 @@
     .input-grow { flex: 1; }
     .input-pts { width: 80px; }
 
-    /* Summary + assign row */
+    /* ── Summary row ────────────────────────────────────────────────────────── */
+
     .summary-row {
       display: flex;
       align-items: center;
@@ -229,14 +251,11 @@
       flex-wrap: wrap;
     }
 
-    .summary-text {
-      font-size: 14px;
-      color: var(--muted);
-    }
-
+    .summary-text { font-size: 14px; color: var(--muted); }
     .summary-text strong { color: var(--text); }
 
-    /* Primary button */
+    /* ── Buttons ────────────────────────────────────────────────────────────── */
+
     .btn-primary {
       border: none;
       border-radius: 999px;
@@ -246,12 +265,12 @@
       font-size: 14px;
       cursor: pointer;
       white-space: nowrap;
+      font-family: inherit;
     }
 
     .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
     .btn-primary:not(:disabled):hover { background: #3a3529; }
 
-    /* Small action buttons */
     .btn-sm {
       border: 1px solid var(--border-strong);
       background: var(--surface-strong);
@@ -261,6 +280,7 @@
       cursor: pointer;
       color: var(--text);
       white-space: nowrap;
+      font-family: inherit;
     }
 
     .btn-sm:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
@@ -275,12 +295,14 @@
       cursor: pointer;
       color: var(--danger);
       white-space: nowrap;
+      font-family: inherit;
     }
 
     .btn-danger-sm:hover { background: var(--danger-soft); }
     .btn-danger-sm:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* Directory rows */
+    /* ── Directory rows ─────────────────────────────────────────────────────── */
+
     .dir-list {
       display: flex;
       flex-direction: column;
@@ -321,7 +343,8 @@
       flex-shrink: 0;
     }
 
-    /* Inline edit row */
+    /* ── Inline edit ────────────────────────────────────────────────────────── */
+
     .inline-edit-row {
       display: flex;
       gap: 8px;
@@ -332,7 +355,8 @@
 
     .inline-edit-row:last-child { border-bottom: none; }
 
-    /* Manage store sections */
+    /* ── Manage sections ────────────────────────────────────────────────────── */
+
     .manage-section { margin-bottom: 24px; }
 
     .manage-section-title {
@@ -343,10 +367,11 @@
       font-weight: 500;
       padding-bottom: 8px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 4px;
+      margin-bottom: 12px;
     }
 
-    /* Role badge */
+    /* ── Role badge ─────────────────────────────────────────────────────────── */
+
     .role-badge {
       font-family: var(--mono);
       font-size: 11px;
@@ -358,17 +383,8 @@
       flex-shrink: 0;
     }
 
-    /* Candidate group title */
-    .candidate-group-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      font-weight: 500;
-      padding: 6px 0 4px;
-    }
+    /* ── Candidate group titles ─────────────────────────────────────────────── */
 
-    /* Candidate groups */
     .candidate-group-title {
       font-size: 13px;
       font-weight: 600;
@@ -376,37 +392,54 @@
       margin-bottom: 4px;
     }
 
-    /* Rules */
+    /* ── Reward rules ───────────────────────────────────────────────────────── */
+
     .rules-store-name {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    #rulesList {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 400px;
+      overflow-y: auto;
     }
 
     .rule-row {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: border-color 0.1s;
     }
 
-    .rule-row:last-child { border-bottom: none; }
-
+    /* Kind badge — base */
     .rule-badge {
       font-family: var(--mono);
       font-size: 11px;
+      font-weight: 500;
+      border-radius: 999px;
+      padding: 3px 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      flex-shrink: 0;
       background: var(--accent-soft);
       color: var(--accent);
-      border-radius: 6px;
-      padding: 2px 8px;
-      text-transform: uppercase;
-      flex-shrink: 0;
     }
 
-    .rule-label-text { flex: 1; font-size: 14px; }
+    /* Kind badge — per-type colour */
+    .rule-badge[data-kind="redeem"]       { background: var(--danger-soft); color: var(--danger); }
+    .rule-badge[data-kind="bonus_reason"],
+    .rule-badge[data-kind="bonus_amount"] { background: rgba(55,47,34,0.07); color: var(--muted); }
+
+    .rule-label-text { flex: 1; font-size: 14px; min-width: 0; }
 
     .rule-pts-text {
       font-family: var(--mono);
@@ -415,6 +448,7 @@
       flex-shrink: 0;
     }
 
+    /* Order controls — minimal icon buttons */
     .rule-order-btns {
       display: flex;
       flex-direction: column;
@@ -423,37 +457,40 @@
     }
 
     .rule-order-btn {
-      border: 1px solid var(--border-strong);
-      background: var(--surface-strong);
+      border: 0.5px solid var(--border-strong);
+      background: transparent;
       border-radius: 6px;
-      padding: 3px 8px;
-      font-size: 13px;
+      padding: 2px 6px;
+      font-size: 11px;
+      line-height: 1.4;
       cursor: pointer;
-      color: var(--text);
+      color: var(--muted);
+      min-width: 22px;
+      text-align: center;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
     }
 
     .rule-order-btn:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-    .rule-order-btn:disabled { opacity: 0.2; cursor: default; }
+    .rule-order-btn:disabled { opacity: 0.18; cursor: default; }
 
+    /* Delete — matches btn-danger-sm exactly */
     .rule-delete-btn {
-      border: none;
-      background: none;
-      color: var(--danger);
-      font-size: 13px;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 6px;
       flex-shrink: 0;
+      border: 1px solid transparent;
+      background: none;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--danger);
+      white-space: nowrap;
+      font-family: inherit;
     }
 
     .rule-delete-btn:hover { background: var(--danger-soft); }
+    .rule-delete-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    .add-rule-form {
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
-    }
-
+    /* Add-rule inputs row */
     .rule-inputs {
       display: flex;
       gap: 8px;
@@ -462,7 +499,8 @@
       margin-bottom: 8px;
     }
 
-    /* Status */
+    /* ── Status / empty ─────────────────────────────────────────────────────── */
+
     .status {
       min-height: 20px;
       font-size: 13px;
@@ -482,9 +520,10 @@
   <main class="page">
 
     <header class="header">
-      <div class="eyebrow">Admin Console</div>
-      <h1>Libber</h1>
-      <div id="adminId" style="margin-top:8px;font-family:var(--mono);font-size:13px;color:var(--muted)"></div>
+      <div class="header-id">
+        <span class="id-label">Admin ID</span>
+        <span id="adminId">—</span>
+      </div>
     </header>
 
     <nav class="actions">
@@ -564,34 +603,48 @@
 
       <section class="panel hidden" id="panel-rewardRules">
         <h2>Reward Rules</h2>
-        <p>Manage quick-award and redemption buttons shown to staff.</p>
+        <p>Manage quick-award, redemption, and bonus buttons shown to staff.</p>
+
         <div class="picker-label">Store</div>
         <div class="picker picker-inline" id="rulesStoreList"><p class="empty">Loading...</p></div>
+
         <div class="hidden" id="rulesContent">
           <div class="rules-store-name" id="rulesStoreName"></div>
-          <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
-            <div class="picker-label" style="margin-bottom:8px">Bonus cap</div>
-            <div class="form-row">
-              <input type="number" id="bonusCapInput" class="input input-pts" placeholder="No cap" min="1" style="width:100px" />
-              <button class="btn-sm" id="saveBonusCapBtn">Save</button>
-              <button class="btn-danger-sm" id="removeBonusCapBtn">Remove cap</button>
-            </div>
-            <div class="status" id="bonusCapStatus"></div>
+
+          <div class="manage-section">
+            <div class="manage-section-title">Current Rules</div>
+            <div id="rulesList"></div>
           </div>
-          <div id="rulesList"></div>
-          <div class="add-rule-form">
+
+          <div class="manage-section">
+            <div class="manage-section-title">Add Rule</div>
             <div class="rule-inputs">
-              <input type="text" id="ruleLabel" placeholder="Label (e.g. 1 coffee)" class="input input-grow" />
-              <input type="number" id="rulePoints" placeholder="Pts" class="input input-pts" min="1" />
               <select id="ruleKind" class="input">
-                <option value="award">Award</option>
-                <option value="redeem">Redeem</option>
-                <option value="bonus_reason">Bonus Reason</option>
-                <option value="bonus_amount">Bonus Amount</option>
+                <optgroup label="Award / Redeem">
+                  <option value="award">Award</option>
+                  <option value="redeem">Redeem</option>
+                </optgroup>
+                <optgroup label="Bonus">
+                  <option value="bonus_reason">Bonus Reason</option>
+                  <option value="bonus_amount">Bonus Amount</option>
+                </optgroup>
               </select>
-              <button class="btn-primary" id="addRuleBtn">Add rule</button>
+              <input type="text" id="ruleLabel" placeholder="Label" class="input input-grow" />
+              <input type="number" id="rulePoints" placeholder="Pts" class="input input-pts" min="1" />
+              <button class="btn-primary" id="addRuleBtn">Add</button>
             </div>
             <div class="status" id="addRuleStatus"></div>
+          </div>
+
+          <div class="manage-section">
+            <div class="manage-section-title">Bonus Configuration</div>
+            <div class="form-row">
+              <span class="picker-label">Cap</span>
+              <input type="number" id="bonusCapInput" class="input input-pts" placeholder="None" min="1" />
+              <button class="btn-sm" id="saveBonusCapBtn">Save</button>
+              <button class="btn-danger-sm" id="removeBonusCapBtn">Remove</button>
+            </div>
+            <div class="status" id="bonusCapStatus"></div>
           </div>
         </div>
       </section>
@@ -627,7 +680,6 @@
           <div class="status" id="manageStoreStatus"></div>
         </div>
       </section>
-
 
     </div>
   </main>

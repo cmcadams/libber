@@ -548,6 +548,8 @@ async function loadAndRenderRules(storeId, storeName) {
   $('bonusCapInput').placeholder = cap !== null ? String(cap) : 'No cap'
 }
 
+const KIND_LABEL = { award: 'Award', redeem: 'Redeem', bonus_reason: 'Bonus Reason', bonus_amount: 'Bonus Amt' }
+
 function renderRulesList() {
   if (!currentRules.length) {
     $('rulesList').innerHTML = '<p class="empty">No rules yet. Add one below.</p>'
@@ -566,7 +568,7 @@ function renderRulesList() {
         <button class="rule-order-btn" data-move-rule-id="${r.id}" data-direction="up" ${i === 0 ? 'disabled' : ''}>↑</button>
         <button class="rule-order-btn" data-move-rule-id="${r.id}" data-direction="down" ${i === currentRules.length - 1 ? 'disabled' : ''}>↓</button>
       </div>
-      <span class="rule-badge">${escapeHtml(r.kind)}</span>
+      <span class="rule-badge" data-kind="${escapeHtml(r.kind)}">${KIND_LABEL[r.kind] || escapeHtml(r.kind)}</span>
       <span class="rule-label-text">${escapeHtml(r.label || '—')}</span>
       <span class="rule-pts-text">${ptsDisplay}</span>
       <button class="rule-delete-btn" data-delete-rule-id="${r.id}">Remove</button>
