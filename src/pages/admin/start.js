@@ -22,6 +22,9 @@ let selectedRulesStoreId = null
 let selectedManageStoreId = null
 let selectedManageStoreName = null
 
+let managerReqId = 0
+let staffReqId = 0
+
 async function init() {
   try {
     const session = await initAuth()
@@ -36,7 +39,7 @@ async function init() {
     stores = s || []
 
     const me = users.find(u => u.user_id === session?.id)
-    if (me?.public_id) $('adminId').textContent = `Your ID: ${me.public_id}`
+    if (me?.public_id) $('adminId').textContent = me.public_id
 
     renderPicker('managerStoreList', stores, 'store')
     renderPicker('staffStoreList', stores, 'store')
@@ -144,7 +147,6 @@ function bindEvents() {
     })
   })
 
-  // Assign manager — store picker
   $('managerStoreList')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-store-id]')
     if (!btn) return
@@ -154,19 +156,16 @@ function bindEvents() {
     await loadAndRenderManagerCandidates(btn.dataset.storeId)
   })
 
-  // Assign manager — candidate actions
   $('managerCandidatesList')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-make-manager-id]')
     if (!btn) return
     btn.disabled = true
-    const userId = btn.dataset.makeManagerId
-    const { error } = await assignManager(userId, selectedManagerStoreId)
+    const { error } = await assignManager(btn.dataset.makeManagerId, selectedManagerStoreId)
     if (error) { btn.disabled = false; setStatus('assignManagerStatus', error.message || 'Could not assign.', true); return }
     setStatus('assignManagerStatus', 'Manager assigned.')
     await loadAndRenderManagerCandidates(selectedManagerStoreId)
   })
 
-  // Assign staff — store picker
   $('staffStoreList')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-store-id]')
     if (!btn) return
@@ -176,23 +175,19 @@ function bindEvents() {
     await loadAndRenderStaffCandidates(btn.dataset.storeId)
   })
 
-  // Assign staff — candidate actions
   $('staffCandidatesList')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-make-staff-id]')
     if (!btn) return
     btn.disabled = true
-    const userId = btn.dataset.makeStaffId
-    const { error } = await assignStaff(userId, selectedStaffStoreId)
+    const { error } = await assignStaff(btn.dataset.makeStaffId, selectedStaffStoreId)
     if (error) { btn.disabled = false; setStatus('assignStaffStatus', error.message || 'Could not assign.', true); return }
     setStatus('assignStaffStatus', 'Staff assigned.')
     await loadAndRenderStaffCandidates(selectedStaffStoreId)
   })
 
-  // Create store
   $('createStoreBtn')?.addEventListener('click', handleCreateStore)
   $('newStoreName')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleCreateStore() })
 
-  // Reward rules store picker
   $('rulesStoreList')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-store-id]')
     if (!btn) return
@@ -201,7 +196,6 @@ function bindEvents() {
     await loadAndRenderRules(btn.dataset.storeId, btn.dataset.storeName)
   })
 
-  // Rules list actions
   $('rulesList')?.addEventListener('click', async e => {
     const deleteBtn = e.target.closest('[data-delete-rule-id]')
     if (deleteBtn) {
@@ -238,7 +232,6 @@ function bindEvents() {
     setStatus('bonusCapStatus', 'Cap removed.')
   })
 
-  // All stores: edit + remove
   $('allStoresList')?.addEventListener('click', async e => {
     const editBtn = e.target.closest('[data-edit-store-id]')
     if (editBtn) { showInlineEdit(editBtn.dataset.editStoreId, editBtn.dataset.storeName); return }
@@ -253,7 +246,6 @@ function bindEvents() {
     if (cancelBtn) { renderAllStores(); setStatus('allStoresStatus', '') }
   })
 
-  // Manage store picker
   $('manageStoreList')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-store-id]')
     if (!btn) return
@@ -263,7 +255,6 @@ function bindEvents() {
     await loadAndRenderManageStore(btn.dataset.storeId, btn.dataset.storeName)
   })
 
-  // Manage store: remove manager / remove staff
   $('manageManagersList')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-remove-manager-id]')
     if (!btn) return
@@ -281,7 +272,6 @@ function bindEvents() {
     if (error) { btn.disabled = false; setStatus('manageStoreStatus', error.message || 'Could not remove.', true); return }
     await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName)
   })
-
 }
 
 // ── Section nav ───────────────────────────────────────────────────────────────
@@ -300,13 +290,17 @@ function selectInPicker(containerId, activeBtn) {
   })
 }
 
-// ── Assign manager / staff candidates ─────────────────────────────────────────
+// ── Manager candidates (race-safe) ────────────────────────────────────────────
 
 async function loadAndRenderManagerCandidates(storeId) {
   const el = $('managerCandidatesList')
+  const reqId = ++managerReqId
+
   el.innerHTML = '<p class="empty">Loading...</p>'
 
   const { data: managers, error } = await loadStoreManagers(storeId)
+
+  if (reqId !== managerReqId) return
   if (error) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
 
   const managerIds = new Set((managers || []).map(m => m.user_id))
@@ -344,11 +338,17 @@ async function loadAndRenderManagerCandidates(storeId) {
   `
 }
 
+// ── Staff candidates (race-safe) ──────────────────────────────────────────────
+
 async function loadAndRenderStaffCandidates(storeId) {
   const el = $('staffCandidatesList')
+  const reqId = ++staffReqId
+
   el.innerHTML = '<p class="empty">Loading...</p>'
 
   const { data: staff, error } = await loadStoreStaff(storeId)
+
+  if (reqId !== staffReqId) return
   if (error) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
 
   const staffIds = new Set((staff || []).map(s => s.user_id))
