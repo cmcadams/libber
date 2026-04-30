@@ -199,7 +199,7 @@ function renderRuleButtons() {
   }
 
   $('redeemBtns').innerHTML = redeemRules.map(r => `
-    <button class="redeem-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}"
+    <button class="redeem-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}" data-rule-id="${escapeHtml(r.id)}"
       ${r.points > balance ? 'disabled' : ''}>
       <span class="redeem-btn-label">${escapeHtml(r.label)}</span>
       <span class="redeem-btn-cost">−${r.points} pts</span>
@@ -347,7 +347,7 @@ async function handleRedeem(btn) {
   const ok = await showConfirm(`Redeem ${label}`, `−${pts} pts for ${selectedMember.public_id}`)
   if (!ok) { btn.disabled = false; return }
 
-  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label)
+  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label, btn.dataset.ruleId)
   if (error) {
     captureError(error, { fn: 'redeemPoints' })
     btn.disabled = false
