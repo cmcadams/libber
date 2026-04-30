@@ -116,4 +116,5 @@ BEGIN
   VALUES (p_user_id, p_store_id, p_points, p_reason, v_staff_id, v_new_balance);
 
   RETURN v_new_balance;
-END $$;
+END;
+$$;
