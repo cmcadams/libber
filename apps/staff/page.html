@@ -253,7 +253,7 @@
     .panel-scroll {
       overflow-y: auto;
       flex: 1;
-      padding: 0 1.25rem 2.5rem;
+      padding: 0 1rem 2.5rem;
     }
 
     .panel-handle {
@@ -269,8 +269,8 @@
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      margin-bottom: 1.5rem;
-      padding: 0 1.25rem;
+      margin-bottom: 1.25rem;
+      padding: 0 1rem;
       flex-shrink: 0;
     }
 
@@ -612,21 +612,12 @@
       width: 100%;
     }
 
-    .redeem-btn:hover:not([aria-disabled="true"]) { background: #f4f4f1; border-color: var(--border-strong); }
+    .redeem-btn:hover { background: #f4f4f1; border-color: var(--border-strong); }
 
-    .redeem-btn.insufficient {
-      opacity: 0.72;
-      cursor: pointer;
-    }
+    .redeem-btn.insufficient { opacity: 0.72; cursor: pointer; }
+    .redeem-btn.insufficient:hover { opacity: 1; }
 
-    .redeem-btn.insufficient .redeem-btn-cost {
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .redeem-btn.insufficient .redeem-btn-label {
-      color: var(--text-muted);
-    }
+    .redeem-btn.insufficient .redeem-btn-label { color: var(--text-muted); }
 
     .redeem-btn-label {
       font-size: 14px;
@@ -637,7 +628,8 @@
     .redeem-btn-cost {
       font-size: 13px;
       font-family: var(--font);
-      color: var(--text-muted);
+      color: var(--text);
+      font-weight: 600;
     }
 
     .redeem-btn.done {
@@ -800,7 +792,27 @@
       margin-top: 2px;
     }
 
-    /* ── Redemption: insufficient balance state — see .redeem-btn.insufficient above ── */
+    /* ── Section cards ─────────────────────────────────────────────────── */
+
+    .divider { display: none; }
+
+    #quickSection,
+    #bonusSection,
+    #redeemSection,
+    #adjustSection {
+      padding: 12px;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 10px;
+    }
+
+    #quickSection  { background: #f9f9f9; }
+    #bonusSection  { background: #f4f4f4; }
+    #redeemSection { background: #eaeaea; }
+    #adjustSection { background: #f0f0f0; }
+
+    #quickSection .quick-btns   { margin-bottom: 0; }
+    #redeemSection .redeem-btns { margin-bottom: 0; }
   </style>
 </head>
 <body>

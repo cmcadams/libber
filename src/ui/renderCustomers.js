@@ -131,6 +131,9 @@ export function initCustomerHandlers() {
     const open    = body.style.display !== 'none'
     body.style.display = open ? 'none' : ''
     if (chevron) chevron.textContent = open ? '▾' : '▴'
+    if (!open) requestAnimationFrame(() =>
+      $('adjustSection').scrollIntoView({ behavior: 'smooth', block: 'start' })
+    )
   })
 
   $('adjustDirBtns')?.addEventListener('click', e => {
