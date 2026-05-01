@@ -714,6 +714,82 @@
     }
 
     .confirm-ok:hover { opacity: 0.82; }
+
+    /* ── Member list: history button ────────────────────────────────────── */
+
+    .cust-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .history-btn {
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--font-ui);
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: color 0.1s, border-color 0.1s;
+    }
+
+    .history-btn:hover { color: var(--text); border-color: var(--text); }
+    .history-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── History modal ──────────────────────────────────────────────────── */
+
+    .history-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 0.5px solid var(--border);
+      gap: 12px;
+    }
+
+    .history-entry:last-child { border-bottom: none; }
+
+    .history-entry-reason {
+      font-size: 13px;
+      color: var(--text);
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-entry-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .history-entry-pts {
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--font);
+    }
+
+    .history-entry-pts.positive { color: var(--success-text); }
+    .history-entry-pts.negative { color: #b83c2b; }
+
+    .history-entry-date {
+      font-size: 11px;
+      color: var(--text-hint);
+      margin-top: 2px;
+    }
+
+    /* ── Redemption: insufficient balance state ─────────────────────────── */
+
+    .redeem-btn.insufficient { opacity: 0.38; }
   </style>
 </head>
 <body>
@@ -833,6 +909,20 @@
         <button class="close-btn" id="storePickerClose">×</button>
       </div>
       <div class="panel-scroll" id="storePickerList"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="historyOverlay" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+    <div class="panel">
+      <div class="panel-handle"></div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-id" id="historyTitle"></div>
+          <div class="panel-balance" id="historySubtitle"></div>
+        </div>
+        <button class="close-btn" id="historyClose" aria-label="Close transaction history">×</button>
+      </div>
+      <div class="panel-scroll" id="historyBody"></div>
     </div>
   </div>
 

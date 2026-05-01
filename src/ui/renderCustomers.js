@@ -1,5 +1,5 @@
 import { state } from '../state/state.js'
-import { awardPoints, adjustPoints } from '../services/members.js'
+import { awardPoints, adjustPoints, loadMemberRecentTransactions } from '../services/members.js'
 import { escapeHtml } from '../lib/escape.js'
 import { $ } from '../lib/dom.js'
 import { captureError } from '../lib/sentry.js'
@@ -12,6 +12,7 @@ let adjustAmount    = ''
 let adjustDirection = null
 let _reRenderTimer  = null
 let _statusTimer    = null
+let _historyTrigger = null
 
 function scheduleReRender() {
   clearTimeout(_reRenderTimer)
@@ -45,7 +46,12 @@ export function renderCustomers() {
 
   container.innerHTML = filtered.map(m => `
     <div class="customer-row" data-user-id="${escapeHtml(m.user_id)}">
-      <span class="cust-id">${escapeHtml(m.public_id)}</span>
+      <div class="cust-left">
+        <button class="history-btn" data-user-id="${escapeHtml(m.user_id)}"
+          aria-label="View transaction history for ${escapeHtml(m.public_id)}"
+          title="View last 5 transactions">History</button>
+        <span class="cust-id">${escapeHtml(m.public_id)}</span>
+      </div>
       <span class="cust-pts"><strong>${m.balance}</strong> pts</span>
     </div>
   `).join('')
@@ -59,6 +65,13 @@ export function initCustomerHandlers() {
   search?.addEventListener('input', () => renderCustomers())
 
   $('customerList')?.addEventListener('click', e => {
+    // History button takes priority — do not open the member panel
+    const histBtn = e.target.closest('.history-btn')
+    if (histBtn) {
+      const member = (state.members || []).find(m => m.user_id === histBtn.dataset.userId)
+      if (member) handleViewHistory(member, histBtn)
+      return
+    }
     const row = e.target.closest('.customer-row')
     if (!row) return
     const member = (state.members || []).find(m => m.user_id === row.dataset.userId)
@@ -146,6 +159,12 @@ export function initCustomerHandlers() {
 
   $('adjustBtn')?.addEventListener('click', handleAdjust)
 
+  $('historyClose')?.addEventListener('click', closeHistory)
+  $('historyOverlay')?.addEventListener('click', e => { if (e.target === $('historyOverlay')) closeHistory() })
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('historyOverlay')?.classList.contains('open')) closeHistory()
+  })
+
   $('redeemBtns')?.addEventListener('click', e => {
     const btn = e.target.closest('.redeem-btn')
     if (!btn || btn.disabled || !selectedMember) return
@@ -198,13 +217,18 @@ function renderRuleButtons() {
     })
   }
 
-  $('redeemBtns').innerHTML = redeemRules.map(r => `
-    <button class="redeem-btn" data-pts="${r.points}" data-label="${escapeHtml(r.label)}" data-rule-id="${escapeHtml(r.id)}"
-      ${r.points > balance ? 'disabled' : ''}>
-      <span class="redeem-btn-label">${escapeHtml(r.label)}</span>
-      <span class="redeem-btn-cost">−${r.points} pts</span>
-    </button>
-  `).join('')
+  $('redeemBtns').innerHTML = redeemRules.map(r => {
+    const canAfford = r.points <= balance
+    return `
+      <button class="redeem-btn${canAfford ? '' : ' insufficient'}"
+        data-pts="${r.points}" data-label="${escapeHtml(r.label)}" data-rule-id="${escapeHtml(r.id)}"
+        ${canAfford ? '' : `disabled title="Requires ${r.points} pts — member has ${balance} pts"`}
+        aria-disabled="${!canAfford}">
+        <span class="redeem-btn-label">${escapeHtml(r.label)}</span>
+        <span class="redeem-btn-cost">−${r.points} pts</span>
+      </button>
+    `
+  }).join('')
 
   updateBonusState()
 }
@@ -263,6 +287,7 @@ async function handleQuickAward(btn) {
   btn.classList.add('done')
   btn.querySelector('.btn-label').textContent = 'awarded'
   btn.querySelector('.btn-pts').textContent   = `+${pts} pts`
+  setStatus(`Points awarded — +${pts} pts`)
   scheduleReRender()
 }
 
@@ -289,7 +314,7 @@ async function handleBonusAward() {
   $('bonusBtns').querySelectorAll('.bonus-btn').forEach(b => b.classList.remove('selected'))
   $('bonusReasonBtns').querySelectorAll('.bonus-reason-btn').forEach(b => b.classList.remove('selected'))
   updateBonusState()
-  setStatus('Bonus awarded')
+  setStatus(`Bonus awarded — +${bonusPts} pts`)
   scheduleReRender()
 }
 
@@ -339,7 +364,7 @@ async function handleRedeem(btn) {
   const label = btn.dataset.label
 
   if (selectedMember.balance < pts) {
-    setStatus('Not enough points.')
+    setStatus('Not enough points to redeem')
     return
   }
 
@@ -360,6 +385,60 @@ async function handleRedeem(btn) {
   btn.querySelector('.redeem-btn-label').textContent = 'Redeemed'
   btn.querySelector('.redeem-btn-cost').textContent  = `−${pts} pts`
   scheduleReRender()
+}
+
+function closeHistory() {
+  $('historyOverlay').classList.remove('open')
+  _historyTrigger?.focus()
+  _historyTrigger = null
+}
+
+async function handleViewHistory(member, triggerBtn) {
+  if (!state.selectedStoreId) return
+
+  _historyTrigger = triggerBtn
+
+  $('historyTitle').textContent    = member.public_id
+  $('historySubtitle').textContent = `${member.balance} pts balance`
+  $('historyBody').innerHTML       = '<p class="empty">Loading...</p>'
+  $('historyOverlay').classList.add('open')
+  $('historyClose').focus()
+
+  triggerBtn.disabled = true
+  const { data, error } = await loadMemberRecentTransactions(member.user_id, state.selectedStoreId)
+  triggerBtn.disabled = false
+
+  if (error) {
+    $('historyBody').innerHTML = `
+      <p class="empty" style="margin-bottom:12px">Could not load history.</p>
+      <div style="text-align:center">
+        <button class="award-btn" id="historyRetryBtn" style="width:auto;padding:8px 20px;font-size:13px">Retry</button>
+      </div>
+    `
+    $('historyRetryBtn')?.addEventListener('click', () => handleViewHistory(member, triggerBtn))
+    return
+  }
+
+  if (!data || !data.length) {
+    $('historyBody').innerHTML = '<p class="empty">No transactions yet.</p>'
+    return
+  }
+
+  $('historyBody').innerHTML = data.map(tx => {
+    const pts     = tx.points
+    const sign    = pts > 0 ? '+' : ''
+    const cls     = pts > 0 ? 'positive' : 'negative'
+    const dateStr = new Date(tx.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    return `
+      <div class="history-entry">
+        <span class="history-entry-reason">${escapeHtml(tx.reason || '—')}</span>
+        <div class="history-entry-right">
+          <span class="history-entry-pts ${cls}">${sign}${pts} pts</span>
+          <span class="history-entry-date">${dateStr}</span>
+        </div>
+      </div>
+    `
+  }).join('')
 }
 
 function updateBonusState() {
