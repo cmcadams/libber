@@ -3,7 +3,7 @@ import { awardPoints, adjustPoints, loadMemberRecentTransactions } from '../serv
 import { escapeHtml } from '../lib/escape.js'
 import { $ } from '../lib/dom.js'
 import { captureError } from '../lib/sentry.js'
-import { showConfirm } from '../lib/confirm.js'
+import { showConfirm, showAlert } from '../lib/confirm.js'
 
 let selectedMember  = null
 let bonusPts        = null
@@ -363,8 +363,8 @@ async function handleRedeem(btn) {
   const pts   = parseInt(btn.dataset.pts)
   const label = btn.dataset.label
 
-  if (selectedMember.balance < pts || btn.getAttribute('aria-disabled') === 'true') {
-    setStatus('Not enough points to redeem')
+  if (selectedMember.balance < pts) {
+    await showAlert('Not enough points to redeem')
     return
   }
 

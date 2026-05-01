@@ -24,3 +24,30 @@ export function showConfirm(title, detail) {
     $('confirmOverlay').addEventListener('click', onBackdrop)
   })
 }
+
+export function showAlert(message) {
+  return new Promise(resolve => {
+    $('alertMessage').textContent = message
+    $('alertOverlay').classList.add('open')
+
+    function onOk() { cleanup(); resolve() }
+    function onBackdrop(e) {
+      if (e.target === $('alertOverlay')) { cleanup(); resolve() }
+    }
+    function onKey(e) {
+      if (e.key === 'Enter' || e.key === 'Escape') { cleanup(); resolve() }
+    }
+
+    function cleanup() {
+      $('alertOverlay').classList.remove('open')
+      $('alertOk').removeEventListener('click', onOk)
+      $('alertOverlay').removeEventListener('click', onBackdrop)
+      document.removeEventListener('keydown', onKey)
+    }
+
+    $('alertOk').addEventListener('click', onOk)
+    $('alertOverlay').addEventListener('click', onBackdrop)
+    document.addEventListener('keydown', onKey)
+    $('alertOk').focus()
+  })
+}
