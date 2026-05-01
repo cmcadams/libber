@@ -78,3 +78,12 @@ export async function adjustPoints(userId, storeId, points, reason) {
   })
   return { error }
 }
+
+export async function loadMemberRecentTransactions(userId, storeId) {
+  const { data, error } = await supabase.rpc('load_member_recent_transactions', {
+    p_user_id:  userId,
+    p_store_id: storeId
+  })
+  if (error) captureError(error, { fn: 'loadMemberRecentTransactions' })
+  return { data: data ?? [], error }
+}
