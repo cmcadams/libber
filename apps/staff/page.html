@@ -612,8 +612,21 @@
       width: 100%;
     }
 
-    .redeem-btn:hover:not(:disabled) { background: #f4f4f1; border-color: var(--border-strong); }
-    .redeem-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .redeem-btn:hover:not([aria-disabled="true"]) { background: #f4f4f1; border-color: var(--border-strong); }
+
+    .redeem-btn.insufficient {
+      opacity: 0.72;
+      cursor: pointer;
+    }
+
+    .redeem-btn.insufficient .redeem-btn-cost {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .redeem-btn.insufficient .redeem-btn-label {
+      color: var(--text-muted);
+    }
 
     .redeem-btn-label {
       font-size: 14px;
@@ -787,9 +800,7 @@
       margin-top: 2px;
     }
 
-    /* ── Redemption: insufficient balance state ─────────────────────────── */
-
-    .redeem-btn.insufficient { opacity: 0.38; }
+    /* ── Redemption: insufficient balance state — see .redeem-btn.insufficient above ── */
   </style>
 </head>
 <body>

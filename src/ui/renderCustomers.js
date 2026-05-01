@@ -222,7 +222,7 @@ function renderRuleButtons() {
     return `
       <button class="redeem-btn${canAfford ? '' : ' insufficient'}"
         data-pts="${r.points}" data-label="${escapeHtml(r.label)}" data-rule-id="${escapeHtml(r.id)}"
-        ${canAfford ? '' : `disabled title="Requires ${r.points} pts — member has ${balance} pts"`}
+        ${canAfford ? '' : `title="Requires ${r.points} pts — member has ${balance} pts"`}
         aria-disabled="${!canAfford}">
         <span class="redeem-btn-label">${escapeHtml(r.label)}</span>
         <span class="redeem-btn-cost">−${r.points} pts</span>
@@ -363,7 +363,7 @@ async function handleRedeem(btn) {
   const pts   = parseInt(btn.dataset.pts)
   const label = btn.dataset.label
 
-  if (selectedMember.balance < pts) {
+  if (selectedMember.balance < pts || btn.getAttribute('aria-disabled') === 'true') {
     setStatus('Not enough points to redeem')
     return
   }
@@ -446,7 +446,7 @@ function updateBonusState() {
   const confirmEl = $('bonusConfirm')
   if (!confirmEl) return
   if (ready) {
-    $('bonusConfirmMsg').textContent = `Award ${bonusReason} — +${bonusPts} pts`
+    $('bonusConfirmMsg').textContent = `Award ${bonusReason} : +${bonusPts} pts`
     confirmEl.style.display = ''
   } else {
     confirmEl.style.display = 'none'
