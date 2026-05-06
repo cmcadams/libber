@@ -44,6 +44,13 @@ export async function loadStoreStaff(storeId) {
     .eq('store_id', storeId)
 }
 
+export async function loadStoreMembers(storeId) {
+  return supabase
+    .from('store_memberships')
+    .select('user_id')
+    .eq('store_id', storeId)
+}
+
 
 // ── Store RPCs ────────────────────────────────────────────────────────────────
 

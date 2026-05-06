@@ -6,7 +6,8 @@ import {
   loadRewardRules, insertRewardRule, deleteRewardRule, updateRewardRuleOrder,
   setBonusCap,
   loadStoreManagers, removeManager,
-  loadStoreStaff, removeStaffAdmin
+  loadStoreStaff, removeStaffAdmin,
+  loadStoreMembers
 } from '../../services/admin.js'
 import { getStoreBonusCap } from '../../services/stores.js'
 import { escapeHtml } from '../../lib/escape.js'
@@ -298,12 +299,16 @@ async function loadAndRenderManagerCandidates(storeId) {
 
   el.innerHTML = '<p class="empty">Loading...</p>'
 
-  const { data: managers, error } = await loadStoreManagers(storeId)
+  const [{ data: managers, error }, { data: members }] = await Promise.all([
+    loadStoreManagers(storeId),
+    loadStoreMembers(storeId)
+  ])
 
   if (reqId !== managerReqId) return
   if (error) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
 
   const managerIds = new Set((managers || []).map(m => m.user_id))
+  const memberIds  = new Set((members  || []).map(m => m.user_id))
 
   const managerHtml = (managers || []).length
     ? (managers || []).map(m => `
@@ -316,7 +321,7 @@ async function loadAndRenderManagerCandidates(storeId) {
         </div>`).join('')
     : '<p class="empty">No managers yet.</p>'
 
-  const candidates = users.filter(u => !managerIds.has(u.user_id))
+  const candidates = users.filter(u => memberIds.has(u.user_id) && !managerIds.has(u.user_id))
   const candidateHtml = candidates.length
     ? candidates.map(u => `
         <div class="dir-row">
@@ -346,12 +351,16 @@ async function loadAndRenderStaffCandidates(storeId) {
 
   el.innerHTML = '<p class="empty">Loading...</p>'
 
-  const { data: staff, error } = await loadStoreStaff(storeId)
+  const [{ data: staff, error }, { data: members }] = await Promise.all([
+    loadStoreStaff(storeId),
+    loadStoreMembers(storeId)
+  ])
 
   if (reqId !== staffReqId) return
   if (error) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
 
-  const staffIds = new Set((staff || []).map(s => s.user_id))
+  const staffIds  = new Set((staff   || []).map(s => s.user_id))
+  const memberIds = new Set((members || []).map(m => m.user_id))
 
   const staffHtml = (staff || []).length
     ? (staff || []).map(s => `
@@ -364,7 +373,7 @@ async function loadAndRenderStaffCandidates(storeId) {
         </div>`).join('')
     : '<p class="empty">No staff yet.</p>'
 
-  const candidates = users.filter(u => !staffIds.has(u.user_id))
+  const candidates = users.filter(u => memberIds.has(u.user_id) && !staffIds.has(u.user_id))
   const candidateHtml = candidates.length
     ? candidates.map(u => `
         <div class="dir-row">
