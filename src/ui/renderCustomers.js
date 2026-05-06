@@ -4,6 +4,7 @@ import { escapeHtml } from '../lib/escape.js'
 import { $ } from '../lib/dom.js'
 import { captureError } from '../lib/sentry.js'
 import { showConfirm, showAlert } from '../lib/confirm.js'
+import { formatShortDate } from '../lib/format.js'
 
 let selectedMember  = null
 let bonusPts        = null
@@ -431,8 +432,7 @@ async function handleViewHistory(member, triggerBtn) {
     const pts     = tx.points
     const sign    = pts > 0 ? '+' : ''
     const cls     = pts > 0 ? 'positive' : 'negative'
-    const utc     = /[Z+]/.test(tx.created_at) ? tx.created_at : tx.created_at + 'Z'
-    const dateStr = new Date(utc).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    const dateStr = formatShortDate(tx.created_at)
     return `
       <div class="history-entry">
         <span class="history-entry-reason">${escapeHtml(tx.reason || '—')}</span>

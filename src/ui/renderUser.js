@@ -2,7 +2,7 @@ import { state } from '../state/state.js'
 import { escapeHtml } from '../lib/escape.js'
 import { loadPointsHistory } from '../services/members.js'
 import { loadRewardRules } from '../services/admin.js'
-import { toHumanId } from '../lib/format.js'
+import { toHumanId, formatRelativeDate } from '../lib/format.js'
 import { $ } from '../lib/dom.js'
 
 function nameToColor(name) {
@@ -26,15 +26,6 @@ export function renderUser(publicId, uuid) {
   el.textContent = toHumanId(publicId, uuid)
 }
 
-function formatDate(iso) {
-  const utc  = /[Z+]/.test(iso) ? iso : iso + 'Z'
-  const d    = new Date(utc)
-  const diff = Math.floor((Date.now() - d) / 1000)
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  return d.toLocaleDateString()
-}
 
 export function renderUserStores() {
   const el     = $('user-stores')
@@ -104,7 +95,7 @@ function renderStoreDetail(el, history, rules) {
         <div class="history-row">
           <span class="history-reason">${escapeHtml(row.reason || '—')}</span>
           <span class="history-pts history-pts-${kind}">${row.points > 0 ? '+' : ''}${row.points} pts</span>
-          <span class="history-date">${formatDate(row.created_at)}</span>
+          <span class="history-date">${formatRelativeDate(row.created_at)}</span>
         </div>`
       }).join('')
     : '<p class="history-empty">No transactions yet</p>'
