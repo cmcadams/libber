@@ -362,12 +362,6 @@ async function loadAndRenderStaffCandidates(storeId) {
   const staffIds  = new Set((staff   || []).map(s => s.user_id))
   const memberIds = new Set((members || []).map(m => m.user_id))
 
-  console.debug('[staff] storeId:', storeId)
-  console.debug('[staff] members raw:', members)
-  console.debug('[staff] memberIds:', [...memberIds])
-  console.debug('[staff] sample user.user_id:', users[0]?.user_id)
-  console.debug('[staff] candidates count:', users.filter(u => memberIds.has(u.user_id) && !staffIds.has(u.user_id)).length)
-
   const staffHtml = (staff || []).length
     ? (staff || []).map(s => `
         <div class="dir-row">
