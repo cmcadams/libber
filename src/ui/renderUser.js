@@ -27,7 +27,8 @@ export function renderUser(publicId, uuid) {
 }
 
 function formatDate(iso) {
-  const d = new Date(iso)
+  const utc  = /[Z+]/.test(iso) ? iso : iso + 'Z'
+  const d    = new Date(utc)
   const diff = Math.floor((Date.now() - d) / 1000)
   if (diff < 60) return 'just now'
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`

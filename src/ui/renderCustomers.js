@@ -431,7 +431,8 @@ async function handleViewHistory(member, triggerBtn) {
     const pts     = tx.points
     const sign    = pts > 0 ? '+' : ''
     const cls     = pts > 0 ? 'positive' : 'negative'
-    const dateStr = new Date(tx.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    const utc     = /[Z+]/.test(tx.created_at) ? tx.created_at : tx.created_at + 'Z'
+    const dateStr = new Date(utc).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
     return `
       <div class="history-entry">
         <span class="history-entry-reason">${escapeHtml(tx.reason || '—')}</span>
