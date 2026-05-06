@@ -47,13 +47,13 @@ export function renderCustomers() {
 
   container.innerHTML = filtered.map(m => `
     <div class="customer-row" data-user-id="${escapeHtml(m.user_id)}">
-      <div class="cust-left">
+      <span class="cust-id">${escapeHtml(m.public_id)}</span>
+      <div class="cust-right">
+        <span class="cust-pts"><strong>${m.balance}</strong> pts</span>
         <button class="history-btn" data-user-id="${escapeHtml(m.user_id)}"
           aria-label="View transaction history for ${escapeHtml(m.public_id)}"
           title="View last 5 transactions">History</button>
-        <span class="cust-id">${escapeHtml(m.public_id)}</span>
       </div>
-      <span class="cust-pts"><strong>${m.balance}</strong> pts</span>
     </div>
   `).join('')
 }
