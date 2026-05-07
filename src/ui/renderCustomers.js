@@ -62,7 +62,6 @@ export function initCustomerHandlers() {
   const overlay = $('overlay')
   const search  = $('search')
 
-  search?.focus()
   search?.addEventListener('input', () => renderCustomers())
 
   $('customerList')?.addEventListener('click', e => {
