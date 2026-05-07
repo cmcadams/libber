@@ -1,4 +1,5 @@
 import { initAuth } from '../../services/auth.js'
+import { refreshDebugUI } from '../../lib/adminContext.js'
 import {
   assignManager, assignStaff,
   loadAdminUsers, loadAllStores,
@@ -155,6 +156,7 @@ function bindEvents() {
     selectInPicker('managerStoreList', btn)
     setStatus('assignManagerStatus', '')
     await loadAndRenderManagerCandidates(btn.dataset.storeId)
+    refreshDebugUI(btn.dataset.storeId)
   })
 
   $('managerCandidatesList')?.addEventListener('click', async e => {
@@ -174,6 +176,7 @@ function bindEvents() {
     selectInPicker('staffStoreList', btn)
     setStatus('assignStaffStatus', '')
     await loadAndRenderStaffCandidates(btn.dataset.storeId)
+    refreshDebugUI(btn.dataset.storeId)
   })
 
   $('staffCandidatesList')?.addEventListener('click', async e => {
@@ -195,6 +198,7 @@ function bindEvents() {
     selectedRulesStoreId = btn.dataset.storeId
     selectInPicker('rulesStoreList', btn)
     await loadAndRenderRules(btn.dataset.storeId, btn.dataset.storeName)
+    refreshDebugUI(btn.dataset.storeId)
   })
 
   $('rulesList')?.addEventListener('click', async e => {
@@ -254,6 +258,7 @@ function bindEvents() {
     selectedManageStoreName = btn.dataset.storeName
     selectInPicker('manageStoreList', btn)
     await loadAndRenderManageStore(btn.dataset.storeId, btn.dataset.storeName)
+    refreshDebugUI(btn.dataset.storeId)
   })
 
   $('manageManagersList')?.addEventListener('click', async e => {

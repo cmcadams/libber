@@ -499,6 +499,79 @@
       margin-bottom: 8px;
     }
 
+    /* ── Debug overlay + header bar ────────────────────────────────────────── */
+
+    #dbg {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 999;
+      width: 210px;
+      background: var(--surface-strong);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      pointer-events: auto;
+    }
+
+    .dbg-row   { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .dbg-head  { justify-content: space-between; margin-bottom: 6px; font-weight: 600; color: var(--text); font-size: 10px; }
+    .dbg-lbl   { color: var(--hint); width: 34px; flex-shrink: 0; }
+    .dbg-val   { flex: 1; color: var(--text); }
+    .dbg-time  { color: var(--hint); margin-top: 6px; font-size: 9px; }
+    .dbg-ok    { color: var(--accent); }
+    .dbg-no    { color: var(--danger); }
+    .dbg-dim   { color: var(--muted); }
+
+    .dbg-btn {
+      border: 0.5px solid var(--border-strong);
+      background: transparent;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-family: var(--mono);
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1.5;
+      flex-shrink: 0;
+    }
+
+    .dbg-btn:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+    #dbgHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(31,106,82,0.18);
+      border-radius: 12px;
+      padding: 8px 14px;
+      margin-bottom: 20px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .dbg-hleft   { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .dbg-hpid    { color: var(--text); font-weight: 500; }
+    .dbg-huid    { color: var(--muted); }
+    .dbg-hsep    { color: var(--hint); }
+    .dbg-hstore  { color: var(--text); }
+    .dbg-htime   { color: var(--hint); font-size: 10px; white-space: nowrap; flex-shrink: 0; }
+
+    .dbg-hbadge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.6);
+      border: 0.5px solid currentColor;
+    }
+
     /* ── Status / empty ─────────────────────────────────────────────────────── */
 
     .status {
@@ -525,6 +598,8 @@
         <span id="adminId">—</span>
       </div>
     </header>
+
+    <div id="dbgHeader">Loading context…</div>
 
     <nav class="actions">
       <button class="action-btn" data-section="createStore">
@@ -683,6 +758,8 @@
 
     </div>
   </main>
+
+  <div id="dbg">Loading…</div>
 
   <script type="module" src="/src/pages/admin/start.js"></script>
 </body>
