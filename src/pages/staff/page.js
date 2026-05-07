@@ -54,8 +54,12 @@ async function boot() {
     $('staffId').textContent = toHumanId(profile?.public_id, user.id)
 
     if (!state.selectedStoreId) {
-      openStorePicker()
-      return
+      const stores = state.staffStores || []
+      if (!stores.length) {
+        $('customerList').innerHTML = '<div class="empty">You are not assigned to any stores. Contact your manager to get access.</div>'
+        return
+      }
+      saveSelectedStore(stores[0].store_id, stores[0].stores?.name || '')
     }
 
     await loadStore(state.selectedStoreId)
