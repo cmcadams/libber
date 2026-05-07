@@ -157,7 +157,7 @@ function bindEvents() {
     }
   })
 
-  $('staffPageBtn')?.addEventListener('click', () => { window.location.href = '/apps/staff/' })
+  $('staffPageBtn')?.addEventListener('click', () => { window.location.href = '/apps/staff/page.html' })
 
   $('refreshBtn')?.addEventListener('click', async () => {
     if (!selectedStoreId) return

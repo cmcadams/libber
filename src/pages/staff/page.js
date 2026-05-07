@@ -22,6 +22,23 @@ let loadToken = 0
 async function boot() {
   $('backBtn')?.addEventListener('click', openStorePicker)
   bindStorePickerEvents()
+  initCustomerHandlers()
+
+  const refreshBtn = $('refreshBtn')
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      refreshBtn.classList.add('loading')
+      refreshBtn.disabled = true
+      try {
+        await loadStore(state.selectedStoreId)
+      } catch (err) {
+        captureError(err, { fn: 'refresh' })
+      } finally {
+        refreshBtn.classList.remove('loading')
+        refreshBtn.disabled = false
+      }
+    })
+  }
 
   try {
     const user = await initAuth()
@@ -29,34 +46,19 @@ async function boot() {
 
     loadSelectedStore()
 
-    if (!state.selectedStoreId) return
-
     const [{ data: profile }] = await Promise.all([
       loadUserProfile(user.id),
       loadStaffStores(user.id),
       loadManagedStores().then(({ data }) => { managedStores = data || [] })
     ])
-    const publicId = toHumanId(profile?.public_id, user.id)
-    $('staffId').textContent = publicId
+    $('staffId').textContent = toHumanId(profile?.public_id, user.id)
+
+    if (!state.selectedStoreId) {
+      openStorePicker()
+      return
+    }
 
     await loadStore(state.selectedStoreId)
-    initCustomerHandlers()
-
-    const refreshBtn = $('refreshBtn')
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', async () => {
-        refreshBtn.classList.add('loading')
-        refreshBtn.disabled = true
-        try {
-          await loadStore(state.selectedStoreId)
-        } catch (err) {
-          captureError(err, { fn: 'refresh' })
-        } finally {
-          refreshBtn.classList.remove('loading')
-          refreshBtn.disabled = false
-        }
-      })
-    }
   } catch (err) {
     captureError(err)
     alert('Something went wrong loading the page.')

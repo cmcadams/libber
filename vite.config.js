@@ -47,7 +47,6 @@ export default defineConfig(({ mode }) => {
           customer:         resolve(__dirname, 'apps/customer/index.html'),
           customerSave:     resolve(__dirname, 'apps/customer/save.html'),
           customerSettings: resolve(__dirname, 'apps/customer/settings.html'),
-          staffApply:   resolve(__dirname, 'apps/staff/index.html'),
           staffPage:    resolve(__dirname, 'apps/staff/page.html'),
           staffManager: resolve(__dirname, 'apps/staff/manager.html'),
         }
