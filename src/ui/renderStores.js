@@ -69,10 +69,11 @@ async function handleJoin(store, btn) {
   }
 
   state.userStores = [...(state.userStores || []), {
-    store_id:   store.id,
-    store_name: store.name ?? 'Unknown Store',
-    balance:    prevBalances.get(store.id) ?? 0,
-    logo_url:   store.logo_url
+    store_id:        store.id,
+    store_name:      store.name ?? 'Unknown Store',
+    balance:         prevBalances.get(store.id) ?? 0,
+    logo_path:       store.logo_path ?? null,
+    logo_updated_at: null,
   }]
   prevBalances.delete(store.id)
 

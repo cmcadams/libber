@@ -359,6 +359,41 @@
 
     .manage-section { margin-bottom: 24px; }
 
+    .logo-upload-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0 4px;
+    }
+
+    .logo-preview-slot {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-preview-slot img {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .logo-none {
+      font-size: 11px;
+      color: var(--hint);
+    }
+
+    .logo-upload-label {
+      cursor: pointer;
+    }
+
     .manage-section-title {
       font-size: 12px;
       text-transform: uppercase;
@@ -744,6 +779,17 @@
         <div class="picker picker-inline" id="manageStoreList"><p class="empty">Loading...</p></div>
         <div class="hidden" id="manageStoreContent">
           <div class="rules-store-name" id="manageStoreName"></div>
+          <div class="manage-section">
+            <div class="manage-section-title">Logo</div>
+            <div class="logo-upload-row">
+              <div id="manageStoreLogo" class="logo-preview-slot"></div>
+              <label class="btn-sm logo-upload-label">
+                Change logo
+                <input type="file" id="logoFileInput" accept="image/*" style="display:none">
+              </label>
+            </div>
+            <div class="status" id="logoUploadStatus"></div>
+          </div>
           <div class="manage-section">
             <div class="manage-section-title">Managers</div>
             <div class="dir-list" id="manageManagersList"></div>

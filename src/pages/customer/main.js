@@ -48,10 +48,11 @@ function applyHomeData(data, uuid) {
   renderUser(data.public_id, uuid)
 
   state.userStores = (data.memberships || []).map(m => ({
-    store_id:   m.store_id,
-    store_name: m.store_name,
-    balance:    m.balance,
-    logo_url:   m.logo_url
+    store_id:        m.store_id,
+    store_name:      m.store_name,
+    balance:         m.balance,
+    logo_path:       m.logo_path       ?? null,
+    logo_updated_at: m.logo_updated_at ?? null,
   }))
 
   state.storeData = state.storeData || {}

@@ -8,9 +8,11 @@ import {
   setBonusCap,
   loadStoreManagers, removeManager,
   loadStoreStaff, removeStaffAdmin,
-  loadStoreMembers
+  loadStoreMembers,
+  uploadStoreLogo, setStoreLogo,
 } from '../../services/admin.js'
 import { getStoreBonusCap } from '../../services/stores.js'
+import { getLogoUrl } from '../../lib/logoUrl.js'
 import { escapeHtml } from '../../lib/escape.js'
 import { $, $$, $q } from '../../lib/dom.js'
 
@@ -259,6 +261,37 @@ function bindEvents() {
     selectInPicker('manageStoreList', btn)
     await loadAndRenderManageStore(btn.dataset.storeId, btn.dataset.storeName)
     refreshDebugUI(btn.dataset.storeId)
+  })
+
+  $('logoFileInput')?.addEventListener('change', async e => {
+    const file = e.target.files?.[0]
+    if (!file || !selectedManageStoreId) return
+    e.target.value = ''
+
+    setStatus('logoUploadStatus', 'Uploading...')
+
+    try {
+      const blob = await processLogoFile(file)
+      const path = `stores/${selectedManageStoreId}/logo.webp`
+
+      const { error: uploadError } = await uploadStoreLogo(selectedManageStoreId, blob)
+      if (uploadError) { setStatus('logoUploadStatus', uploadError.message, true); return }
+
+      const { error: rpcError } = await setStoreLogo(selectedManageStoreId, path)
+      if (rpcError) { setStatus('logoUploadStatus', rpcError.message, true); return }
+
+      const updatedAt = new Date().toISOString()
+      stores = stores.map(s =>
+        s.id === selectedManageStoreId
+          ? { ...s, logo_path: path, logo_updated_at: updatedAt }
+          : s
+      )
+
+      renderManageLogo(selectedManageStoreId)
+      setStatus('logoUploadStatus', 'Logo updated.')
+    } catch {
+      setStatus('logoUploadStatus', 'Could not process image. Use a different file.', true)
+    }
   })
 
   $('manageManagersList')?.addEventListener('click', async e => {
@@ -643,11 +676,46 @@ async function handleAddRule() {
   btn.disabled = false
 }
 
+// ── Store logo ────────────────────────────────────────────────────────────────
+
+async function processLogoFile(file) {
+  const TARGET = 256
+  const bitmap = await createImageBitmap(file)
+  const size   = Math.min(bitmap.width, bitmap.height)
+  const canvas = document.createElement('canvas')
+  canvas.width  = TARGET
+  canvas.height = TARGET
+  const ctx = canvas.getContext('2d')
+  const sx  = (bitmap.width  - size) / 2
+  const sy  = (bitmap.height - size) / 2
+  ctx.drawImage(bitmap, sx, sy, size, size, 0, 0, TARGET, TARGET)
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      blob => blob ? resolve(blob) : reject(new Error('Image conversion failed')),
+      'image/webp',
+      0.82
+    )
+  })
+}
+
+function renderManageLogo(storeId) {
+  const el = $('manageStoreLogo')
+  if (!el) return
+  const store = stores.find(s => s.id === storeId)
+  const url   = store ? getLogoUrl(store.logo_path, store.logo_updated_at) : null
+  if (url) {
+    el.innerHTML = `<img src="${escapeHtml(url)}" width="48" height="48" alt="Store logo" onerror="this.style.display='none'">`
+  } else {
+    el.innerHTML = '<span class="logo-none">No logo</span>'
+  }
+}
+
 // ── Manage store ──────────────────────────────────────────────────────────────
 
 async function loadAndRenderManageStore(storeId, storeName) {
   $('manageStoreName').textContent = storeName
   $('manageStoreContent').classList.remove('hidden')
+  renderManageLogo(storeId)
   $('manageManagersList').innerHTML = '<p class="empty">Loading...</p>'
   $('manageStaffList').innerHTML = '<p class="empty">Loading...</p>'
   setStatus('manageStoreStatus', '')

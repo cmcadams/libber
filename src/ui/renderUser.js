@@ -1,5 +1,6 @@
 import { state } from '../state/state.js'
 import { escapeHtml } from '../lib/escape.js'
+import { getLogoUrl } from '../lib/logoUrl.js'
 import { loadPointsHistory } from '../services/members.js'
 import { loadRewardRules } from '../services/admin.js'
 import { toHumanId, formatRelativeDate } from '../lib/format.js'
@@ -11,13 +12,18 @@ function nameToColor(name) {
   return 160 + (Math.abs(h) % 180)
 }
 
-function storeAvatar(store) {
-  if (store.logo_url && store.logo_url.startsWith('https://')) {
-    return `<img class="store-avatar" src="${escapeHtml(store.logo_url)}" width="36" height="36" alt="" aria-hidden="true" loading="lazy">`
-  }
+function initialsAvatar(store) {
   const initials = escapeHtml((store.store_name || '?').slice(0, 2).toUpperCase())
   const hue      = nameToColor(store.store_name || '')
   return `<span class="store-avatar store-avatar--initials" style="--hue:${hue}" aria-hidden="true">${initials}</span>`
+}
+
+function storeAvatar(store) {
+  const url = getLogoUrl(store.logo_path, store.logo_updated_at)
+  if (url) {
+    return `<img class="store-avatar" src="${escapeHtml(url)}" width="36" height="36" alt="" aria-hidden="true" loading="lazy" onerror="this.style.display='none'">`
+  }
+  return initialsAvatar(store)
 }
 
 export function renderUser(publicId, uuid) {

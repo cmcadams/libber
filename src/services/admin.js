@@ -10,8 +10,22 @@ export async function loadAdminUsers() {
 export async function loadAllStores() {
   return supabase
     .from('stores')
-    .select('id, name')
+    .select('id, name, logo_path, logo_updated_at')
     .order('name', { ascending: true })
+}
+
+export async function uploadStoreLogo(storeId, blob) {
+  const path = `stores/${storeId}/logo.webp`
+  return supabase.storage
+    .from('store-logos')
+    .upload(path, blob, { contentType: 'image/webp', upsert: true })
+}
+
+export async function setStoreLogo(storeId, logoPath) {
+  return supabase.rpc('admin_set_store_logo', {
+    p_store_id:  storeId,
+    p_logo_path: logoPath,
+  })
 }
 
 export async function setBonusCap(storeId, maxBonus) {
