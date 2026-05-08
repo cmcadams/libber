@@ -21,39 +21,25 @@ ON CONFLICT (id) DO NOTHING;
 DROP POLICY IF EXISTS "store logos are publicly readable"    ON storage.objects;
 DROP POLICY IF EXISTS "managers and admins can upload logos" ON storage.objects;
 DROP POLICY IF EXISTS "managers and admins can update logos" ON storage.objects;
+DROP POLICY IF EXISTS "admins can upload logos"              ON storage.objects;
+DROP POLICY IF EXISTS "admins can update logos"              ON storage.objects;
 
 CREATE POLICY "store logos are publicly readable"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'store-logos');
 
-CREATE POLICY "managers and admins can upload logos"
+CREATE POLICY "admins can upload logos"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
-  bucket_id = 'store-logos' AND
-  (
-    public.is_admin() OR
-    EXISTS (
-      SELECT 1 FROM public.store_managers sm
-      WHERE sm.user_id  = auth.uid()
-        AND sm.store_id::text = (string_to_array(name, '/'))[2]
-    )
-  )
+  bucket_id = 'store-logos' AND public.is_admin()
 );
 
-CREATE POLICY "managers and admins can update logos"
+CREATE POLICY "admins can update logos"
 ON storage.objects FOR UPDATE
 TO authenticated
 USING (
-  bucket_id = 'store-logos' AND
-  (
-    public.is_admin() OR
-    EXISTS (
-      SELECT 1 FROM public.store_managers sm
-      WHERE sm.user_id  = auth.uid()
-        AND sm.store_id::text = (string_to_array(name, '/'))[2]
-    )
-  )
+  bucket_id = 'store-logos' AND public.is_admin()
 );
 
 -- ── 2. Schema ─────────────────────────────────────────────────────────────────
@@ -63,7 +49,7 @@ ALTER TABLE public.stores
   ADD COLUMN IF NOT EXISTS logo_updated_at timestamptz;
 
 -- ── 3. RPC: admin_set_store_logo ──────────────────────────────────────────────
--- Caller must be a global admin OR a manager of the target store.
+-- Caller must be a global admin. Managers cannot change logos.
 -- Updates both logo_path and logo_updated_at atomically.
 
 CREATE OR REPLACE FUNCTION public.admin_set_store_logo(
@@ -80,11 +66,8 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  IF NOT public.is_admin() AND NOT EXISTS (
-    SELECT 1 FROM public.store_managers sm
-    WHERE sm.user_id = auth.uid() AND sm.store_id = p_store_id
-  ) THEN
-    RAISE EXCEPTION 'Not authorized — must be admin or manager of this store';
+  IF NOT public.is_admin() THEN
+    RAISE EXCEPTION 'Not authorized — only admins can change store logos';
   END IF;
 
   UPDATE public.stores
