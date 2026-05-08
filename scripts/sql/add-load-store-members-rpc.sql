@@ -38,6 +38,7 @@ BEGIN
       FROM public.store_memberships sm
       LEFT JOIN public.profiles p ON p.user_id = sm.user_id
       WHERE sm.store_id = p_store_id
+      ORDER BY p.public_id
     ) t
   );
 END $$;
