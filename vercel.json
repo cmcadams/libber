@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/apps/customer/index.html" }
+    { "source": "/",             "destination": "/apps/customer/index.html" },
+    { "source": "/apps/staff/", "destination": "/apps/staff/page.html" }
   ],
   "headers": [
     {
