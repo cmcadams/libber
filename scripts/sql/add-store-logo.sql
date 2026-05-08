@@ -70,6 +70,10 @@ BEGIN
     RAISE EXCEPTION 'Not authorized — only admins can change store logos';
   END IF;
 
+  IF p_logo_path IS DISTINCT FROM ('stores/' || p_store_id::text || '/logo.webp') THEN
+    RAISE EXCEPTION 'Invalid logo_path — must be stores/<store_id>/logo.webp';
+  END IF;
+
   UPDATE public.stores
   SET    logo_path       = p_logo_path,
          logo_updated_at = now()
