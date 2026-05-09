@@ -18,7 +18,7 @@ function initialsAvatar(store) {
   return `<span class="store-avatar store-avatar--initials" style="--hue:${hue}" aria-hidden="true">${initials}</span>`
 }
 
-function storeAvatar(store) {
+export function storeAvatar(store) {
   const url = getLogoUrl(store.logo_path, store.logo_updated_at)
   if (url) {
     return `<img class="store-avatar" src="${escapeHtml(url)}" width="36" height="36" alt="" aria-hidden="true" loading="lazy" onerror="this.style.display='none'">`

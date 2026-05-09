@@ -1,6 +1,6 @@
 import { joinStore, unjoinStore } from '../services/stores.js'
 import { state } from '../state/state.js'
-import { renderUserStores } from './renderUser.js'
+import { renderUserStores, storeAvatar } from './renderUser.js'
 import { $ } from '../lib/dom.js'
 import { captureError } from '../lib/sentry.js'
 
@@ -20,7 +20,9 @@ export function renderStores(stores) {
 
   if (section) section.style.display = ''
 
-  const joinedIds = new Set((state.userStores || []).map(s => s.store_id))
+  const joinedIds  = new Set((state.userStores || []).map(s => s.store_id))
+  const theme      = document.documentElement.dataset.theme
+  const showAvatar = theme === 'mid' || theme === 'max'
 
   container.innerHTML = ''
   const list = document.createElement('div')
@@ -32,9 +34,21 @@ export function renderStores(stores) {
     const card    = document.createElement('div')
     card.className = 'store-join-card'
 
+    const left = document.createElement('div')
+    left.className = 'store-card-left'
+    if (showAvatar) {
+      left.insertAdjacentHTML('beforeend', storeAvatar({
+        store_name:      store.name ?? 'Unknown Store',
+        logo_path:       store.logo_path ?? null,
+        logo_updated_at: null,
+      }))
+    }
+
     const nameEl      = document.createElement('span')
     nameEl.className  = 'store-join-name'
     nameEl.textContent = store.name ?? 'Unknown Store'
+
+    left.appendChild(nameEl)
 
     const btn         = document.createElement('button')
     btn.className     = joined ? 'unjoin-btn' : 'join-btn'
@@ -45,7 +59,7 @@ export function renderStores(stores) {
       else handleJoin(store, btn)
     })
 
-    card.appendChild(nameEl)
+    card.appendChild(left)
     card.appendChild(btn)
     list.appendChild(card)
   }

@@ -91,15 +91,6 @@
 
     .settings-btn:hover { color: var(--text-muted); }
 
-    @keyframes cog-glow {
-      0%, 100% { filter: none; }
-      50%       { filter: drop-shadow(0 0 4px rgba(99, 153, 34, 0.65)); }
-    }
-
-    .settings-btn.glowing {
-      animation: cog-glow 1s ease-in-out 3;
-    }
-
     .header-id {
       text-align: center;
       cursor: pointer;
@@ -581,7 +572,7 @@
   <div class="page">
     <div class="header">
       <div class="header-id" id="header-id">
-        <span class="user-id" id="header-label">Tap to show staff</span>
+        <span class="user-id" id="header-label">Your ID</span>
         <span id="user-id">Loading...</span>
       </div>
       <a id="settings-btn" href="/apps/customer/settings.html" class="settings-btn" aria-label="Account settings">

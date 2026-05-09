@@ -1,6 +1,6 @@
 const VALID   = new Set(['min', 'mid', 'max'])
 const KEY     = 'libber_theme'
-const DEFAULT = 'min'
+const DEFAULT = 'mid'
 
 export function getTheme() {
   try {

@@ -4,7 +4,6 @@ import { loadCustomerHome, subscribeToPointsInserts } from '../../services/membe
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
 import * as savePrompt   from '../../ui/savePrompt.js'
-import * as settingsCog  from '../../ui/settingsCog.js'
 import { state } from '../../state/state.js'
 import { $ } from '../../lib/dom.js'
 import { applyTheme } from '../../lib/theme.js'
@@ -44,7 +43,6 @@ function writeStoresCache(stores) { writeJson(STORES_KEY, { stores, ts: Date.now
 
 function applyHomeData(data, uuid) {
   savePrompt.render(data)
-  settingsCog.render(data)
   renderUser(data.public_id, uuid)
 
   state.userStores = (data.memberships || []).map(m => ({
@@ -64,26 +62,6 @@ function applyHomeData(data, uuid) {
   if (data.stores != null) renderStores(data.stores)
 }
 
-// ── Notifications ─────────────────────────────────────────────────────────────
-
-function maybeNotify(row) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return
-  if (document.visibilityState === 'visible') return
-  const store = (state.userStores || []).find(s => s.store_id === row.store_id)
-  const name  = store?.store_name || 'a store'
-  const pts   = row.points
-  new Notification('Libber', {
-    body: pts > 0 ? `+${pts} pts at ${name}` : `${Math.abs(pts)} pts redeemed at ${name}`,
-    icon: '/apps/customer/icon.svg'
-  })
-}
-
-function requestNotificationPermission() {
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission()
-  }
-}
-
 // ── Show Staff overlay ────────────────────────────────────────────────────────
 
 function initShowStaff() {
@@ -91,12 +69,7 @@ function initShowStaff() {
   const overlay   = $('staff-overlay')
   const overlayId = $('staff-overlay-id')
   const doneBtn   = $('staff-overlay-done')
-  const label     = $('header-label')
   if (!trigger || !overlay) return
-
-  if (label && localStorage.getItem('libber_staff_used')) {
-    label.textContent = 'Your ID'
-  }
 
   function exitStaffView() {
     overlay.classList.remove('active')
@@ -105,10 +78,6 @@ function initShowStaff() {
   }
 
   trigger.addEventListener('click', () => {
-    if (label) {
-      localStorage.setItem('libber_staff_used', '1')
-      label.textContent = 'Your ID'
-    }
     overlayId.textContent = $('user-id').textContent
     overlay.classList.add('active')
     document.documentElement.requestFullscreen?.().catch(() => {})
@@ -187,14 +156,11 @@ async function init() {
       }
       writeHomeCache(user.id, data)
       applyHomeData(data, user.id)
-      if (hasNewPoints(prevBal, data, hadCache)) { savePrompt.glow(); settingsCog.glow() }
+      if (hasNewPoints(prevBal, data, hadCache)) savePrompt.glow()
     }
 
-    // 3. Request notification permission after a brief delay.
-    setTimeout(requestNotificationPermission, 4000)
-
-    // 4. Real-time: re-fetch when a points row is inserted.
-    subscribeToPointsInserts(user.id, async row => {
+    // 3. Real-time: re-fetch when a points row is inserted.
+    subscribeToPointsInserts(user.id, async () => {
       const stores = readStoresCache()
       const { data: fresh } = await loadCustomerHome(!stores)
       if (!fresh) return
@@ -206,11 +172,10 @@ async function init() {
       const prevRtBal = getTotalBalance(readHomeCache(user.id))
       writeHomeCache(user.id, fresh)
       applyHomeData(fresh, user.id)
-      if (hasNewPoints(prevRtBal, fresh, true)) { savePrompt.glow(); settingsCog.glow() }
-      maybeNotify(row)
+      if (hasNewPoints(prevRtBal, fresh, true)) savePrompt.glow()
     })
 
-    // 5. Refresh button.
+    // 4. Refresh button.
     const refreshBtn = $('refresh-btn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
@@ -223,7 +188,7 @@ async function init() {
             writeStoresCache(fresh.stores)
             writeHomeCache(user.id, fresh)
             applyHomeData(fresh, user.id)
-            if (hasNewPoints(prevRefBal, fresh, true)) { savePrompt.glow(); settingsCog.glow() }
+            if (hasNewPoints(prevRefBal, fresh, true)) savePrompt.glow()
           }
         } catch (err) {
           captureError(err, { fn: 'refresh' })
@@ -240,7 +205,7 @@ async function init() {
   }
 }
 
-// 6. Register service worker for PWA installability.
+// 5. Register service worker for PWA installability.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/customer/sw.js').catch(() => {})
 }
