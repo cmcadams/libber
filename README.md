@@ -4,6 +4,23 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 
 ---
 
+## Next session
+
+**Pending SQL deployments** (paste into Supabase Dashboard → SQL Editor in this order):
+
+1. `scripts/sql/add-store-logo.sql` — store logos feature (Storage bucket, columns, RPC, updated `load_customer_home`)
+2. `scripts/sql/admin-load-store-members.sql` — fixes admin access to `load_store_members` via `is_admin()`
+3. `scripts/sql/add-load-store-members-rpc.sql` — adds `ORDER BY p.public_id` to member list
+4. `scripts/sql/fix-default-privileges.sql` — re-run after the above to restore correct grants
+
+**OAuth setup** (Google and Apple sign-in not yet configured):
+
+- Google: create OAuth 2.0 credentials in Google Cloud Console, add redirect URI `https://flghcbrwqtburdywgcvk.supabase.co/auth/v1/callback`, enable provider in Supabase Auth
+- Apple: requires Apple Developer account — Services ID, redirect URI, `.p8` private key, Team ID, Key ID
+- Supabase Auth → URL Configuration: Site URL `https://libber.vercel.app`, Redirect URL `https://libber.vercel.app/apps/customer/save.html`
+
+---
+
 ## Architecture
 
 Two separate web apps built from one codebase, deployed to one Vercel project.
@@ -24,15 +41,14 @@ Two separate web apps built from one codebase, deployed to one Vercel project.
 | File | Purpose |
 |---|---|
 | `index.html` | Home — user ID, joined store balances, join/unjoin stores, save-prompt button, points history per store |
-| `save.html` | Save account — shown after identity linking via magic link or OAuth |
-| `settings.html` | Settings — linked accounts, notifications, display theme, install to home screen |
+| `save.html` | Save account — Google, Apple, or email magic link |
+| `settings.html` | Account — linked account status; link another account |
 
 ### Staff (`apps/staff/`)
 
 | File | Purpose |
 |---|---|
-| `index.html` | Store picker — shows approved stores, install to home screen |
-| `page.html` | Staff tools — load members, award/bonus/adjust points, redeem |
+| `page.html` | Staff tools — load members, award/bonus/adjust points, redeem. Auto-selects first store if none previously chosen |
 | `manager.html` | Manager tools — view store members, promote to staff, demote staff |
 
 ### Admin (local only)
@@ -52,7 +68,6 @@ apps/
     manifest.json       PWA manifest
     sw.js               Service worker (cache versioned at build time)
   staff/
-    index.html
     page.html
     manager.html
 adminstart.html         Local admin tool (not deployed)
@@ -60,7 +75,7 @@ scripts/
   sql/                  All DB scripts (see SQL Scripts section)
 src/
   lib/
-    cog.js              PWA install logic — initCog() (dropdown toggle) + initInstallSection() (static section)
+    cog.js              PWA install logic — initCog() (dropdown toggle) + initInstallSection() (static section) — used by staff/manager pages
     confirm.js          showConfirm(title, detail) — reusable Promise-based confirm dialog
     dom.js              $ (getElementById), $q (querySelector), $$ (querySelectorAll)
     escape.js           escapeHtml — used before any user value hits the DOM
@@ -68,7 +83,7 @@ src/
     sentry.js           Sentry init, setSentryUser(), captureError()
     storage.js          Shared localStorage helpers
     supabase.js         Supabase client (anon key)
-    theme.js            Theme utilities
+    theme.js            Theme utilities — default is `mid` (thumbnails visible)
   pages/
     admin/start.js      Admin page controller (local only)
     customer/
@@ -89,10 +104,9 @@ src/
   state/state.js        Shared in-memory state
   ui/
     renderCustomers.js  Staff member panel — award, bonus, adjust, redeem
-    renderStores.js     Store join/unjoin cards
-    renderUser.js       User ID header, joined-store cards, expandable history
+    renderStores.js     Store join/unjoin cards (with avatars on mid/max theme)
+    renderUser.js       User ID header, joined-store cards, expandable history; exports storeAvatar()
     savePrompt.js       Save-prompt button — render(), glow()
-    settingsCog.js      Settings cog UI
 eslint.config.js
 vite.config.js
 vercel.json
@@ -163,7 +177,6 @@ dist/
   apps/customer/index.html
   apps/customer/save.html
   apps/customer/settings.html
-  apps/staff/index.html
   apps/staff/page.html
   apps/staff/manager.html
 ```
@@ -219,9 +232,10 @@ Anonymous Supabase auth (`src/services/auth.js`):
 
 1. Open `apps/customer/` — anonymous session starts, profile created
 2. Joined stores and balances load from cache instantly, then refresh from the server
-3. A save-prompt button is shown once the user has earned any points (A/B tested text). It glows briefly when new points are detected
+3. A save-prompt button is shown once the user has earned any points (A/B tested text). Glows briefly when new points are detected. Tapping goes to `save.html` — Google, Apple, or email magic link
 4. Tap a store card to expand: award rules, redeem options, last 10 transactions
 5. Join or unjoin stores — points are preserved if the user rejoins later
+6. Cog icon (top right) links to `settings.html` — shows linked account status
 
 ### Staff
 
@@ -466,6 +480,9 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 | `fix-default-privileges.sql` | Re-revokes anon/PUBLIC execute on all public functions and re-grants to authenticated. Re-run after any migration that creates or replaces functions |
 | `remove-applicant-table-refs.sql` | Redefines `approve_staff_applicant`, `admin_assign_manager`, `admin_remove_store` — removes all applicant table references |
 | `drop-applicant-system.sql` | Drops dead applicant RPCs, views, and tables (`store_staff_applicants`, `store_manager_applicants`) |
+| `add-store-logo.sql` | Store logos — Supabase Storage bucket, RLS policies, `logo_path`/`logo_updated_at` columns on `stores`, `admin_set_store_logo` RPC, updated `load_customer_home` ⚠️ not yet run in production |
+| `admin-load-store-members.sql` | Updated `load_store_members` to use `is_admin()` directly (removes bootstrap dependency) ⚠️ not yet run in production |
+| `revoke-admin-store-access.sql` | Safely revokes admin + all store access for a user. Dry-run by default (`v_dry_run = true`) |
 | `assign-admin.sql` | Grants admin access by public ID |
 | `delete-store.sql` | Deletes one store and all its data |
 | `delete-user.sql` | Deletes one user by public ID |
