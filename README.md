@@ -8,10 +8,11 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 
 **Pending SQL deployments** (paste into Supabase Dashboard → SQL Editor in this order):
 
-1. `scripts/sql/add-store-logo.sql` — store logos feature (Storage bucket, columns, RPC, updated `load_customer_home`)
-2. `scripts/sql/admin-load-store-members.sql` — fixes admin access to `load_store_members` via `is_admin()`
-3. `scripts/sql/add-load-store-members-rpc.sql` — adds `ORDER BY p.public_id` to member list
-4. `scripts/sql/fix-default-privileges.sql` — re-run after the above to restore correct grants
+1. `scripts/sql/admin-load-store-members.sql` — fixes admin access to `load_store_members` via `is_admin()`
+2. `scripts/sql/add-load-store-members-rpc.sql` — adds `ORDER BY p.public_id` to member list
+3. `scripts/sql/fix-default-privileges.sql` — re-run after the above to restore correct grants
+
+✅ `add-store-logo.sql` — already deployed (logos working)
 
 **OAuth setup** (Google and Apple sign-in not yet configured):
 
@@ -480,7 +481,7 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 | `fix-default-privileges.sql` | Re-revokes anon/PUBLIC execute on all public functions and re-grants to authenticated. Re-run after any migration that creates or replaces functions |
 | `remove-applicant-table-refs.sql` | Redefines `approve_staff_applicant`, `admin_assign_manager`, `admin_remove_store` — removes all applicant table references |
 | `drop-applicant-system.sql` | Drops dead applicant RPCs, views, and tables (`store_staff_applicants`, `store_manager_applicants`) |
-| `add-store-logo.sql` | Store logos — Supabase Storage bucket, RLS policies, `logo_path`/`logo_updated_at` columns on `stores`, `admin_set_store_logo` RPC, updated `load_customer_home` ⚠️ not yet run in production |
+| `add-store-logo.sql` | Store logos — Supabase Storage bucket, RLS policies, `logo_path`/`logo_updated_at` columns on `stores`, `admin_set_store_logo` RPC, updated `load_customer_home` |
 | `admin-load-store-members.sql` | Updated `load_store_members` to use `is_admin()` directly (removes bootstrap dependency) ⚠️ not yet run in production |
 | `revoke-admin-store-access.sql` | Safely revokes admin + all store access for a user. Dry-run by default (`v_dry_run = true`) |
 | `assign-admin.sql` | Grants admin access by public ID |
