@@ -101,14 +101,21 @@ The `handleCallback()` fix deployed today handles both outcomes correctly:
 
 ---
 
-## 6. Known Gap — Magic Link on Free Tier
+## 6. Magic Link Email — Configure Custom SMTP (Resend)
 
-Supabase's free tier rate-limits outbound email to approximately **3 emails per hour**. For any real usage, a custom SMTP provider needs to be configured:
+Supabase's free tier rate-limits outbound email to approximately **3 emails per hour**. This will block real users from saving their points via magic link at any meaningful volume. Must be resolved before launch.
 
-- Authentication → **Email** (or Settings → SMTP)
-- Options: Resend, Postmark, SendGrid, AWS SES
+**Recommended: Resend** — free tier (3,000 emails/month), native Supabase integration, ~5 min setup.
 
-This is not blocking for testing but will block real users from saving their points via magic link at any meaningful volume.
+1. Create account at [resend.com](https://resend.com)
+2. Add and verify domain `libber.vercel.app` (adds DNS records)
+3. Create an API key
+4. Supabase Dashboard → **Authentication → Email** → enable **Custom SMTP**:
+   - Host: `smtp.resend.com`
+   - Port: `465`
+   - Username: `resend`
+   - Password: your Resend API key
+   - Sender email: `noreply@libber.vercel.app` (or similar verified address)
 
 ---
 
