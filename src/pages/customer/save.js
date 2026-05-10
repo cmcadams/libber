@@ -27,16 +27,19 @@ function setError(msg) {
 // ── OAuth / magic link callback ───────────────────────────────────────────
 
 function handleCallback() {
-  showView('view-success')
+  showView('view-loading')
 
   // Check session state rather than event name: with detectSessionInUrl=true
   // Supabase processes the code/hash before our listener attaches, so
   // INITIAL_SESSION (not SIGNED_IN) is often the only event we receive here.
-  let redirected = false
+  let resolved = false
+
   const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    if (resolved) return
     if (session?.user && !session.user.is_anonymous) {
-      redirected = true
+      resolved = true
       subscription.unsubscribe()
+      showView('view-success')
       try {
         await markAccountLinked()
       } catch (err) {
@@ -46,10 +49,18 @@ function handleCallback() {
     }
   })
 
-  // Fallback: if auth state never fires (e.g. code already consumed), redirect anyway.
+  // Fallback: sign-in did not complete within 8 s (code consumed, identity
+  // conflict, or automatic linking disabled). Show error and let user retry.
   setTimeout(() => {
-    if (!redirected) location.href = HOME_URL
-  }, 10000)
+    if (!resolved) {
+      resolved = true
+      subscription.unsubscribe()
+      showView('view-main')
+      setError('Could not sign in. Please try again.')
+      initProviders()
+      initMagicLink()
+    }
+  }, 8000)
 }
 
 // ── Provider buttons ──────────────────────────────────────────────────────
