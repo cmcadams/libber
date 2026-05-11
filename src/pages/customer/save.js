@@ -40,12 +40,8 @@ function handleCallback() {
       resolved = true
       subscription.unsubscribe()
       showView('view-success')
-      try {
-        await markAccountLinked()
-      } catch (err) {
-        captureError(err, { fn: 'mark_account_linked' })
-      }
       setTimeout(() => { location.href = HOME_URL }, 1500)
+      markAccountLinked().catch(err => captureError(err, { fn: 'mark_account_linked' }))
     }
   })
 
