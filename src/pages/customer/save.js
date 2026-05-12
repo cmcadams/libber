@@ -137,6 +137,19 @@ async function init() {
     return
   }
 
+  if (params.has('error')) {
+    showView('view-main')
+    initProviders()
+    initMagicLink()
+    const code = params.get('error_code') || ''
+    if (code === 'email_exists') {
+      setError('This Google account is already linked to another account. Try signing in with email instead.')
+    } else {
+      setError('Sign-in failed. Please try again.')
+    }
+    return
+  }
+
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (user && !user.is_anonymous) {
