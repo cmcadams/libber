@@ -27,6 +27,94 @@ Build the Gotya loyalty card app from scratch on a clean setup — new laptop, n
 
 ---
 
+## Linux machine setup (fresh install)
+
+### 1. Install Node.js (via nvm — recommended)
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+# Close and reopen terminal, then:
+nvm install --lts
+nvm use --lts
+node --version   # should be v22 or higher
+npm --version
+```
+
+### 2. Install Git
+
+```bash
+sudo apt update
+sudo apt install git
+git --version
+```
+
+Configure Git identity:
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+```
+
+### 3. Set up SSH key for GitHub
+
+```bash
+ssh-keygen -t ed25519 -C "your@email.com"
+# Press enter to accept defaults
+cat ~/.ssh/id_ed25519.pub
+```
+
+Copy the output and add it to GitHub: **Settings → SSH and GPG keys → New SSH key**
+
+Test it:
+
+```bash
+ssh -T git@github.com
+# Should say: Hi username! You've successfully authenticated...
+```
+
+### 4. Clone the repo
+
+```bash
+git clone git@github.com:yourusername/gotya.git
+cd gotya
+```
+
+### 5. Install project dependencies
+
+```bash
+npm install
+```
+
+### 6. Create `.env.local`
+
+```bash
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+SENTRY_AUTH_TOKEN=your_sentry_auth_token
+```
+
+Get these values from:
+- Supabase Dashboard → Project Settings → API
+- Sentry → Settings → Auth Tokens
+
+### 7. Start the dev server
+
+```bash
+npm run dev
+```
+
+Admin tool available at: `http://localhost:5173/adminstart.html`
+
+### 8. Install a code editor (VS Code)
+
+```bash
+sudo snap install code --classic
+```
+
+Or download from code.visualstudio.com.
+
+---
+
 ## Code preparation (do this before transferring)
 
 1. Clone or copy the Libber repo
