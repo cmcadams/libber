@@ -6,19 +6,25 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 
 ## Next session
 
-**Pending SQL deployments** (paste into Supabase Dashboard → SQL Editor in this order):
+**Domain name decided: Gotya** (`gotya.ie` + `gotya.co.uk` registered). Rebrand from Libber to Gotya is pending.
 
-1. `scripts/sql/admin-load-store-members.sql` — fixes admin access to `load_store_members` via `is_admin()`
-2. `scripts/sql/add-load-store-members-rpc.sql` — adds `ORDER BY p.public_id` to member list
-3. `scripts/sql/fix-default-privileges.sql` — re-run after the above to restore correct grants
+**Plan:** rebuild on a new laptop with a new Google account (`gotya`), fresh Git repo, fresh Supabase project, fresh Vercel project. This repo is the reference blueprint.
 
-✅ `add-store-logo.sql` — already deployed (logos working)
+### What is done (2026-05-12)
 
-**OAuth setup** (Google and Apple sign-in not yet configured):
+- ✅ Gmail SMTP configured in Supabase — magic link emails working (500/day limit)
+- ✅ `admin-load-store-members.sql` deployed — admin access via `is_admin()`, no bootstrap needed
+- ✅ `fix-default-privileges.sql` re-run after above
+- ✅ Google OAuth configured — Google Cloud project `delta-discovery-593`, client `Libber`, redirect URI `https://flghcbrwqtburdywgcvk.supabase.co/auth/v1/callback`, enabled in Supabase Auth
+- ✅ Supabase URL Configuration — Site URL `https://libber.vercel.app`, Redirect URL `https://libber.vercel.app/apps/customer/save.html`
+- ✅ Error handling for OAuth `email_exists` conflict — shows message instead of silent fail
 
-- Google: create OAuth 2.0 credentials in Google Cloud Console, add redirect URI `https://flghcbrwqtburdywgcvk.supabase.co/auth/v1/callback`, enable provider in Supabase Auth
-- Apple: requires Apple Developer account — Services ID, redirect URI, `.p8` private key, Team ID, Key ID
-- Supabase Auth → URL Configuration: Site URL `https://libber.vercel.app`, Redirect URL `https://libber.vercel.app/apps/customer/save.html`
+### Still outstanding
+
+- **Apple OAuth** — requires paid Apple Developer account ($99/year). Services ID, `.p8` key, Team ID, Key ID → Supabase Auth → Apple
+- **Automatic identity linking** — setting not visible in Supabase dashboard UI; may require Supabase config file. Without it, a user who saved via magic link cannot link Google in a second browser (gets `email_exists` error). Magic link cross-device works fine regardless.
+- **Custom SMTP (Resend)** — currently using Gmail SMTP (500/day). Resend requires a custom domain — unblock after domain is set up.
+- **Rebrand to Gotya** — rename in code, Vercel, Supabase, Google Cloud, Sentry
 
 ---
 
@@ -482,7 +488,7 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 | `remove-applicant-table-refs.sql` | Redefines `approve_staff_applicant`, `admin_assign_manager`, `admin_remove_store` — removes all applicant table references |
 | `drop-applicant-system.sql` | Drops dead applicant RPCs, views, and tables (`store_staff_applicants`, `store_manager_applicants`) |
 | `add-store-logo.sql` | Store logos — Supabase Storage bucket, RLS policies, `logo_path`/`logo_updated_at` columns on `stores`, `admin_set_store_logo` RPC, updated `load_customer_home` |
-| `admin-load-store-members.sql` | Updated `load_store_members` to use `is_admin()` directly (removes bootstrap dependency) ⚠️ not yet run in production |
+| `admin-load-store-members.sql` | Updated `load_store_members` to use `is_admin()` directly (removes bootstrap dependency) |
 | `revoke-admin-store-access.sql` | Safely revokes admin + all store access for a user. Dry-run by default (`v_dry_run = true`) |
 | `assign-admin.sql` | Grants admin access by public ID |
 | `delete-store.sql` | Deletes one store and all its data |
