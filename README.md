@@ -519,9 +519,11 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 15. `fix-default-privileges.sql`
 16. `remove-applicant-table-refs.sql`
 17. `drop-applicant-system.sql`
-18. `fix-default-privileges.sql` _(re-run — new RPCs were created/replaced in steps 16–17)_
-19. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
-20. Reload admin tool — create stores, configure rules, assign managers
+18. `add-store-logo.sql`
+19. `admin-load-store-members.sql`
+20. `fix-default-privileges.sql` _(always re-run last after any session that creates/replaces functions)_
+21. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
+22. Reload admin tool — create stores, configure rules, assign managers
 
 ### After a full reset (`reset-all.sql`)
 
