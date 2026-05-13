@@ -10,12 +10,11 @@ Build the Gotya loyalty card app from scratch on a clean setup — new laptop, n
 
 DNS propagation takes 24–48 hours. Do the domain and DNS steps **before** anything else so the wait runs in the background while you set up everything else.
 
-1. Set up accounts (Google, GitHub, Vercel, Supabase, Sentry, Resend)
+1. Set up accounts (Google, GitHub, Vercel, Supabase, Sentry)
 2. Add `gotya.ie` to Vercel → get DNS records
-3. Add `gotya.ie` to Resend → get DNS records
-4. Add ALL DNS records to registrar (123reg) in one go
-5. While DNS propagates: set up Linux machine, clone repo, run SQL scripts, configure Supabase
-6. Once DNS is live: test email, test OAuth, test custom domain
+3. Add DNS records to registrar (123reg)
+4. While DNS propagates: set up Linux machine, clone repo, run SQL scripts, configure Supabase
+5. Once DNS is live: test email, test OAuth, test custom domain
 
 ---
 
@@ -26,9 +25,8 @@ DNS propagation takes 24–48 hours. Do the domain and DNS steps **before** anyt
 3. **Vercel** — sign up with the Gotya Google account. Connect to the GitHub repo.
 4. **Supabase** — new project. Note the project ref, anon key, and URL.
 5. **Sentry** — new project for error tracking. Note the DSN and auth token.
-6. **Resend** — sign up, add and verify domain `gotya.ie`, create API key.
-7. **Google Cloud Console** — create project `Gotya`. Set up OAuth consent screen and credentials.
-8. **Apple Developer** (optional, $99/year) — needed for Apple sign-in.
+6. **Google Cloud Console** — create project `Gotya`. Set up OAuth consent screen and credentials.
+7. **Apple Developer** (optional, $99/year) — needed for Apple sign-in.
 
 ---
 
@@ -40,17 +38,11 @@ Domains registered: `gotya.ie` and `gotya.co.uk` (via 123reg).
 
 In Vercel: **Project → Settings → Domains → Add → `gotya.ie`**
 
-Vercel will show you the DNS records to add (usually an A record and a CNAME). Add them at 123reg.
-
-### Resend DNS records
-
-In Resend: **Domains → Add Domain → `gotya.ie`**
-
-Resend will show SPF, DKIM, and MX records. Add all of them at 123reg.
+Vercel will show you the DNS records to add (usually an A record and a CNAME).
 
 ### At 123reg
 
-Go to **Domain Management → `gotya.ie` → DNS** and add all the records from Vercel and Resend together. Once saved, propagation begins — check back in a few hours.
+Go to **Domain Management → `gotya.ie` → DNS** and add the records from Vercel. Once saved, propagation begins — check back in a few hours.
 
 ---
 
@@ -216,22 +208,26 @@ Run these in order in **Supabase Dashboard → SQL Editor**. All are in `scripts
 
 | Setting | Where | Value |
 |---|---|---|
-| Custom SMTP | Authentication → Email → Custom SMTP | Resend — see below |
+| Custom SMTP | Authentication → Email → Custom SMTP | Gmail — see below |
 | Google OAuth | Authentication → Providers → Google | Client ID + Secret from Google Cloud Console |
 | Apple OAuth | Authentication → Providers → Apple | Services ID, Team ID, Key ID, `.p8` key |
 | Site URL | Authentication → URL Configuration | `https://gotya.ie` |
 | Redirect URL | Authentication → URL Configuration | `https://gotya.ie/apps/customer/save.html` |
 
-### Resend SMTP values
+### Gmail SMTP values
+
+Requires a Gmail App Password — Google Account → Security → 2-Step Verification → App Passwords → Create.
 
 | Field | Value |
 |---|---|
-| Host | `smtp.resend.com` |
+| Host | `smtp.gmail.com` |
 | Port | `465` |
-| Username | `resend` |
-| Password | Resend API key |
-| Sender email | `noreply@gotya.ie` |
+| Username | your Gmail address |
+| Password | 16-character App Password (not your login password) |
+| Sender email | your Gmail address |
 | Sender name | `Gotya` |
+
+Supabase will show a warning about personal email — ignore it, it works fine. Limit: 500 emails/day.
 
 ---
 
