@@ -201,6 +201,16 @@ Run these in order in **Supabase Dashboard → SQL Editor**. All are in `scripts
 20. `fix-default-privileges.sql` ← always re-run last after any session that creates/replaces functions
 21. Open `http://localhost:5173/adminstart.html`, copy your public ID, run `assign-admin.sql`
 22. Reload admin tool — create stores, configure reward rules, assign managers
+23. Seed the `ab_variants` table — run this in Supabase SQL Editor:
+
+```sql
+INSERT INTO public.ab_variants (test_name, variant, text, position, weight, is_active)
+VALUES
+  ('save_prompt', 'A', 'Save your points',      'bottom', 50, true),
+  ('save_prompt', 'B', 'Don''t lose your points', 'bottom', 50, true);
+```
+
+Without this the save prompt never appears for any user.
 
 ---
 
@@ -260,6 +270,12 @@ Supabase will show a warning about personal email — ignore it, it works fine. 
    - `SENTRY_AUTH_TOKEN`
 7. Deploy
 8. Add custom domain `gotya.ie` (once DNS has propagated)
+
+---
+
+## Known limitations
+
+**Automatic identity linking** — the Supabase setting that lets a user sign in with Google on a second device (when they already saved via magic link) is not visible in the Supabase dashboard UI. It may require a paid plan or a `supabase/config.toml` config file. Without it, users who saved via magic link will get an `email_exists` error if they try Google OAuth on another device. The app shows a clear error message in this case and tells them to use magic link instead. Magic link cross-device works correctly regardless.
 
 ---
 
