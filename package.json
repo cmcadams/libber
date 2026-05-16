@@ -22,6 +22,8 @@
   },
   "dependencies": {
     "@sentry/browser": "^10.50.0",
-    "@supabase/supabase-js": "^2.102.1"
+    "@supabase/supabase-js": "^2.102.1",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4"
   }
 }

@@ -1,3 +1,4 @@
+import jsQR from 'jsqr'
 import { state } from '../state/state.js'
 import { awardPoints, adjustPoints, loadMemberRecentTransactions } from '../services/members.js'
 import { escapeHtml } from '../lib/escape.js'
@@ -27,12 +28,10 @@ export function renderCustomers() {
   const container = $('customerList')
   if (!container) return
 
-  const members    = state.members || []
-  const showSearch = members.length >= 10
-  const searchEl   = $('search')
-  if (searchEl) searchEl.style.display = showSearch ? '' : 'none'
+  const members  = state.members || []
+  const searchEl = $('search')
 
-  const query = (showSearch ? searchEl?.value || '' : '').toUpperCase().replace(/[-\s]/g, '').trim()
+  const query = (searchEl?.value || '').toUpperCase().replace(/[-\s]/g, '').trim()
 
   const filtered = query
     ? members.filter(m => m.public_id.replace(/[-\s]/g, '').includes(query))
@@ -173,6 +172,60 @@ export function initCustomerHandlers() {
     if (!btn || btn.disabled || !selectedMember) return
     handleRedeem(btn)
   })
+
+  // ── QR scanner ───────────────────────────────────────────────────────────────
+  const scanBtn   = $('scanBtn')
+  const scanModal = $('scanModal')
+  const scanVideo = $('scanVideo')
+  const scanClose = $('scanClose')
+
+  const scanCanvas = document.createElement('canvas')
+  const scanCtx    = scanCanvas.getContext('2d', { willReadFrequently: true })
+
+  let stream = null
+  let rafId  = null
+
+  function stopScan() {
+    if (rafId)  { cancelAnimationFrame(rafId); rafId = null }
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null }
+    scanModal?.classList.remove('active')
+  }
+
+  function scanFrame() {
+    if (scanVideo.readyState >= scanVideo.HAVE_ENOUGH_DATA) {
+      scanCanvas.width  = scanVideo.videoWidth
+      scanCanvas.height = scanVideo.videoHeight
+      scanCtx.drawImage(scanVideo, 0, 0)
+      const img    = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height)
+      const result = jsQR(img.data, img.width, img.height)
+      if (result) {
+        const s = $('search')
+        if (s) {
+          s.value = result.data
+          s.dispatchEvent(new Event('input'))
+        }
+        stopScan()
+        return
+      }
+    }
+    rafId = requestAnimationFrame(scanFrame)
+  }
+
+  scanBtn?.addEventListener('click', async () => {
+    scanModal?.classList.add('active')
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      scanVideo.srcObject = stream
+      await scanVideo.play()
+      scanFrame()
+    } catch {
+      stopScan()
+      alert('Camera not available. Use the search box to filter by ID.')
+    }
+  })
+
+  scanClose?.addEventListener('click', stopScan)
+  scanModal?.addEventListener('click', e => { if (e.target === scanModal) stopScan() })
 }
 
 function renderRuleButtons() {
