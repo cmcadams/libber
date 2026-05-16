@@ -435,7 +435,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 24px;
+      gap: 16px;
     }
 
     .staff-overlay.active {
@@ -452,17 +452,26 @@
     }
 
     .staff-overlay-id {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
       font-family: var(--font);
-      font-size: clamp(52px, 14vw, 140px);
-      font-weight: 500;
+      font-size: clamp(56px, 22vw, 130px);
+      font-weight: 600;
       color: #fff;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.06em;
       text-align: center;
-      padding: 0 24px;
+      line-height: 1.05;
+    }
+
+    .staff-overlay-qr {
+      border-radius: 12px;
+      display: block;
     }
 
     .staff-overlay-done {
-      margin-top: 12px;
+      margin-top: 4px;
       padding: 14px 36px;
       background: transparent;
       border: 1px solid rgba(255,255,255,0.25);
@@ -479,11 +488,6 @@
     .staff-overlay-done:hover {
       border-color: rgba(255,255,255,0.5);
       color: #fff;
-    }
-
-    .staff-overlay-qr {
-      border-radius: 12px;
-      display: block;
     }
 
     .save-prompt           { margin-top: -0.5rem; margin-bottom: 0.75rem; display: none; }
@@ -590,7 +594,7 @@
 
     <div id="staff-overlay" class="staff-overlay">
       <span class="staff-overlay-label">Your ID</span>
-      <span id="staff-overlay-id" class="staff-overlay-id"></span>
+      <div id="staff-overlay-id" class="staff-overlay-id"></div>
       <canvas id="staff-overlay-qr" class="staff-overlay-qr"></canvas>
       <button id="staff-overlay-done" class="staff-overlay-done">Done</button>
     </div>

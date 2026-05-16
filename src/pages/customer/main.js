@@ -1,5 +1,6 @@
 import QRCode from 'qrcode'
 import { captureError } from '../../lib/sentry.js'
+import { escapeHtml } from '../../lib/escape.js'
 import { initAuth, resetSession } from '../../services/auth.js'
 import { loadCustomerHome, subscribeToPointsInserts } from '../../services/members.js'
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
@@ -80,15 +81,15 @@ function initShowStaff() {
 
   trigger.addEventListener('click', () => {
     const idText = $('user-id').textContent
-    overlayId.textContent = idText
+    overlayId.innerHTML = idText.split(' ').map(p => `<span>${escapeHtml(p)}</span>`).join('')
     QRCode.toCanvas($('staff-overlay-qr'), idText, {
-      width: 200,
+      width: 220,
       margin: 2,
       color: { dark: '#000000', light: '#ffffff' },
     }).catch(() => {})
     overlay.classList.add('active')
     document.documentElement.requestFullscreen?.().catch(() => {})
-    screen.orientation?.lock('landscape').catch(() => {})
+    screen.orientation?.lock('portrait').catch(() => {})
   })
 
   doneBtn.addEventListener('click', exitStaffView)
