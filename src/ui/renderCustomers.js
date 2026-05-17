@@ -214,13 +214,21 @@ export function initCustomerHandlers() {
   scanBtn?.addEventListener('click', async () => {
     scanModal?.classList.add('active')
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      // Prefer rear camera; fall back to any camera if the constraint is rejected
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true })
+      }
       scanVideo.srcObject = stream
       await scanVideo.play()
       scanFrame()
-    } catch {
+    } catch (err) {
       stopScan()
-      alert('Camera not available. Use the search box to filter by ID.')
+      const denied = err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError'
+      alert(denied
+        ? 'Camera permission was denied. Allow camera access in your browser settings and try again.'
+        : 'Camera not available. Use the search box to filter by ID.')
     }
   })
 
