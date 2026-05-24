@@ -10,7 +10,7 @@ export async function loadAdminUsers() {
 export async function loadAllStores() {
   return supabase
     .from('stores')
-    .select('id, name, logo_path, logo_updated_at')
+    .select('id, name, logo_path, logo_updated_at, is_active, deleted_at')
     .order('name', { ascending: true })
 }
 
@@ -113,6 +113,21 @@ export async function updateOutlet(outletId, name) {
 
 export async function deleteOutlet(outletId) {
   return supabase.rpc('admin_delete_outlet', { p_outlet_id: outletId })
+}
+
+export async function archiveStore(storeId) {
+  return supabase.rpc('admin_archive_store', { p_store_id: storeId })
+}
+
+export async function restoreStore(storeId) {
+  return supabase.rpc('admin_restore_store', { p_store_id: storeId })
+}
+
+export async function removeCustomerFromStore(userId, storeId) {
+  return supabase.rpc('manager_remove_customer_from_store', {
+    p_user_id:  userId,
+    p_store_id: storeId,
+  })
 }
 
 // ── Staff / manager RPCs ──────────────────────────────────────────────────────

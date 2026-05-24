@@ -3,7 +3,7 @@ import { refreshDebugUI } from '../../lib/adminContext.js'
 import {
   assignManager, assignStaff,
   loadAdminUsers, loadAllStores,
-  createStore, updateStoreName, removeStore,
+  createStore, updateStoreName,
   loadRewardRules, insertRewardRule, deleteRewardRule, updateRewardRuleOrder,
   setBonusCap,
   loadStoreManagers, removeManager,
@@ -11,6 +11,7 @@ import {
   loadStoreMembers,
   uploadStoreLogo, setStoreLogo,
   loadStoreOutlets, createOutlet, updateOutlet, deleteOutlet,
+  archiveStore, restoreStore, removeCustomerFromStore,
 } from '../../services/admin.js'
 import { getStoreBonusCap } from '../../services/stores.js'
 import { getLogoUrl } from '../../lib/logoUrl.js'
@@ -48,10 +49,11 @@ async function init() {
     const me = users.find(u => u.user_id === session?.id)
     if (me?.public_id) $('adminId').textContent = me.public_id
 
-    renderPicker('managerStoreList', stores, 'store')
-    renderPicker('staffStoreList', stores, 'store')
-    renderPicker('rulesStoreList', stores, 'store')
-    renderPicker('manageStoreList', stores, 'store')
+    const activeStores = stores.filter(s => s.is_active !== false)
+    renderPicker('managerStoreList', activeStores, 'store')
+    renderPicker('staffStoreList', activeStores, 'store')
+    renderPicker('rulesStoreList', activeStores, 'store')
+    renderPicker('manageStoreList', activeStores, 'store')
     renderAllStores()
     renderAllUsers()
 
@@ -95,18 +97,22 @@ function renderAllStores() {
   const el = $('allStoresList')
   if (!el) return
   if (!stores.length) { el.innerHTML = '<p class="empty">No stores yet.</p>'; return }
-  el.innerHTML = stores.map(s => `
+  el.innerHTML = stores.map(s => {
+    const archived = s.is_active === false
+    const actions = archived
+      ? `<button class="btn-sm" data-restore-store-id="${escapeHtml(s.id)}">Restore</button>`
+      : `<button class="btn-sm" data-edit-store-id="${escapeHtml(s.id)}" data-store-name="${escapeHtml(s.name || '')}">Edit</button>
+         <button class="btn-danger-sm" data-archive-store-id="${escapeHtml(s.id)}">Archive</button>`
+    return `
     <div class="dir-row" data-store-id="${escapeHtml(s.id)}">
       <div class="dir-info">
         <span class="dir-name">${escapeHtml(s.name || 'Untitled')}</span>
         <span class="dir-sub">${escapeHtml(s.id)}</span>
       </div>
-      <div class="dir-actions">
-        <button class="btn-sm" data-edit-store-id="${escapeHtml(s.id)}" data-store-name="${escapeHtml(s.name || '')}">Edit</button>
-        <button class="btn-danger-sm" data-remove-store-id="${escapeHtml(s.id)}">Remove</button>
-      </div>
-    </div>
-  `).join('')
+      ${archived ? '<span class="archived-badge">Archived</span>' : ''}
+      <div class="dir-actions">${actions}</div>
+    </div>`
+  }).join('')
 }
 
 function renderAllUsers() {
@@ -246,8 +252,11 @@ function bindEvents() {
     const editBtn = e.target.closest('[data-edit-store-id]')
     if (editBtn) { showInlineEdit(editBtn.dataset.editStoreId, editBtn.dataset.storeName); return }
 
-    const removeBtn = e.target.closest('[data-remove-store-id]')
-    if (removeBtn) { await handleRemoveStore(removeBtn); return }
+    const archiveBtn = e.target.closest('[data-archive-store-id]')
+    if (archiveBtn) { await handleArchiveStore(archiveBtn); return }
+
+    const restoreBtn = e.target.closest('[data-restore-store-id]')
+    if (restoreBtn) { await handleRestoreStore(restoreBtn); return }
 
     const saveBtn = e.target.closest('[data-save-store-id]')
     if (saveBtn) await handleSaveStoreName(saveBtn)
@@ -318,6 +327,12 @@ function bindEvents() {
     if (reqId !== manageStoreReqId) return
     if (error) { btn.disabled = false; setStatus('manageStoreStatus', error.message || 'Could not remove.', true); return }
     await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
+  })
+
+  $('manageMembersList')?.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-remove-customer-id]')
+    if (!btn) return
+    await handleRemoveCustomer(btn.dataset.removeCustomerId, btn)
   })
 
   // ── Outlets ────────────────────────────────────────────────────────────────
@@ -502,15 +517,16 @@ async function handleCreateStore() {
   $('newStoreName').value = ''
   setStatus('createStoreStatus', `"${data.name}" created.`)
 
-  stores = [...stores, { id: data.id, name: data.name }]
+  stores = [...stores, { id: data.id, name: data.name, is_active: true }]
   refreshAllStorePickers()
 }
 
 function refreshAllStorePickers() {
-  renderPicker('managerStoreList', stores, 'store')
-  renderPicker('staffStoreList', stores, 'store')
-  renderPicker('rulesStoreList', stores, 'store')
-  renderPicker('manageStoreList', stores, 'store')
+  const activeStores = stores.filter(s => s.is_active !== false)
+  renderPicker('managerStoreList', activeStores, 'store')
+  renderPicker('staffStoreList', activeStores, 'store')
+  renderPicker('rulesStoreList', activeStores, 'store')
+  renderPicker('manageStoreList', activeStores, 'store')
   renderAllStores()
 
   if (selectedManagerStoreId) {
@@ -570,21 +586,24 @@ async function handleSaveStoreName(saveBtn) {
   setStatus('allStoresStatus', 'Store name updated.')
 }
 
-async function handleRemoveStore(removeBtn) {
-  const storeId = removeBtn.dataset.removeStoreId
+async function handleArchiveStore(archiveBtn) {
+  const storeId = archiveBtn.dataset.archiveStoreId
 
-  if (!confirmStep(removeBtn, 'Remove')) return
+  if (!confirmStep(archiveBtn, 'Archive')) return
 
-  removeBtn.disabled = true
-  const { error } = await removeStore(storeId)
+  archiveBtn.disabled = true
+  const { error } = await archiveStore(storeId)
   if (error) {
-    removeBtn.disabled = false
-    setStatus('allStoresStatus', error.message || 'Could not remove store.', true)
+    archiveBtn.disabled = false
+    setStatus('allStoresStatus', error.message || 'Could not archive store.', true)
     return
   }
 
-  stores = stores.filter(s => s.id !== storeId)
+  stores = stores.map(s =>
+    s.id === storeId ? { ...s, is_active: false, deleted_at: new Date().toISOString() } : s
+  )
 
+  // Remove archived store from section pickers — pickers only show active stores
   if (selectedManagerStoreId === storeId) {
     selectedManagerStoreId = null
     $('managerCandidatesList').innerHTML = '<p class="empty">Select a store</p>'
@@ -597,15 +616,44 @@ async function handleRemoveStore(removeBtn) {
     selectedRulesStoreId = null
     $('rulesContent').classList.add('hidden')
   }
-  if (selectedManageStoreId === storeId) {
-    selectedManageStoreId = null
-    selectedManageStoreName = null
-    $('manageStoreContent').classList.add('hidden')
-  }
 
   renderAllStores()
   refreshAllStorePickers()
-  setStatus('allStoresStatus', 'Store removed.')
+  setStatus('allStoresStatus', 'Store archived.')
+}
+
+async function handleRestoreStore(restoreBtn) {
+  const storeId = restoreBtn.dataset.restoreStoreId
+
+  restoreBtn.disabled = true
+  const { error } = await restoreStore(storeId)
+  if (error) {
+    restoreBtn.disabled = false
+    setStatus('allStoresStatus', error.message || 'Could not restore store.', true)
+    return
+  }
+
+  stores = stores.map(s =>
+    s.id === storeId ? { ...s, is_active: true, deleted_at: null } : s
+  )
+
+  renderAllStores()
+  refreshAllStorePickers()
+  setStatus('allStoresStatus', 'Store restored.')
+}
+
+async function handleRemoveCustomer(userId, btn) {
+  if (!confirmStep(btn, 'Remove')) return
+  btn.disabled = true
+  const reqId = manageStoreReqId
+  const { error } = await removeCustomerFromStore(userId, selectedManageStoreId)
+  if (reqId !== manageStoreReqId) return
+  if (error) {
+    btn.disabled = false
+    setStatus('manageMembersStatus', error.message || 'Could not remove customer.', true)
+    return
+  }
+  await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
 }
 
 // ── Reward rules ──────────────────────────────────────────────────────────────
@@ -757,30 +805,37 @@ async function loadAndRenderManageStore(storeId, storeName, reqId) {
   renderManageLogo(storeId)
   $('manageManagersList').innerHTML = '<p class="empty">Loading...</p>'
   $('manageStaffList').innerHTML    = '<p class="empty">Loading...</p>'
+  $('manageMembersList').innerHTML  = '<p class="empty">Loading...</p>'
   $('manageOutletsList').innerHTML  = '<p class="empty">Loading...</p>'
   setStatus('manageStoreStatus', '')
+  setStatus('manageMembersStatus', '')
   setStatus('manageOutletsStatus', '')
 
   const [
     { data: managers, error: me },
     { data: staff,    error: se },
+    { data: members,  error: mbe },
     { data: outlets,  error: oe },
   ] = await Promise.all([
     loadStoreManagers(storeId),
     loadStoreStaff(storeId),
+    loadStoreMembers(storeId),
     loadStoreOutlets(storeId),
   ])
 
   if (reqId !== manageStoreReqId) return
 
-  if (me) { $('manageManagersList').innerHTML = '<p class="empty">Could not load.</p>' }
-  else { renderMemberList('manageManagersList', managers || [], 'data-remove-manager-id') }
+  if (me)  { $('manageManagersList').innerHTML = '<p class="empty">Could not load.</p>' }
+  else     { renderMemberList('manageManagersList', managers || [], 'data-remove-manager-id') }
 
-  if (se) { $('manageStaffList').innerHTML = '<p class="empty">Could not load.</p>' }
-  else { renderMemberList('manageStaffList', staff || [], 'data-remove-staff-id') }
+  if (se)  { $('manageStaffList').innerHTML = '<p class="empty">Could not load.</p>' }
+  else     { renderMemberList('manageStaffList', staff || [], 'data-remove-staff-id') }
 
-  if (oe) { $('manageOutletsList').innerHTML = '<p class="empty">Could not load.</p>' }
-  else { currentOutlets = outlets || []; renderOutletsList(currentOutlets) }
+  if (mbe) { $('manageMembersList').innerHTML = '<p class="empty">Could not load.</p>' }
+  else     { renderMemberList('manageMembersList', members || [], 'data-remove-customer-id') }
+
+  if (oe)  { $('manageOutletsList').innerHTML = '<p class="empty">Could not load.</p>' }
+  else     { currentOutlets = outlets || []; renderOutletsList(currentOutlets) }
 }
 
 // ── Outlets ───────────────────────────────────────────────────────────────────

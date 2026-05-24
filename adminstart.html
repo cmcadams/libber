@@ -607,6 +607,19 @@
       border: 0.5px solid currentColor;
     }
 
+    /* ── Archived badge ─────────────────────────────────────────────────────── */
+
+    .archived-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-radius: 6px;
+      padding: 2px 8px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
     /* ── Status / empty ─────────────────────────────────────────────────────── */
 
     .status {
@@ -761,7 +774,7 @@
 
       <section class="panel hidden" id="panel-allStores">
         <h2>All Stores</h2>
-        <p>Every store in the directory. Edit names or remove stores.</p>
+        <p>Every store in the directory. Edit names, archive, or restore stores.</p>
         <div class="dir-list" id="allStoresList"><p class="empty">Loading...</p></div>
         <div class="status" id="allStoresStatus"></div>
       </section>
@@ -797,6 +810,11 @@
           <div class="manage-section">
             <div class="manage-section-title">Staff</div>
             <div class="dir-list" id="manageStaffList"></div>
+          </div>
+          <div class="manage-section">
+            <div class="manage-section-title">Members</div>
+            <div class="dir-list" id="manageMembersList"></div>
+            <div class="status" id="manageMembersStatus"></div>
           </div>
           <div class="manage-section">
             <div class="manage-section-title">Outlets</div>
