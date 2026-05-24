@@ -10,8 +10,14 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 
 **Plan:** rebuild on a new laptop with a new Google account (`gotya`), fresh Git repo, fresh Supabase project, fresh Vercel project. This repo is the reference blueprint.
 
-### What is done (2026-05-24)
+### What is done (2026-05-25)
 
+- ✅ **Canonical rebuild chain frozen at migration 15** — 16 numbered SQL files (`00`–`15`) replace the old 26-step sequence. Running them in order on an empty Supabase project produces the full production schema.
+- ✅ **Applicant system fully removed** — `store_staff_applicants`, `store_manager_applicants`, `apply_for_staff`, `reject_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` are completely absent from the rebuild chain.
+- ✅ **`assert_store_manager` NULL bypass fixed** — `COALESCE(get_store_role(...), '')` prevents authenticated users with no role from bypassing manager-only RPCs.
+- ✅ **`load_customer_home` restored** — `logo_path` + `logo_updated_at` + `is_active` filtering all present in the final version (14-soft-delete.sql).
+- ✅ **`on_auth_user_created` trigger created** — was previously defined but never wired up; now correctly fires on `auth.users` INSERT.
+- ✅ **Migration governance** — `MIGRATIONS.md` (rules), `BASELINE.md` (frozen spec), `verify-baseline.sql` (drift detection). Next migration is `16`.
 - ✅ Gmail SMTP configured in Supabase — magic link emails working (500/day limit)
 - ✅ `admin-load-store-members.sql` deployed — admin access via `is_admin()`, no bootstrap needed
 - ✅ Google OAuth configured — Google Cloud project `delta-discovery-593`, client `Libber`, redirect URI `https://flghcbrwqtburdywgcvk.supabase.co/auth/v1/callback`
@@ -26,6 +32,7 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 
 ### Still outstanding
 
+- **`unjoin_store` missing from canonical rebuild** — client (`src/services/stores.js`) calls `unjoin_store` but the function does not appear in any SQL file and is not in the frozen baseline. If rebuilding from scratch the function must be added as migration `16`. Customers currently cannot unjoin a store on a fresh database.
 - **Apple OAuth** — requires paid Apple Developer account ($99/year). Services ID, `.p8` key, Team ID, Key ID → Supabase Auth → Apple
 - **Automatic identity linking** — not configurable in Supabase dashboard. Without it, a user who saved via magic link cannot link Google in a second browser (`email_exists` error). Magic link cross-device works fine regardless.
 - **Custom SMTP (Resend)** — currently using Gmail SMTP (500/day). Resend requires a custom domain — unblock after domain is set up.
@@ -359,22 +366,24 @@ All write operations go through RPCs. No direct client writes.
 
 | RPC | Auth check | What it does |
 |---|---|---|
-| `join_store` | `auth.uid()` | Creates store membership (ON CONFLICT DO NOTHING) |
-| `unjoin_store` | `auth.uid()` | Removes caller's membership |
+| `join_store` | `auth.uid()` | Creates membership or reactivates an inactive one; blocks archived stores |
 | `approve_staff_applicant` | Manager or admin | Promotes a member to staff |
-| `reject_staff_applicant` | Manager or admin | Removes a staff applicant |
 | `demote_store_staff` | Manager or admin | Removes a user from store staff |
+| `manager_remove_customer_from_store` | Manager or admin | Deactivates a customer's membership (soft-removes) |
 | `award_points` | Staff, manager, or admin | Inserts ledger entry, enforces bonus cap, tags outlet if provided. Advisory lock per (user, store) |
 | `adjust_points` | Staff, manager, or admin | Inserts correction (no cap). Advisory lock per (user, store) |
-| `load_customer_home` | `auth.uid()` | Returns profile, memberships, balances, rules, history, save prompt data in one call |
-| `load_store_members` | Staff, manager, or admin | Returns members with balances and public IDs |
+| `load_customer_home` | `auth.uid()` | Returns profile, memberships, balances, rules, history, save prompt data in one call. Filters inactive stores and memberships |
+| `load_store_members` | Staff, manager, or admin | Returns active members with balances and public IDs |
 | `load_store_staff_profiles` | Manager or admin | Returns staff with public IDs |
 | `load_store_outlets` | Staff, manager, or admin | Returns outlets for a store |
 | `load_member_recent_transactions` | Staff, manager, or admin | Returns last 5 ledger entries for a member at a store |
 | `mark_account_linked` | `auth.uid()` | Sets `account_linked_at` on the caller's profile |
 | `admin_create_store` | Admin | Creates a store |
 | `admin_update_store` | Admin | Renames a store |
-| `admin_remove_store` | Admin | Deletes a store and all related data |
+| `admin_remove_store` | Admin | Hard-deletes a store and all related data |
+| `admin_archive_store` | Admin | Soft-deletes a store (`is_active = false`, sets `deleted_at`) |
+| `admin_restore_store` | Admin | Restores an archived store (`is_active = true`, clears `deleted_at`) |
+| `admin_set_store_logo` | Admin | Sets `logo_path` and `logo_updated_at` on a store |
 | `admin_insert_reward_rule` | Admin | Adds a reward rule |
 | `admin_delete_reward_rule` | Admin | Deletes a reward rule |
 | `admin_update_reward_rule_order` | Admin | Updates rule sort order |
@@ -383,12 +392,15 @@ All write operations go through RPCs. No direct client writes.
 | `admin_remove_manager` | Admin | Removes a manager |
 | `admin_assign_staff` | Admin | Directly assigns a user as staff |
 | `admin_remove_staff` | Admin | Removes a user from store staff |
+| `admin_load_store_members` | Admin | Returns all members (active + inactive) for a store |
 | `admin_create_outlet` | Admin | Creates an outlet for a store |
 | `admin_update_outlet` | Admin | Renames an outlet |
 | `admin_delete_outlet` | Admin | Deletes an outlet (ledger rows retain history via ON DELETE SET NULL) |
 | `get_store_role` | — | STABLE helper: returns `'admin'`, `'manager'`, `'staff'`, or `null` for the caller at a given store |
 | `assert_store_access` | — | Raises if caller has no role at the store (used inside RPCs) |
 | `assert_store_manager` | — | Raises if caller is not manager or admin (used inside RPCs) |
+| `assert_store_active` | — | Raises if store does not exist or is archived (used inside RPCs) |
+| `assert_active_membership` | — | Raises if no active membership row exists for the (user, store) pair |
 | `is_admin` | — | Helper: returns true if caller is in `admins` table |
 
 **Views**
@@ -420,9 +432,9 @@ All SECURITY DEFINER RPCs use `SET search_path = ''` and fully qualified `public
 
 | Table | Blocked direct | Via RPC only |
 |---|---|---|
-| `stores` | ✓ | `admin_create_store`, `admin_update_store`, `admin_remove_store` |
+| `stores` | ✓ | `admin_create_store`, `admin_update_store`, `admin_remove_store`, `admin_archive_store`, `admin_restore_store` |
 | `store_reward_rules` | ✓ | `admin_insert_reward_rule`, `admin_delete_reward_rule`, `admin_update_reward_rule_order` |
-| `store_memberships` | ✓ | `join_store`, `unjoin_store` |
+| `store_memberships` | ✓ | `join_store`, `manager_remove_customer_from_store` |
 | `store_staff` | ✓ | `approve_staff_applicant`, `demote_store_staff`, `admin_assign_staff`, `admin_remove_staff` |
 | `store_managers` | ✓ | `admin_assign_manager`, `admin_remove_manager` |
 | `store_outlets` | ✓ | `admin_create_outlet`, `admin_update_outlet`, `admin_delete_outlet` |
@@ -445,7 +457,7 @@ All SECURITY DEFINER RPCs use `SET search_path = ''` and fully qualified `public
 
 ### Function grants
 
-All public RPCs are callable by `authenticated` only. `anon` and `PUBLIC` have `EXECUTE` revoked on all public functions. Re-run `fix-default-privileges.sql` after any migration that creates or replaces functions.
+All public RPCs are callable by `authenticated` only. `anon` and `PUBLIC` have `EXECUTE` revoked on all public functions. Re-run `15-final-grants.sql` after any migration that creates or replaces functions — Supabase's `supabase_admin` default privileges restore broad grants on every `CREATE OR REPLACE FUNCTION`.
 
 ### XSS
 
@@ -453,15 +465,19 @@ All user-controlled values are escaped via `src/lib/escape.js` before being writ
 
 ### Store-level RBAC
 
-All store-scoped permission checks go through three centralized helpers (deployed via `add-rbac-helpers.sql` + `fix-rbac-remaining.sql`):
+All store-scoped permission checks go through centralised helpers defined in `10-rbac-helpers.sql`:
 
 | Helper | Returns / Raises |
 |---|---|
 | `get_store_role(p_store_id)` | `'admin'` · `'manager'` · `'staff'` · `null` |
 | `assert_store_access(p_store_id)` | Raises if `get_store_role` returns null |
-| `assert_store_manager(p_store_id)` | Raises if role is not `manager` or `admin` |
+| `assert_store_manager(p_store_id)` | Raises if role is not `manager` or `admin` (`COALESCE`-guarded — NULL-safe) |
+| `assert_store_active(p_store_id)` | Raises if store is archived or does not exist |
+| `assert_active_membership(p_user_id, p_store_id)` | Raises if no active membership row exists |
 
-Every guarded RPC calls one `PERFORM public.assert_store_access(p_store_id)` or `PERFORM public.assert_store_manager(p_store_id)` — no inline UNION queries. Adding a new role tier only requires editing `get_store_role`.
+Every guarded RPC calls the appropriate helper — no inline UNION queries. Adding a new role tier only requires editing `get_store_role`.
+
+**NULL-safety note**: `assert_store_manager` uses `COALESCE(get_store_role(...), '')` before the `NOT IN` check. Without this, `NULL NOT IN ('manager', 'admin')` evaluates to NULL in SQL and the guard would silently pass for unauthenticated callers.
 
 ### Admin identity
 
@@ -496,43 +512,78 @@ Rules: `no-unused-vars` (args prefixed `_` are exempt), `no-undef`, `no-empty` (
 
 ## SQL Scripts
 
-All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All are safe to re-run.
+All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor.
+
+### Canonical Build Files (00–15) — use these for fresh setup
+
+Baseline frozen at migration 15. Files 00–15 are immutable. See `BASELINE.md` for the full spec and `MIGRATIONS.md` for governance rules.
+
+| File | What it adds |
+|---|---|
+| `00-base-schema.sql` | 7 base tables + RLS enabled |
+| `01-admin-security.sql` | `admins` table, `is_admin()`, write-block RLS on stores/rules, admin RPCs |
+| `02-rls-policies.sql` | SELECT policies on all base tables |
+| `03-rls-write-blocks.sql` | Write-block RLS on memberships/staff/ledger; early `join_store`, `demote_store_staff` |
+| `04-schema-bonus-cap.sql` | `stores.max_bonus_points`; `admin_set_bonus_cap`; `award_points` (intermediate) |
+| `05-schema-bonus-adjust.sql` | Extends kind constraint; `adjust_points` (intermediate) |
+| `06-schema-outlets.sql` | `store_outlets` table; `outlet_id` on `points_ledger`; outlet RPCs |
+| `07-schema-ab-testing.sql` | `ab_variants` table; profile columns; `create_profile` trigger |
+| `08-schema-store-logo.sql` | `stores.logo_path`/`logo_updated_at`; storage bucket + policies; `admin_set_store_logo` |
+| `09-rpc-save-account.sql` | `mark_account_linked` RPC |
+| `10-rbac-helpers.sql` | `get_store_role`, `assert_store_access`, `assert_store_manager`; RBAC indexes |
+| `11-security-hardening.sql` | Realtime; scoped RLS; REVOKE anon; grant lockdown |
+| `12-admin-user-directory.sql` | `admin_user_directory` view; `profiles: select as admin` policy |
+| `13-rpc-fixes.sql` | `load_member_recent_transactions`; advisory lock on `adjust_points` |
+| `14-soft-delete.sql` | `is_active` columns; `assert_store_active`/`assert_active_membership`; all final RPCs |
+| `15-final-grants.sql` | Final REVOKE anon/PUBLIC + re-grant authenticated on all functions |
+
+### Utility Scripts
 
 | Script | What it does |
 |---|---|
-| Script | What it does |
-|---|---|
-| `admin-rpcs.sql` | `admins` table, `is_admin()` helper, RESTRICTIVE RLS on `stores` and `store_reward_rules`, all admin RPCs |
-| `staff-rpcs.sql` | RESTRICTIVE RLS on `store_memberships`, `store_staff`, `points_ledger`. Staff and manager RPCs |
-| `add-manager-applicants.sql` | Historical — originally created applicant tables and related RPCs (superseded by `remove-applicant-table-refs.sql` + `drop-applicant-system.sql`) |
-| `add-bonus-cap.sql` | `max_bonus_points` on `stores`, `award_points` RPC with cap logic, `admin_set_bonus_cap` |
-| `add-rls-select-policies.sql` | SELECT RLS policies for all client-read tables |
-| `add-load-customer-home-rpc.sql` | `load_customer_home` RPC baseline (superseded by `add-ab-testing.sql`) |
-| `add-load-store-members-rpc.sql` | `load_store_members` RPC baseline (superseded by `add-rbac-helpers.sql`) |
-| `add-reject-applicant-rpc.sql` | `reject_staff_applicant` RPC baseline (superseded by `fix-rbac-remaining.sql`) |
-| `add-ab-testing.sql` | `ab_variants` table + RLS, new profile columns, weighted variant assignment trigger, updated `load_customer_home` |
-| `add-bonus-adjust.sql` | Extends `store_reward_rules` kind check, adds `adjust_points` RPC baseline |
-| `add-save-account.sql` | `mark_account_linked` RPC |
-| `add-load-store-staff-profiles-rpc.sql` | `load_store_staff_profiles` RPC baseline (superseded by `add-rbac-helpers.sql`) |
-| `rename-account-linked.sql` | Renames `email_saved_at` → `account_linked_at` and `mark_email_saved` → `mark_account_linked` throughout |
-| `harden-rls-and-grants.sql` | Security hardening: scoped RLS on profiles/staff, anon grants revoked, function grants restricted to authenticated |
-| `fix-default-privileges.sql` | Re-revokes anon/PUBLIC execute on all public functions and re-grants to authenticated. **Re-run after every session that creates/replaces functions** |
-| `remove-applicant-table-refs.sql` | Redefines `approve_staff_applicant`, `admin_assign_manager`, `admin_remove_store` — removes all applicant table references |
-| `drop-applicant-system.sql` | Drops dead applicant RPCs, views, and tables (`store_staff_applicants`, `store_manager_applicants`) |
-| `add-store-logo.sql` | Store logos — Supabase Storage bucket, RLS policies, `logo_path`/`logo_updated_at` columns on `stores`, `admin_set_store_logo` RPC, updated `load_customer_home` |
-| `admin-load-store-members.sql` | `admin_load_store_members` RPC baseline (superseded by `fix-rbac-remaining.sql`) |
-| `fix-approve-staff-applicant.sql` | Historical security fix for `approve_staff_applicant` (superseded by `add-rbac-helpers.sql`) |
-| `fix-award-points-security.sql` | Historical security fix for `award_points` — added advisory lock and redemption rule requirement (superseded by `add-outlets.sql` → `add-rbac-helpers.sql`) |
-| `add-load-member-recent-transactions-rpc.sql` | `load_member_recent_transactions` RPC baseline (superseded by `fix-rbac-remaining.sql`) |
-| `add-outlets.sql` | `store_outlets` table + RLS, `outlet_id` on `points_ledger`, outlet admin RPCs, `load_store_outlets`. Run before `add-rbac-helpers.sql` |
-| `add-rbac-helpers.sql` | **Central RBAC** — `get_store_role`, `assert_store_access`, `assert_store_manager`, covering indexes, rewrites 7 RPCs |
-| `fix-rbac-remaining.sql` | **RBAC audit patch** — updates 3 missed RPCs (`load_member_recent_transactions`, `reject_staff_applicant`, `admin_load_store_members`) and adds advisory lock to `adjust_points` |
-| `revoke-admin-store-access.sql` | Safely revokes admin + all store access for a user. Dry-run by default (`v_dry_run = true`) |
 | `assign-admin.sql` | Grants admin access by public ID |
+| `revoke-admin-store-access.sql` | Safely revokes admin + all store access for a user. Dry-run by default (`v_dry_run = true`) |
 | `delete-store.sql` | Deletes one store and all its data |
 | `delete-user.sql` | Deletes one user by public ID |
 | `delete-all-users.sql` | Deletes all users. Leaves stores and rules intact |
 | `reset-all.sql` | Full wipe — every row including auth users. No undo |
+| `verify-baseline.sql` | Drift-detection queries — every section returns rows only when something is wrong |
+
+### Legacy / Reference Scripts
+
+Kept for history only. Do not run these on a fresh setup — the canonical files above supersede them.
+
+| Script | Notes |
+|---|---|
+| `admin-rpcs.sql` | Superseded by `01-admin-security.sql` |
+| `staff-rpcs.sql` | Superseded by `03-rls-write-blocks.sql` |
+| `add-bonus-cap.sql` | Superseded by `04-schema-bonus-cap.sql` |
+| `add-rls-select-policies.sql` | Superseded by `02-rls-policies.sql` |
+| `add-ab-testing.sql` | Superseded by `07-schema-ab-testing.sql` |
+| `add-bonus-adjust.sql` | Superseded by `05-schema-bonus-adjust.sql` |
+| `add-save-account.sql` | Superseded by `09-rpc-save-account.sql` |
+| `add-outlets.sql` | Superseded by `06-schema-outlets.sql` |
+| `add-store-logo.sql` | Superseded by `08-schema-store-logo.sql` |
+| `add-rbac-helpers.sql` | Superseded by `10-rbac-helpers.sql` (also has the COALESCE NULL-safety fix) |
+| `harden-rls-and-grants.sql` | Superseded by `11-security-hardening.sql` |
+| `fix-admin-user-directory.sql` | Superseded by `12-admin-user-directory.sql` |
+| `fix-rbac-remaining.sql` | Superseded by `13-rpc-fixes.sql` |
+| `fix-default-privileges.sql` | Superseded by `15-final-grants.sql` |
+| `add-soft-delete-v4.sql` | Superseded by `14-soft-delete.sql` |
+| `add-manager-applicants.sql` | Historical — applicant system removed from rebuild |
+| `add-load-customer-home-rpc.sql` | Historical |
+| `add-load-store-members-rpc.sql` | Historical |
+| `add-reject-applicant-rpc.sql` | Historical — `reject_staff_applicant` removed from rebuild |
+| `add-load-store-staff-profiles-rpc.sql` | Historical |
+| `add-load-member-recent-transactions-rpc.sql` | Historical |
+| `rename-account-linked.sql` | Historical migration — already baked into canonical files |
+| `remove-applicant-table-refs.sql` | Historical — applicant system removed from rebuild |
+| `drop-applicant-system.sql` | Historical — applicant system removed from rebuild |
+| `admin-load-store-members.sql` | Historical |
+| `fix-approve-staff-applicant.sql` | Historical security fix — baked into canonical files |
+| `fix-award-points-security.sql` | Historical security fix — baked into canonical files |
+| `fix-soft-delete-consistency.sql` | Historical — baked into `14-soft-delete.sql` |
+| `bootstrap-admin-store-access.sql` | Historical utility |
 
 ---
 
@@ -540,36 +591,38 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 
 ### New Supabase project — run scripts in this order
 
-1. `admin-rpcs.sql`
-2. `staff-rpcs.sql`
-3. `add-manager-applicants.sql`
-4. `add-bonus-cap.sql`
-5. `add-rls-select-policies.sql`
-6. `add-load-customer-home-rpc.sql`
-7. `add-load-store-members-rpc.sql`
-8. `add-reject-applicant-rpc.sql`
-9. `add-ab-testing.sql`
-10. `add-bonus-adjust.sql`
-11. `add-save-account.sql`
-12. `add-load-store-staff-profiles-rpc.sql`
-13. `add-load-member-recent-transactions-rpc.sql`
-14. `rename-account-linked.sql`
-15. `harden-rls-and-grants.sql`
-16. `fix-default-privileges.sql`
-17. `remove-applicant-table-refs.sql`
-18. `drop-applicant-system.sql`
-19. `add-store-logo.sql`
-20. `admin-load-store-members.sql`
-21. `add-outlets.sql`
-22. `add-rbac-helpers.sql`
-23. `fix-rbac-remaining.sql`
-24. `fix-default-privileges.sql` _(always re-run last after any session that creates/replaces functions)_
-25. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
-26. Reload admin tool — create stores, configure rules, assign managers, manage outlets
+Run the 16 canonical migration files in `scripts/sql/` in order. Paste each into Supabase Dashboard → SQL Editor.
+
+```
+00-base-schema.sql
+01-admin-security.sql
+02-rls-policies.sql
+03-rls-write-blocks.sql
+04-schema-bonus-cap.sql
+05-schema-bonus-adjust.sql
+06-schema-outlets.sql
+07-schema-ab-testing.sql
+08-schema-store-logo.sql
+09-rpc-save-account.sql
+10-rbac-helpers.sql
+11-security-hardening.sql
+12-admin-user-directory.sql
+13-rpc-fixes.sql
+14-soft-delete.sql
+15-final-grants.sql   ← always run last (re-revokes anon/PUBLIC; defeats Supabase default-privilege re-grant)
+```
+
+Then:
+
+1. Open `adminstart.html` locally, copy your public ID
+2. Run `assign-admin.sql` to grant yourself admin access
+3. Reload admin tool — create stores, configure rules, assign managers, manage outlets
+
+The authoritative spec for the resulting schema is `scripts/sql/BASELINE.md`.
 
 ### After a full reset (`reset-all.sql`)
 
-Schema (RPCs, RLS, triggers) survives a reset — it lives in the schema, not the data. Only re-run steps 16–17.
+Schema (RPCs, RLS, triggers) survive a data reset — they live in the schema, not the data. Re-run `15-final-grants.sql` only.
 
 ---
 
