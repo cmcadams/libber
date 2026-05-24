@@ -214,3 +214,12 @@ SET    save_prompt_variant = (
   LIMIT  1
 )
 WHERE save_prompt_variant IS NULL;
+
+-- ── Create profile trigger ────────────────────────────────────────────────────
+-- The create_profile() function is defined above but the trigger was never
+-- created by the original script. Added here so the rebuild creates it correctly.
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.create_profile();
