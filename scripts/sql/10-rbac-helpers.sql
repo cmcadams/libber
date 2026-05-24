@@ -62,6 +62,8 @@ END $$;
 
 -- ── assert_store_manager ──────────────────────────────────────────────────────
 -- Passes for: admin, manager. Raises for staff, unauthenticated, or no role.
+-- COALESCE converts a NULL return from get_store_role to '' so that
+-- NULL NOT IN (...) cannot silently evaluate to NULL (falsy) and bypass the check.
 
 CREATE OR REPLACE FUNCTION public.assert_store_manager(p_store_id uuid)
 RETURNS void
@@ -70,8 +72,6 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
-  -- COALESCE converts a NULL return from get_store_role to '' so that
-  -- NULL NOT IN (...) cannot silently evaluate to NULL (falsy) and bypass the check.
   IF COALESCE(public.get_store_role(p_store_id), '') NOT IN ('manager', 'admin') THEN
     RAISE EXCEPTION 'not authorized: manager or admin access required for this store';
   END IF;
