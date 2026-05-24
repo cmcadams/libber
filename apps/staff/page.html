@@ -100,7 +100,7 @@
 
     .back-btn:hover { color: var(--text); border-color: var(--text); }
 
-    /* ── Store context ───────────────────────────────────────────────────── */
+    /* ── Store / outlet context ──────────────────────────────────────────── */
 
     .store-context {
       display: flex;
@@ -108,6 +108,27 @@
       justify-content: space-between;
       margin-bottom: 12px;
     }
+
+    .context-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .outlet-btn {
+      padding: 4px 10px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: 999px;
+      background: transparent;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text-muted);
+      cursor: pointer;
+      min-height: 28px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .outlet-btn:hover { color: var(--text); border-color: var(--text); }
 
     .store-title {
       font-size: 15px;
@@ -893,7 +914,10 @@
 
     <div class="store-context">
       <span class="store-title" id="storeTitle"></span>
-      <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
+      <div class="context-actions">
+        <button class="outlet-btn" id="changeOutletBtn" style="display:none" title="Change outlet">⌂ Outlet</button>
+        <button class="refresh-btn" id="refreshBtn" title="Refresh">↻</button>
+      </div>
     </div>
 
     <div class="search-row">
@@ -1015,6 +1039,17 @@
         <button class="close-btn" id="storePickerClose">×</button>
       </div>
       <div class="panel-scroll" id="storePickerList"></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="outletPicker">
+    <div class="panel">
+      <div class="panel-handle"></div>
+      <div class="panel-header">
+        <div class="panel-id">Select your outlet</div>
+        <button class="close-btn" id="outletPickerClose">×</button>
+      </div>
+      <div class="panel-scroll" id="outletPickerList"></div>
     </div>
   </div>
 

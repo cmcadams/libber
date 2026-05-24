@@ -339,7 +339,7 @@ async function handleQuickAward(btn) {
   const ok = await showConfirm(`Award ${label}`, `+${pts} pts for ${selectedMember.public_id}`)
   if (!ok) { btn.disabled = false; return }
 
-  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, label, btn.dataset.ruleId)
+  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, pts, label, btn.dataset.ruleId, state.selectedOutletId)
   if (error) {
     captureError(error, { fn: 'awardPoints' })
     btn.disabled = false
@@ -361,7 +361,7 @@ async function handleBonusAward() {
   $('bonusConfirmOk').disabled     = true
   $('bonusConfirmCancel').disabled = true
 
-  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, bonusPts, bonusReason)
+  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, bonusPts, bonusReason, null, state.selectedOutletId)
   if (error) {
     captureError(error, { fn: 'awardBonus' })
     $('bonusConfirmOk').disabled     = false
@@ -398,7 +398,7 @@ async function handleAdjust() {
   const ok = await showConfirm(`Adjust ${sign} pts`, `${reason} · ${selectedMember.public_id}`)
   if (!ok) { btn.disabled = false; return }
 
-  const { error } = await adjustPoints(selectedMember.user_id, state.selectedStoreId, pts, reason)
+  const { error } = await adjustPoints(selectedMember.user_id, state.selectedStoreId, pts, reason, state.selectedOutletId)
   if (error) {
     captureError(error, { fn: 'adjustPoints' })
     btn.disabled = false
@@ -436,7 +436,7 @@ async function handleRedeem(btn) {
   const ok = await showConfirm(`Redeem ${label}`, `−${pts} pts for ${selectedMember.public_id}`)
   if (!ok) { btn.disabled = false; return }
 
-  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label, btn.dataset.ruleId)
+  const { error } = await awardPoints(selectedMember.user_id, state.selectedStoreId, -pts, label, btn.dataset.ruleId, state.selectedOutletId)
   if (error) {
     captureError(error, { fn: 'redeemPoints' })
     btn.disabled = false

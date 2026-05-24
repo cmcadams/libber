@@ -62,20 +62,18 @@ export async function loadMembers(storeId) {
   return { error }
 }
 
-export async function awardPoints(userId, storeId, points, reason, ruleId = null) {
+export async function awardPoints(userId, storeId, points, reason, ruleId = null, outletId = null) {
   const params = { p_user_id: userId, p_store_id: storeId, p_points: points, p_reason: reason }
-  if (ruleId) params.p_rule_id = ruleId
+  if (ruleId)   params.p_rule_id   = ruleId
+  if (outletId) params.p_outlet_id = outletId
   const { error } = await supabase.rpc('award_points', params)
   return { error }
 }
 
-export async function adjustPoints(userId, storeId, points, reason) {
-  const { error } = await supabase.rpc('adjust_points', {
-    p_user_id:  userId,
-    p_store_id: storeId,
-    p_points:   points,
-    p_reason:   reason
-  })
+export async function adjustPoints(userId, storeId, points, reason, outletId = null) {
+  const params = { p_user_id: userId, p_store_id: storeId, p_points: points, p_reason: reason }
+  if (outletId) params.p_outlet_id = outletId
+  const { error } = await supabase.rpc('adjust_points', params)
   return { error }
 }
 

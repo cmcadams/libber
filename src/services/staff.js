@@ -14,3 +14,8 @@ export async function loadStaffStores(userId) {
   state.staffStores = merged
   return { error: e1 || e2 || null }
 }
+
+export async function loadStoreOutlets(storeId) {
+  const { data, error } = await supabase.rpc('load_store_outlets', { p_store_id: storeId })
+  return { data: data || [], error }
+}
