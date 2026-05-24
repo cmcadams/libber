@@ -10,6 +10,7 @@ import {
   loadStoreStaff, removeStaffAdmin,
   loadStoreMembers,
   uploadStoreLogo, setStoreLogo,
+  loadStoreOutlets, createOutlet, updateOutlet, deleteOutlet,
 } from '../../services/admin.js'
 import { getStoreBonusCap } from '../../services/stores.js'
 import { getLogoUrl } from '../../lib/logoUrl.js'
@@ -19,6 +20,7 @@ import { $, $$, $q } from '../../lib/dom.js'
 let users = []
 let stores = []
 let currentRules = []
+let currentOutlets = []
 
 let selectedManagerStoreId = null
 let selectedStaffStoreId = null
@@ -28,6 +30,7 @@ let selectedManageStoreName = null
 
 let managerReqId = 0
 let staffReqId = 0
+let manageStoreReqId = 0
 
 async function init() {
   try {
@@ -259,7 +262,8 @@ function bindEvents() {
     selectedManageStoreId = btn.dataset.storeId
     selectedManageStoreName = btn.dataset.storeName
     selectInPicker('manageStoreList', btn)
-    await loadAndRenderManageStore(btn.dataset.storeId, btn.dataset.storeName)
+    const reqId = ++manageStoreReqId
+    await loadAndRenderManageStore(btn.dataset.storeId, btn.dataset.storeName, reqId)
     refreshDebugUI(btn.dataset.storeId)
   })
 
@@ -298,18 +302,63 @@ function bindEvents() {
     const btn = e.target.closest('[data-remove-manager-id]')
     if (!btn) return
     btn.disabled = true
+    const reqId = manageStoreReqId
     const { error } = await removeManager(btn.dataset.removeManagerId, selectedManageStoreId)
+    if (reqId !== manageStoreReqId) return
     if (error) { btn.disabled = false; setStatus('manageStoreStatus', error.message || 'Could not remove.', true); return }
-    await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName)
+    await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
   })
 
   $('manageStaffList')?.addEventListener('click', async e => {
     const btn = e.target.closest('[data-remove-staff-id]')
     if (!btn) return
     btn.disabled = true
+    const reqId = manageStoreReqId
     const { error } = await removeStaffAdmin(btn.dataset.removeStaffId, selectedManageStoreId)
+    if (reqId !== manageStoreReqId) return
     if (error) { btn.disabled = false; setStatus('manageStoreStatus', error.message || 'Could not remove.', true); return }
-    await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName)
+    await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
+  })
+
+  // ── Outlets ────────────────────────────────────────────────────────────────
+
+  $('addOutletBtn')?.addEventListener('click', handleAddOutletRow)
+
+  $('manageOutletsList')?.addEventListener('click', async e => {
+    const renameBtn = e.target.closest('[data-rename-outlet-id]')
+    if (renameBtn) {
+      showOutletInlineEdit(renameBtn.dataset.renameOutletId, renameBtn.dataset.outletName)
+      return
+    }
+
+    const saveRenameBtn = e.target.closest('[data-save-outlet-id]')
+    if (saveRenameBtn) {
+      await handleSaveOutletRename(saveRenameBtn.dataset.saveOutletId)
+      return
+    }
+
+    const cancelRenameBtn = e.target.closest('[data-cancel-outlet-id]')
+    if (cancelRenameBtn) {
+      renderOutletsList(currentOutlets)
+      return
+    }
+
+    const saveNewBtn = e.target.closest('[data-save-new-outlet]')
+    if (saveNewBtn) {
+      await handleSaveNewOutlet()
+      return
+    }
+
+    const cancelNewBtn = e.target.closest('[data-cancel-new-outlet]')
+    if (cancelNewBtn) {
+      renderOutletsList(currentOutlets)
+      return
+    }
+
+    const removeBtn = e.target.closest('[data-remove-outlet-id]')
+    if (removeBtn) {
+      await handleDeleteOutlet(removeBtn.dataset.removeOutletId, removeBtn)
+    }
   })
 }
 
@@ -524,17 +573,7 @@ async function handleSaveStoreName(saveBtn) {
 async function handleRemoveStore(removeBtn) {
   const storeId = removeBtn.dataset.removeStoreId
 
-  if (removeBtn.dataset.confirm !== 'true') {
-    removeBtn.dataset.confirm = 'true'
-    removeBtn.textContent = 'Sure?'
-    setTimeout(() => {
-      if (removeBtn.dataset.confirm === 'true') {
-        removeBtn.dataset.confirm = ''
-        removeBtn.textContent = 'Remove'
-      }
-    }, 3000)
-    return
-  }
+  if (!confirmStep(removeBtn, 'Remove')) return
 
   removeBtn.disabled = true
   const { error } = await removeStore(storeId)
@@ -712,27 +751,172 @@ function renderManageLogo(storeId) {
 
 // ── Manage store ──────────────────────────────────────────────────────────────
 
-async function loadAndRenderManageStore(storeId, storeName) {
+async function loadAndRenderManageStore(storeId, storeName, reqId) {
   $('manageStoreName').textContent = storeName
   $('manageStoreContent').classList.remove('hidden')
   renderManageLogo(storeId)
   $('manageManagersList').innerHTML = '<p class="empty">Loading...</p>'
-  $('manageStaffList').innerHTML = '<p class="empty">Loading...</p>'
+  $('manageStaffList').innerHTML    = '<p class="empty">Loading...</p>'
+  $('manageOutletsList').innerHTML  = '<p class="empty">Loading...</p>'
   setStatus('manageStoreStatus', '')
+  setStatus('manageOutletsStatus', '')
 
-  const [{ data: managers, error: me }, { data: staff, error: se }] = await Promise.all([
+  const [
+    { data: managers, error: me },
+    { data: staff,    error: se },
+    { data: outlets,  error: oe },
+  ] = await Promise.all([
     loadStoreManagers(storeId),
-    loadStoreStaff(storeId)
+    loadStoreStaff(storeId),
+    loadStoreOutlets(storeId),
   ])
+
+  if (reqId !== manageStoreReqId) return
 
   if (me) { $('manageManagersList').innerHTML = '<p class="empty">Could not load.</p>' }
   else { renderMemberList('manageManagersList', managers || [], 'data-remove-manager-id') }
 
   if (se) { $('manageStaffList').innerHTML = '<p class="empty">Could not load.</p>' }
   else { renderMemberList('manageStaffList', staff || [], 'data-remove-staff-id') }
+
+  if (oe) { $('manageOutletsList').innerHTML = '<p class="empty">Could not load.</p>' }
+  else { currentOutlets = outlets || []; renderOutletsList(currentOutlets) }
+}
+
+// ── Outlets ───────────────────────────────────────────────────────────────────
+
+// TODO: outlets are ordered alphabetically (ORDER BY name in load_store_outlets RPC).
+// If manual ordering is needed, add sort_order to store_outlets and update the RPC.
+
+function renderOutletsList(outlets) {
+  const el = $('manageOutletsList')
+  if (!el) return
+  if (!outlets.length) {
+    el.innerHTML = '<p class="empty">No outlets yet.</p>'
+    return
+  }
+  el.innerHTML = outlets.map(o => `
+    <div class="dir-row" data-outlet-id="${escapeHtml(o.id)}">
+      <div class="dir-info">
+        <span class="dir-name">${escapeHtml(o.name)}</span>
+      </div>
+      <div class="dir-actions">
+        <button class="btn-sm"
+          data-rename-outlet-id="${escapeHtml(o.id)}"
+          data-outlet-name="${escapeHtml(o.name)}">Rename</button>
+        <button class="btn-danger-sm"
+          data-remove-outlet-id="${escapeHtml(o.id)}">Remove</button>
+      </div>
+    </div>
+  `).join('')
+}
+
+function handleAddOutletRow() {
+  const el = $('manageOutletsList')
+  if (!el) return
+  if (el.querySelector('[data-new-outlet-row]')) return  // prevent duplicates
+  const row = document.createElement('div')
+  row.className = 'inline-edit-row'
+  row.dataset.newOutletRow = 'true'
+  row.innerHTML = `
+    <input class="input input-grow" placeholder="Outlet name…" />
+    <button class="btn-sm" data-save-new-outlet>Save</button>
+    <button class="btn-danger-sm" data-cancel-new-outlet>Cancel</button>
+  `
+  el.appendChild(row)
+  row.querySelector('input')?.focus()
+}
+
+async function handleSaveNewOutlet() {
+  const el = $('manageOutletsList')
+  const row = el?.querySelector('[data-new-outlet-row]')
+  const input = row?.querySelector('input')
+  const name = input?.value.trim()
+  if (!name) { renderOutletsList(currentOutlets); return }
+
+  const saveBtn = row?.querySelector('[data-save-new-outlet]')
+  if (saveBtn) saveBtn.disabled = true
+
+  const reqId = manageStoreReqId
+  const { error } = await createOutlet(selectedManageStoreId, name)
+  if (reqId !== manageStoreReqId) return
+  if (error) {
+    if (saveBtn) saveBtn.disabled = false
+    setStatus('manageOutletsStatus', error.message || 'Could not create outlet.', true)
+    return
+  }
+  await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
+}
+
+function showOutletInlineEdit(outletId, currentName) {
+  const el = $('manageOutletsList')
+  const row = el?.querySelector(`[data-outlet-id="${CSS.escape(outletId)}"]`)
+  if (!row) return
+  row.outerHTML = `
+    <div class="inline-edit-row" data-outlet-id="${escapeHtml(outletId)}">
+      <input class="input input-grow"
+        value="${escapeHtml(currentName)}"
+        id="outlet-edit-input-${escapeHtml(outletId)}" />
+      <button class="btn-sm" data-save-outlet-id="${escapeHtml(outletId)}">Save</button>
+      <button class="btn-danger-sm" data-cancel-outlet-id="${escapeHtml(outletId)}">Cancel</button>
+    </div>
+  `
+  $(`outlet-edit-input-${outletId}`)?.focus()
+}
+
+async function handleSaveOutletRename(outletId) {
+  const input = $(`outlet-edit-input-${outletId}`)
+  const name = input?.value.trim()
+  if (!name) { renderOutletsList(currentOutlets); return }
+
+  const saveBtn = $('manageOutletsList')
+    ?.querySelector(`[data-save-outlet-id="${CSS.escape(outletId)}"]`)
+  if (saveBtn) saveBtn.disabled = true
+
+  const reqId = manageStoreReqId
+  const { error } = await updateOutlet(outletId, name)
+  if (reqId !== manageStoreReqId) return
+  if (error) {
+    if (saveBtn) saveBtn.disabled = false
+    setStatus('manageOutletsStatus', error.message || 'Could not rename outlet.', true)
+    return
+  }
+  await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
+}
+
+async function handleDeleteOutlet(outletId, btn) {
+  if (!confirmStep(btn, 'Remove')) return
+  btn.disabled = true
+  const reqId = manageStoreReqId
+  const { error } = await deleteOutlet(outletId)
+  if (reqId !== manageStoreReqId) return
+  if (error) {
+    btn.disabled = false
+    setStatus('manageOutletsStatus', error.message || 'Could not delete outlet.', true)
+    return
+  }
+  await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
+
+// Double-confirm helper for destructive buttons.
+// First call shows "Sure?" and returns false. Second call returns true.
+// Works with delegated event listeners — no binding needed.
+function confirmStep(btn, originalLabel, ms = 3000) {
+  if (btn.dataset.confirm !== 'true') {
+    btn.dataset.confirm = 'true'
+    btn.textContent = 'Sure?'
+    setTimeout(() => {
+      if (btn.dataset.confirm === 'true') {
+        btn.dataset.confirm = ''
+        btn.textContent = originalLabel
+      }
+    }, ms)
+    return false
+  }
+  return true
+}
 
 function setStatus(id, message, isError = false) {
   const el = $(id)

@@ -97,6 +97,24 @@ export async function updateRewardRuleOrder(id, sortOrder) {
   return supabase.rpc('admin_update_reward_rule_order', { p_id: id, p_sort_order: sortOrder })
 }
 
+// ── Outlet RPCs ───────────────────────────────────────────────────────────────
+
+export async function loadStoreOutlets(storeId) {
+  return supabase.rpc('load_store_outlets', { p_store_id: storeId })
+}
+
+export async function createOutlet(storeId, name) {
+  return supabase.rpc('admin_create_outlet', { p_store_id: storeId, p_name: name })
+}
+
+export async function updateOutlet(outletId, name) {
+  return supabase.rpc('admin_update_outlet', { p_outlet_id: outletId, p_name: name })
+}
+
+export async function deleteOutlet(outletId) {
+  return supabase.rpc('admin_delete_outlet', { p_outlet_id: outletId })
+}
+
 // ── Staff / manager RPCs ──────────────────────────────────────────────────────
 
 export async function assignManager(userId, storeId) {
