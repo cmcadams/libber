@@ -10,21 +10,27 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 
 **Plan:** rebuild on a new laptop with a new Google account (`gotya`), fresh Git repo, fresh Supabase project, fresh Vercel project. This repo is the reference blueprint.
 
-### What is done (2026-05-12)
+### What is done (2026-05-24)
 
 - ✅ Gmail SMTP configured in Supabase — magic link emails working (500/day limit)
 - ✅ `admin-load-store-members.sql` deployed — admin access via `is_admin()`, no bootstrap needed
-- ✅ `fix-default-privileges.sql` re-run after above
-- ✅ Google OAuth configured — Google Cloud project `delta-discovery-593`, client `Libber`, redirect URI `https://flghcbrwqtburdywgcvk.supabase.co/auth/v1/callback`, enabled in Supabase Auth
-- ✅ Supabase URL Configuration — Site URL `https://libber.vercel.app`, Redirect URL `https://libber.vercel.app/apps/customer/save.html`
+- ✅ Google OAuth configured — Google Cloud project `delta-discovery-593`, client `Libber`, redirect URI `https://flghcbrwqtburdywgcvk.supabase.co/auth/v1/callback`
 - ✅ Error handling for OAuth `email_exists` conflict — shows message instead of silent fail
+- ✅ Migrated from Vercel to **Cloudflare Pages** — `_headers` / `_redirects` replace `vercel.json`
+- ✅ QR code on customer staff overlay — staff can scan instead of reading alphanumeric ID
+- ✅ Camera scanner on staff page — `jsqr` decodes QR from video feed, rear-camera preferred with fallback
+- ✅ Multi-outlet support — `store_outlets` table, outlet picker on staff page, `outlet_id` tagged on every ledger row for analytics
+- ✅ Admin outlet CRUD — create/rename/delete outlets inline in Manage Store panel
+- ✅ RBAC helpers deployed — `get_store_role`, `assert_store_access`, `assert_store_manager` centralise all store permission checks across every RPC
+- ✅ Supabase URL Configuration — Site URL `https://libber.pages.dev`, Redirect URL `https://libber.pages.dev/apps/customer/save.html`
 
 ### Still outstanding
 
 - **Apple OAuth** — requires paid Apple Developer account ($99/year). Services ID, `.p8` key, Team ID, Key ID → Supabase Auth → Apple
-- **Automatic identity linking** — setting not visible in Supabase dashboard UI; may require Supabase config file. Without it, a user who saved via magic link cannot link Google in a second browser (gets `email_exists` error). Magic link cross-device works fine regardless.
+- **Automatic identity linking** — not configurable in Supabase dashboard. Without it, a user who saved via magic link cannot link Google in a second browser (`email_exists` error). Magic link cross-device works fine regardless.
 - **Custom SMTP (Resend)** — currently using Gmail SMTP (500/day). Resend requires a custom domain — unblock after domain is set up.
-- **Rebrand to Gotya** — rename in code, Vercel, Supabase, Google Cloud, Sentry
+- **Admin UI for outlet ordering** — outlets are currently alphabetical only. Manual ordering would require a `sort_order` column on `store_outlets`.
+- **Rebrand to Gotya** — rename in code, Cloudflare, Supabase, Google Cloud, Sentry
 
 ---
 
@@ -37,7 +43,7 @@ Two separate web apps built from one codebase, deployed to one Vercel project.
 | **Customer** | End users — join stores, view balances, earn and redeem points | `apps/customer/` |
 | **Staff** | Staff, managers — award points, promote/demote staff | `apps/staff/` |
 
-**Admin tool** (`adminstart.html`) — local only, never deployed. Used to create stores, configure reward rules, and assign managers.
+**Admin tool** (`adminstart.html`) — local only, never deployed. Used to create stores, configure reward rules, assign managers, and manage store outlets.
 
 ---
 
@@ -55,12 +61,12 @@ Two separate web apps built from one codebase, deployed to one Vercel project.
 
 | File | Purpose |
 |---|---|
-| `page.html` | Staff tools — load members, award/bonus/adjust points, redeem. Auto-selects first store if none previously chosen |
+| `page.html` | Staff tools — load members, award/bonus/adjust points, redeem. QR scanner searches by scanned ID. Outlet picker shown when store has multiple outlets |
 | `manager.html` | Manager tools — view store members, promote to staff, demote staff |
 
 ### Admin (local only)
 
-`adminstart.html` — create stores, configure reward rules (with ordering), assign managers and staff. Your public ID is shown at the top for use with `assign-admin.sql`.
+`adminstart.html` — create stores, configure reward rules (with ordering), assign managers and staff, manage store outlets (create, rename, delete). Your public ID is shown at the top for use with `assign-admin.sql`.
 
 ---
 
@@ -102,11 +108,11 @@ src/
       start.js          Staff store picker controller
       page.js           Staff tools controller
   services/
-    admin.js            Store, rule, and admin RPC calls
+    admin.js            Store, rule, outlet, and admin RPC calls
     applicants.js       loadManagedStores, approveApplicant (promote), demoteStaff, loadStaff
     auth.js             Anonymous auth bootstrap, resetSession() (dev only)
-    members.js          loadUserProfile, loadCustomerHome, loadMembers, loadPointsHistory
-    staff.js            loadStaffStores (unions store_staff + store_managers)
+    members.js          loadUserProfile, loadCustomerHome, loadMembers, loadPointsHistory, awardPoints, adjustPoints
+    staff.js            loadStaffStores (unions store_staff + store_managers), loadStoreOutlets
     stores.js           getStores, joinStore, unjoinStore, getStoreBonusCap
   state/state.js        Shared in-memory state
   ui/
@@ -131,7 +137,7 @@ vercel.json
 | Error tracking | Sentry (`@sentry/browser`) — source maps uploaded at build, disabled in dev |
 | Linting | ESLint 10 (flat config) |
 | Git hooks | Husky — runs `npm run lint` on pre-commit |
-| Deployment | Vercel — auto-deploys on push to `main` |
+| Deployment | Cloudflare Pages — auto-deploys on push to `main` |
 
 ---
 
@@ -194,30 +200,30 @@ The admin tool is never built — run it locally in dev only.
 
 ## Deployment
 
-Deployed on Vercel. Auto-deploys on push to `main`.
+Deployed on **Cloudflare Pages**. Auto-deploys on push to `main`.
 
-- Framework: Vite (auto-detected)
+- Framework preset: None
 - Build command: `npm run build`
 - Output directory: `dist`
+- Production branch: `main`
+
+Security headers and URL rewrites are in `public/_headers` and `public/_redirects` — Vite copies them to `dist/` at build time. `vercel.json` has been removed.
 
 **Live URLs**
 
 | Page | URL |
 |---|---|
-| Customer home | `https://libber.vercel.app` |
-| Staff store picker | `https://libber.vercel.app/apps/staff/` |
-| Staff tools | `https://libber.vercel.app/apps/staff/page.html` |
-| Manager tools | `https://libber.vercel.app/apps/staff/manager.html` |
+| Customer home | `https://libber.pages.dev` |
+| Staff tools | `https://libber.pages.dev/apps/staff/` |
+| Manager tools | `https://libber.pages.dev/apps/staff/manager.html` |
 
-**Environment variables** (Vercel → Settings → Environment Variables)
+**Environment variables** (Cloudflare Pages → Settings → Environment Variables)
 
 | Variable | Where to get it |
 |---|---|
 | `VITE_SUPABASE_URL` | Supabase Dashboard → Project Settings → API |
 | `VITE_SUPABASE_ANON_KEY` | Supabase Dashboard → Project Settings → API |
 | `SENTRY_AUTH_TOKEN` | Sentry → Settings → Auth Tokens |
-
-`vercel.json` handles the root redirect (`/` → customer home), security headers (CSP, X-Frame-Options, etc.), and Supabase/Sentry connect-src allowlist.
 
 ---
 
@@ -263,6 +269,7 @@ Anonymous Supabase auth (`src/services/auth.js`):
 2. Copy your public ID at the top, run `assign-admin.sql` to grant yourself admin access
 3. Create stores, configure reward rules (label, points, kind, order)
 4. Assign and remove managers and staff
+5. In Manage Store → Outlets: create, rename, and delete outlets for a store
 
 ---
 
@@ -338,7 +345,8 @@ A persistent button on the customer home page that encourages users to save thei
 | `store_memberships` | Which users are members of which stores |
 | `store_staff` | Approved staff per store |
 | `store_managers` | Approved managers per store |
-| `points_ledger` | Every points transaction. On `supabase_realtime` publication |
+| `store_outlets` | Physical outlets within a store (optional). Name only — analytics tag, not balance-affecting |
+| `points_ledger` | Every points transaction. `outlet_id` nullable FK for per-outlet analytics. On `supabase_realtime` publication |
 | `store_reward_rules` | Award and redeem rules per store |
 | `ab_variants` | A/B test variant definitions |
 | `admins` | Users with admin access |
@@ -353,13 +361,16 @@ All write operations go through RPCs. No direct client writes.
 |---|---|---|
 | `join_store` | `auth.uid()` | Creates store membership (ON CONFLICT DO NOTHING) |
 | `unjoin_store` | `auth.uid()` | Removes caller's membership |
-| `approve_staff_applicant` | Manager of store | Promotes a user to staff |
-| `demote_store_staff` | Manager of store | Removes a user from store staff |
-| `award_points` | Staff or manager of store | Inserts ledger entry, enforces bonus cap |
-| `adjust_points` | Staff or manager of store | Inserts positive or negative correction, no cap |
+| `approve_staff_applicant` | Manager or admin | Promotes a member to staff |
+| `reject_staff_applicant` | Manager or admin | Removes a staff applicant |
+| `demote_store_staff` | Manager or admin | Removes a user from store staff |
+| `award_points` | Staff, manager, or admin | Inserts ledger entry, enforces bonus cap, tags outlet if provided. Advisory lock per (user, store) |
+| `adjust_points` | Staff, manager, or admin | Inserts correction (no cap). Advisory lock per (user, store) |
 | `load_customer_home` | `auth.uid()` | Returns profile, memberships, balances, rules, history, save prompt data in one call |
-| `load_store_members` | Staff or manager of store | Returns members with balances and public IDs |
-| `load_store_staff_profiles` | Manager of store | Returns staff with public IDs |
+| `load_store_members` | Staff, manager, or admin | Returns members with balances and public IDs |
+| `load_store_staff_profiles` | Manager or admin | Returns staff with public IDs |
+| `load_store_outlets` | Staff, manager, or admin | Returns outlets for a store |
+| `load_member_recent_transactions` | Staff, manager, or admin | Returns last 5 ledger entries for a member at a store |
 | `mark_account_linked` | `auth.uid()` | Sets `account_linked_at` on the caller's profile |
 | `admin_create_store` | Admin | Creates a store |
 | `admin_update_store` | Admin | Renames a store |
@@ -372,6 +383,12 @@ All write operations go through RPCs. No direct client writes.
 | `admin_remove_manager` | Admin | Removes a manager |
 | `admin_assign_staff` | Admin | Directly assigns a user as staff |
 | `admin_remove_staff` | Admin | Removes a user from store staff |
+| `admin_create_outlet` | Admin | Creates an outlet for a store |
+| `admin_update_outlet` | Admin | Renames an outlet |
+| `admin_delete_outlet` | Admin | Deletes an outlet (ledger rows retain history via ON DELETE SET NULL) |
+| `get_store_role` | — | STABLE helper: returns `'admin'`, `'manager'`, `'staff'`, or `null` for the caller at a given store |
+| `assert_store_access` | — | Raises if caller has no role at the store (used inside RPCs) |
+| `assert_store_manager` | — | Raises if caller is not manager or admin (used inside RPCs) |
 | `is_admin` | — | Helper: returns true if caller is in `admins` table |
 
 **Views**
@@ -408,6 +425,7 @@ All SECURITY DEFINER RPCs use `SET search_path = ''` and fully qualified `public
 | `store_memberships` | ✓ | `join_store`, `unjoin_store` |
 | `store_staff` | ✓ | `approve_staff_applicant`, `demote_store_staff`, `admin_assign_staff`, `admin_remove_staff` |
 | `store_managers` | ✓ | `admin_assign_manager`, `admin_remove_manager` |
+| `store_outlets` | ✓ | `admin_create_outlet`, `admin_update_outlet`, `admin_delete_outlet` |
 | `points_ledger` | ✓ | `award_points`, `adjust_points` |
 | `ab_variants` | ✓ | Supabase dashboard only |
 
@@ -432,6 +450,18 @@ All public RPCs are callable by `authenticated` only. `anon` and `PUBLIC` have `
 ### XSS
 
 All user-controlled values are escaped via `src/lib/escape.js` before being written to the DOM.
+
+### Store-level RBAC
+
+All store-scoped permission checks go through three centralized helpers (deployed via `add-rbac-helpers.sql` + `fix-rbac-remaining.sql`):
+
+| Helper | Returns / Raises |
+|---|---|
+| `get_store_role(p_store_id)` | `'admin'` · `'manager'` · `'staff'` · `null` |
+| `assert_store_access(p_store_id)` | Raises if `get_store_role` returns null |
+| `assert_store_manager(p_store_id)` | Raises if role is not `manager` or `admin` |
+
+Every guarded RPC calls one `PERFORM public.assert_store_access(p_store_id)` or `PERFORM public.assert_store_manager(p_store_id)` — no inline UNION queries. Adding a new role tier only requires editing `get_store_role`.
 
 ### Admin identity
 
@@ -470,25 +500,33 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 
 | Script | What it does |
 |---|---|
+| Script | What it does |
+|---|---|
 | `admin-rpcs.sql` | `admins` table, `is_admin()` helper, RESTRICTIVE RLS on `stores` and `store_reward_rules`, all admin RPCs |
 | `staff-rpcs.sql` | RESTRICTIVE RLS on `store_memberships`, `store_staff`, `points_ledger`. Staff and manager RPCs |
 | `add-manager-applicants.sql` | Historical — originally created applicant tables and related RPCs (superseded by `remove-applicant-table-refs.sql` + `drop-applicant-system.sql`) |
 | `add-bonus-cap.sql` | `max_bonus_points` on `stores`, `award_points` RPC with cap logic, `admin_set_bonus_cap` |
 | `add-rls-select-policies.sql` | SELECT RLS policies for all client-read tables |
 | `add-load-customer-home-rpc.sql` | `load_customer_home` RPC baseline (superseded by `add-ab-testing.sql`) |
-| `add-load-store-members-rpc.sql` | `load_store_members` RPC |
-| `add-reject-applicant-rpc.sql` | Historical — originally created `reject_staff_applicant` (dropped by `drop-applicant-system.sql`) |
+| `add-load-store-members-rpc.sql` | `load_store_members` RPC baseline (superseded by `add-rbac-helpers.sql`) |
+| `add-reject-applicant-rpc.sql` | `reject_staff_applicant` RPC baseline (superseded by `fix-rbac-remaining.sql`) |
 | `add-ab-testing.sql` | `ab_variants` table + RLS, new profile columns, weighted variant assignment trigger, updated `load_customer_home` |
-| `add-bonus-adjust.sql` | Extends `store_reward_rules` kind check, adds `adjust_points` RPC |
+| `add-bonus-adjust.sql` | Extends `store_reward_rules` kind check, adds `adjust_points` RPC baseline |
 | `add-save-account.sql` | `mark_account_linked` RPC |
-| `add-load-store-staff-profiles-rpc.sql` | `load_store_staff_profiles` RPC |
+| `add-load-store-staff-profiles-rpc.sql` | `load_store_staff_profiles` RPC baseline (superseded by `add-rbac-helpers.sql`) |
 | `rename-account-linked.sql` | Renames `email_saved_at` → `account_linked_at` and `mark_email_saved` → `mark_account_linked` throughout |
 | `harden-rls-and-grants.sql` | Security hardening: scoped RLS on profiles/staff, anon grants revoked, function grants restricted to authenticated |
-| `fix-default-privileges.sql` | Re-revokes anon/PUBLIC execute on all public functions and re-grants to authenticated. Re-run after any migration that creates or replaces functions |
+| `fix-default-privileges.sql` | Re-revokes anon/PUBLIC execute on all public functions and re-grants to authenticated. **Re-run after every session that creates/replaces functions** |
 | `remove-applicant-table-refs.sql` | Redefines `approve_staff_applicant`, `admin_assign_manager`, `admin_remove_store` — removes all applicant table references |
 | `drop-applicant-system.sql` | Drops dead applicant RPCs, views, and tables (`store_staff_applicants`, `store_manager_applicants`) |
 | `add-store-logo.sql` | Store logos — Supabase Storage bucket, RLS policies, `logo_path`/`logo_updated_at` columns on `stores`, `admin_set_store_logo` RPC, updated `load_customer_home` |
-| `admin-load-store-members.sql` | Updated `load_store_members` to use `is_admin()` directly (removes bootstrap dependency) |
+| `admin-load-store-members.sql` | `admin_load_store_members` RPC baseline (superseded by `fix-rbac-remaining.sql`) |
+| `fix-approve-staff-applicant.sql` | Historical security fix for `approve_staff_applicant` (superseded by `add-rbac-helpers.sql`) |
+| `fix-award-points-security.sql` | Historical security fix for `award_points` — added advisory lock and redemption rule requirement (superseded by `add-outlets.sql` → `add-rbac-helpers.sql`) |
+| `add-load-member-recent-transactions-rpc.sql` | `load_member_recent_transactions` RPC baseline (superseded by `fix-rbac-remaining.sql`) |
+| `add-outlets.sql` | `store_outlets` table + RLS, `outlet_id` on `points_ledger`, outlet admin RPCs, `load_store_outlets`. Run before `add-rbac-helpers.sql` |
+| `add-rbac-helpers.sql` | **Central RBAC** — `get_store_role`, `assert_store_access`, `assert_store_manager`, covering indexes, rewrites 7 RPCs |
+| `fix-rbac-remaining.sql` | **RBAC audit patch** — updates 3 missed RPCs (`load_member_recent_transactions`, `reject_staff_applicant`, `admin_load_store_members`) and adds advisory lock to `adjust_points` |
 | `revoke-admin-store-access.sql` | Safely revokes admin + all store access for a user. Dry-run by default (`v_dry_run = true`) |
 | `assign-admin.sql` | Grants admin access by public ID |
 | `delete-store.sql` | Deletes one store and all its data |
@@ -514,16 +552,20 @@ All scripts in `scripts/sql/`. Paste into Supabase Dashboard → SQL Editor. All
 10. `add-bonus-adjust.sql`
 11. `add-save-account.sql`
 12. `add-load-store-staff-profiles-rpc.sql`
-13. `rename-account-linked.sql`
-14. `harden-rls-and-grants.sql`
-15. `fix-default-privileges.sql`
-16. `remove-applicant-table-refs.sql`
-17. `drop-applicant-system.sql`
-18. `add-store-logo.sql`
-19. `admin-load-store-members.sql`
-20. `fix-default-privileges.sql` _(always re-run last after any session that creates/replaces functions)_
-21. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
-22. Reload admin tool — create stores, configure rules, assign managers
+13. `add-load-member-recent-transactions-rpc.sql`
+14. `rename-account-linked.sql`
+15. `harden-rls-and-grants.sql`
+16. `fix-default-privileges.sql`
+17. `remove-applicant-table-refs.sql`
+18. `drop-applicant-system.sql`
+19. `add-store-logo.sql`
+20. `admin-load-store-members.sql`
+21. `add-outlets.sql`
+22. `add-rbac-helpers.sql`
+23. `fix-rbac-remaining.sql`
+24. `fix-default-privileges.sql` _(always re-run last after any session that creates/replaces functions)_
+25. Open `adminstart.html` locally, copy your public ID, run `assign-admin.sql`
+26. Reload admin tool — create stores, configure rules, assign managers, manage outlets
 
 ### After a full reset (`reset-all.sql`)
 
