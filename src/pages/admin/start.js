@@ -519,6 +519,17 @@ async function handleCreateStore() {
 
   stores = [...stores, { id: data.id, name: data.name, is_active: true }]
   refreshAllStorePickers()
+
+  // Navigate directly to Manage Store and auto-select the new store.
+  // The new store already has a 'Main' outlet (created atomically by the RPC).
+  const manageNavBtn = $q('.action-btn[data-section="manageStore"]')
+  showSection('manageStore', manageNavBtn)
+  selectedManageStoreId   = data.id
+  selectedManageStoreName = data.name
+  const pickerBtn = $q(`#manageStoreList [data-store-id="${CSS.escape(data.id)}"]`)
+  if (pickerBtn) selectInPicker('manageStoreList', pickerBtn)
+  const reqId = ++manageStoreReqId
+  await loadAndRenderManageStore(data.id, data.name, reqId)
 }
 
 function refreshAllStorePickers() {
@@ -946,7 +957,11 @@ async function handleDeleteOutlet(outletId, btn) {
   const { error } = await deleteOutlet(outletId)
   if (reqId !== manageStoreReqId) return
   if (error) {
+    // Reset confirm state so the button returns to its normal label.
     btn.disabled = false
+    btn.dataset.confirm = ''
+    btn.textContent = 'Remove'
+    // The server returns the reason directly (e.g. "last outlet" constraint).
     setStatus('manageOutletsStatus', error.message || 'Could not delete outlet.', true)
     return
   }

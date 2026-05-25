@@ -1,8 +1,8 @@
 # Libber — Frozen Baseline Specification
 
-**Baseline version**: 16  
+**Baseline version**: 17  
 **Frozen**: 2026-05-25 (extended 2026-05-25)  
-**Status**: Files 00–15 immutable. File 16 added `unjoin_store`.
+**Status**: Files 00–15 immutable. File 16 added `unjoin_store`. File 17 enforces outlet integrity.
 
 This document is the authoritative record of the database state produced by
 running migrations 00–15 on an empty Supabase project. Any production database
@@ -32,6 +32,8 @@ Run in this exact order on a fresh database:
 | 13 | `13-rpc-fixes.sql` | load_member_recent_transactions; advisory lock on adjust_points |
 | 14 | `14-soft-delete.sql` | is_active columns; assert_store_active/active_membership; all final RPCs |
 | 15 | `15-final-grants.sql` | Final REVOKE anon/PUBLIC + re-grant authenticated on all functions |
+| 16 | `16-unjoin-store.sql` | unjoin_store customer RPC |
+| 17 | `17-outlet-integrity.sql` | admin_create_store auto-creates 'Main' outlet; admin_delete_outlet blocks last-outlet deletion; backfill for existing stores |
 
 ---
 
@@ -211,7 +213,7 @@ All functions: `SECURITY DEFINER SET search_path = ''` · GRANT EXECUTE TO authe
 ### Admin — stores
 | Function | Signature | Returns |
 |---|---|---|
-| admin_create_store | (text) | json |
+| admin_create_store | (text) | json — id, name, is_active, outlet_id (atomically creates a 'Main' outlet) |
 | admin_update_store | (uuid, text) | json |
 | admin_remove_store | (uuid) | void |
 | admin_archive_store | (uuid) | json |
@@ -240,7 +242,7 @@ All functions: `SECURITY DEFINER SET search_path = ''` · GRANT EXECUTE TO authe
 |---|---|---|
 | admin_create_outlet | (uuid, text) | json |
 | admin_update_outlet | (uuid, text) | json |
-| admin_delete_outlet | (uuid) | void |
+| admin_delete_outlet | (uuid) | void — raises exception if outlet is the last one for its store |
 
 ### Customer
 | Function | Signature | Returns |
