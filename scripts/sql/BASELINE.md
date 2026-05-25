@@ -1,8 +1,8 @@
 # Libber — Frozen Baseline Specification
 
-**Baseline version**: 15  
-**Frozen**: 2026-05-25  
-**Status**: Immutable. Files 00–15 must not be edited.
+**Baseline version**: 16  
+**Frozen**: 2026-05-25 (extended 2026-05-25)  
+**Status**: Files 00–15 immutable. File 16 added `unjoin_store`.
 
 This document is the authoritative record of the database state produced by
 running migrations 00–15 on an empty Supabase project. Any production database
@@ -246,6 +246,7 @@ All functions: `SECURITY DEFINER SET search_path = ''` · GRANT EXECUTE TO authe
 | Function | Signature | Returns |
 |---|---|---|
 | join_store | (uuid) | json |
+| unjoin_store | (uuid) | json |
 | load_customer_home | (boolean) | json |
 | mark_account_linked | () | void |
 
@@ -262,7 +263,7 @@ All functions: `SECURITY DEFINER SET search_path = ''` · GRANT EXECUTE TO authe
 | load_store_staff_profiles | (uuid) | json |
 | load_member_recent_transactions | (uuid, uuid) | json |
 
-**Total: 37 functions**
+**Total: 38 functions**
 
 ---
 

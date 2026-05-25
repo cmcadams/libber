@@ -32,7 +32,6 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 
 ### Still outstanding
 
-- **`unjoin_store` missing from canonical rebuild** — client (`src/services/stores.js`) calls `unjoin_store` but the function does not appear in any SQL file and is not in the frozen baseline. If rebuilding from scratch the function must be added as migration `16`. Customers currently cannot unjoin a store on a fresh database.
 - **Apple OAuth** — requires paid Apple Developer account ($99/year). Services ID, `.p8` key, Team ID, Key ID → Supabase Auth → Apple
 - **Automatic identity linking** — not configurable in Supabase dashboard. Without it, a user who saved via magic link cannot link Google in a second browser (`email_exists` error). Magic link cross-device works fine regardless.
 - **Custom SMTP (Resend)** — currently using Gmail SMTP (500/day). Resend requires a custom domain — unblock after domain is set up.

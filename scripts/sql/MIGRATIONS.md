@@ -209,5 +209,6 @@ Any row returned by the drift queries is a problem.
 | File | Description | Date |
 |---|---|---|
 | 00–15 | Initial build — full schema, RBAC, ledger, soft-delete, A/B, logos | 2026-05 |
+| 16 | `unjoin_store` — soft-removes caller's membership (was missing from canonical rebuild) | 2026-05 |
 
 > Add a row here when merging a new migration. Date format: YYYY-MM.
