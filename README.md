@@ -12,15 +12,17 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 
 ### What is done (2026-05-25)
 
-- ✅ **Canonical rebuild chain frozen at migration 15** — 16 numbered SQL files (`00`–`15`) replace the old 26-step sequence. Running them in order on an empty Supabase project produces the full production schema.
-- ✅ **Applicant system fully removed** — `store_staff_applicants`, `store_manager_applicants`, `apply_for_staff`, `reject_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` are completely absent from the rebuild chain.
+- ✅ **New Supabase project live** — `lib2` (`tcrbkylzbdpkgliacrlj`). Migrations 00–15 executed. App deployed and confirmed hitting new project (blank state, new user `RHH 791 052`).
+- ✅ **Migration 16 — `unjoin_store`** — was missing from canonical rebuild; client called it but no SQL existed. Added as `16-unjoin-store.sql`, soft-removes membership (`is_active = false`).
+- ✅ **Cloudflare env vars updated** — `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` set in dashboard and committed to `.env` in git.
+- ✅ **Canonical rebuild chain frozen at migration 16** — 16 numbered SQL files (`00`–`16`). `BASELINE.md`, `MIGRATIONS.md`, `verify-baseline.sql` all current.
+- ✅ **Applicant system fully removed** — `store_staff_applicants`, `store_manager_applicants`, `apply_for_staff`, `reject_staff_applicant`, `admin_approve_applicant`, `admin_reject_applicant` absent from rebuild chain.
 - ✅ **`assert_store_manager` NULL bypass fixed** — `COALESCE(get_store_role(...), '')` prevents authenticated users with no role from bypassing manager-only RPCs.
-- ✅ **`load_customer_home` restored** — `logo_path` + `logo_updated_at` + `is_active` filtering all present in the final version (14-soft-delete.sql).
-- ✅ **`on_auth_user_created` trigger created** — was previously defined but never wired up; now correctly fires on `auth.users` INSERT.
-- ✅ **Migration governance** — `MIGRATIONS.md` (rules), `BASELINE.md` (frozen spec), `verify-baseline.sql` (drift detection). Next migration is `16`.
+- ✅ **`load_customer_home` restored** — `logo_path` + `logo_updated_at` + `is_active` filtering all present in the final version (`14-soft-delete.sql`).
+- ✅ **`on_auth_user_created` trigger created** — fires correctly on `auth.users` INSERT.
+- ✅ **Migration governance** — `MIGRATIONS.md` (rules), `BASELINE.md` (frozen spec), `verify-baseline.sql` (drift detection).
 - ✅ Gmail SMTP configured in Supabase — magic link emails working (500/day limit)
-- ✅ `admin-load-store-members.sql` deployed — admin access via `is_admin()`, no bootstrap needed
-- ✅ Google OAuth configured — Google Cloud project `delta-discovery-593`, client `Libber`, redirect URI `https://flghcbrwqtburdywgcvk.supabase.co/auth/v1/callback`
+- ✅ Google OAuth configured — Google Cloud project `delta-discovery-593`, client `Libber`, redirect URI `https://flghcbrwqtburdywgcvk.supabase.co/auth/v1/callback` ⚠️ needs updating for new project
 - ✅ Error handling for OAuth `email_exists` conflict — shows message instead of silent fail
 - ✅ Migrated from Vercel to **Cloudflare Pages** — `_headers` / `_redirects` replace `vercel.json`
 - ✅ QR code on customer staff overlay — staff can scan instead of reading alphanumeric ID
@@ -28,7 +30,19 @@ A loyalty points app. Customers join stores and accumulate points. Staff award p
 - ✅ Multi-outlet support — `store_outlets` table, outlet picker on staff page, `outlet_id` tagged on every ledger row for analytics
 - ✅ Admin outlet CRUD — create/rename/delete outlets inline in Manage Store panel
 - ✅ RBAC helpers deployed — `get_store_role`, `assert_store_access`, `assert_store_manager` centralise all store permission checks across every RPC
-- ✅ Supabase URL Configuration — Site URL `https://libber.pages.dev`, Redirect URL `https://libber.pages.dev/apps/customer/save.html`
+
+### Pick up here next session
+
+1. **Run in Supabase SQL editor (new project)**:
+   - `16-unjoin-store.sql`
+   - `15-final-grants.sql` (re-run after 16)
+2. **Assign admin**: public ID is `RHH 791 052` — run `assign-admin.sql` with this value
+3. **Enable anonymous auth**: Supabase Dashboard → Authentication → Providers → Anonymous → Enable (confirm it's on)
+4. **Seed `ab_variants`**: insert at least 2 active rows for `test_name = 'save_prompt'` (see README SQL section)
+5. **Set Auth URL config**: Dashboard → Authentication → URL Configuration → Site URL `https://libber.pages.dev`, Redirect URL `https://libber.pages.dev/apps/customer/save.html`
+6. **Update Google OAuth redirect URI**: Google Cloud → OAuth client → add `https://tcrbkylzbdpkgliacrlj.supabase.co/auth/v1/callback`
+7. **Configure Gmail SMTP**: re-enter in new project Dashboard → Authentication → SMTP settings
+8. **Create stores** via admin tool and test full customer → staff flow
 
 ### Still outstanding
 
