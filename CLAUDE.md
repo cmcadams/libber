@@ -30,3 +30,9 @@ Anonymous Supabase auth. All identity and role checks are tied to `auth.uid()` i
 ## No service role key in the browser
 
 Even for the local-only admin tool. If an operation needs elevated privileges, it goes through an RPC.
+
+## Before any coding task
+
+Read these documents first:
+- `docs/libber-backend-contract-v1.md` — frozen backend spec (do not propose changes to anything in here without a migration)
+- `docs/libber-frontend-spec-v1.md` — active frontend working doc (allowed RPCs per page, UI rules)
