@@ -27,6 +27,14 @@
       --radius-xl: 16px;
       --font: 'DM Mono', 'Courier New', monospace;
       --font-ui: system-ui, sans-serif;
+
+      /* Semantic card header colours */
+      --card-award-bg:   rgba(75, 155, 50,   0.11);
+      --card-award-text: #2d6a20;
+      --card-adjust-bg:  rgba(200, 140, 0,   0.13);
+      --card-adjust-text:#6b4800;
+      --card-danger-bg:  rgba(184, 60,  43,  0.10);
+      --card-danger-text:#8b2213;
     }
 
     body {
@@ -891,15 +899,26 @@
       border-radius: 6px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       margin-bottom: 10px;
+      background: #fafafa;
     }
-
-    #quickSection  { background: #f9f9f9; }
-    #bonusSection  { background: #f4f4f4; }
-    #redeemSection { background: #eaeaea; }
-    #adjustSection { background: #f0f0f0; }
 
     #quickSection .quick-btns   { margin-bottom: 0; }
     #redeemSection .redeem-btns { margin-bottom: 0; }
+
+    /* ── Semantic header pills ──────────────────────────────────────────── */
+
+    .card-award,
+    .card-adjust,
+    .card-danger {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .card-award  { background: var(--card-award-bg);  color: var(--card-award-text); }
+    .card-adjust { background: var(--card-adjust-bg); color: var(--card-adjust-text); }
+    .card-danger { background: var(--card-danger-bg); color: var(--card-danger-text); }
   </style>
 </head>
 <body>
@@ -948,14 +967,14 @@
 
       <div class="panel-scroll">
         <div id="quickSection">
-          <div class="section-label">Quick award</div>
+          <div class="section-label card-award">Quick award</div>
           <div class="quick-btns" id="quickBtns"></div>
         </div>
 
         <hr class="divider" id="sectionDivider" />
 
         <div id="bonusSection">
-          <div class="section-label">Bonus</div>
+          <div class="section-label card-award">Bonus</div>
           <div class="bonus-reason-btns" id="bonusReasonBtns"></div>
           <div class="bonus-btns" id="bonusBtns"></div>
           <div class="bonus-confirm" id="bonusConfirm" style="display:none">
@@ -970,7 +989,7 @@
         <hr class="divider" id="redeemDivider" style="display:none" />
 
         <div id="redeemSection" style="display:none">
-          <div class="section-label">Redeem</div>
+          <div class="section-label card-danger">Redeem</div>
           <div class="redeem-btns" id="redeemBtns"></div>
         </div>
 
@@ -978,7 +997,7 @@
 
         <div id="adjustSection">
           <button class="adjust-toggle" id="adjustToggle">
-            <span class="section-label" style="margin-bottom:0">Adjust</span>
+            <span class="section-label card-adjust" style="margin-bottom:0">Adjust</span>
             <span class="adjust-chevron" id="adjustChevron">▾</span>
           </button>
           <div id="adjustBody" style="display:none">
