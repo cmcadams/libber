@@ -34,7 +34,7 @@
       color: var(--text);
       font-family: var(--ui);
       min-height: 100vh;
-      padding: 24px;
+      padding: 24px 24px 80px;
     }
 
     .page {
@@ -42,271 +42,298 @@
       margin: 0 auto;
     }
 
-    /* ── Header ─────────────────────────────────────────────────────────────── */
+    /* ── Views ──────────────────────────────────────────────────────────────── */
 
-    .header {
-      position: relative;
-      margin-bottom: 28px;
-      padding-bottom: 1.5rem;
-      border-bottom: 0.5px solid var(--border);
+    .view { }
+    .view.hidden { display: none; }
+    .hidden { display: none; }
+
+    /* ── Page header ────────────────────────────────────────────────────────── */
+
+    .page-header {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      width: 100%;
-    }
-
-    .header-id { text-align: center; }
-
-    .id-label {
-      font-size: 12px;
-      color: var(--hint);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    #adminId {
-      font-family: var(--mono);
-      font-size: 18px;
-      font-weight: 500;
-      letter-spacing: 0.02em;
-    }
-
-    /* ── Action buttons ─────────────────────────────────────────────────────── */
-
-    .actions {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      justify-content: space-between;
+      gap: 16px;
       margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 0.5px solid var(--border);
     }
 
-    @media (min-width: 640px) {
-      .actions { grid-template-columns: repeat(4, 1fr); }
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
     }
 
-    @media (min-width: 900px) {
-      .actions { grid-template-columns: repeat(8, 1fr); }
-    }
-
-    .action-btn {
+    .page-header-actions {
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Store grid (landing) ───────────────────────────────────────────────── */
+
+    .store-grid {
+      display: grid;
+      grid-template-columns: 1fr;
       gap: 10px;
-      padding: 20px;
+      margin-bottom: 32px;
+    }
+
+    @media (min-width: 560px) {
+      .store-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (min-width: 860px) {
+      .store-grid { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    .store-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 20px;
       cursor: pointer;
       text-align: left;
-      transition: border-color 0.15s, background 0.15s, transform 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+      width: 100%;
     }
 
-    .action-btn:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+    .store-card:hover {
+      border-color: var(--border-strong);
+      box-shadow: 0 2px 8px rgba(55, 47, 34, 0.08);
+      transform: translateY(-1px);
+    }
 
-    .action-btn.active {
-      border-color: var(--accent);
+    .store-card.archived {
+      opacity: 0.65;
+    }
+
+    .store-card-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
       background: var(--accent-soft);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .action-num {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--muted);
+    .store-card-logo img {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      display: block;
     }
 
-    .action-btn.active .action-num { color: var(--accent); }
+    .logo-initial {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
 
-    .action-label {
+    .store-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .store-card-name {
+      display: block;
       font-size: 15px;
       font-weight: 600;
-      color: var(--text);
-      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
     }
 
-    /* ── Panels ─────────────────────────────────────────────────────────────── */
+    .store-card-arrow {
+      color: var(--hint);
+      font-size: 16px;
+      flex-shrink: 0;
+    }
 
-    .panel {
+    /* ── Status badges ──────────────────────────────────────────────────────── */
+
+    .badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      border-radius: 999px;
+      padding: 2px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-active   { background: var(--accent-soft); color: var(--accent); }
+    .badge-archived { background: var(--danger-soft); color: var(--danger); }
+
+    /* ── Create store form (landing) ────────────────────────────────────────── */
+
+    .create-store-form {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Back navigation ────────────────────────────────────────────────────── */
+
+    .back-nav {
+      margin-bottom: 20px;
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 14px;
+      font-family: var(--ui);
+      cursor: pointer;
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.1s;
+    }
+
+    .back-btn:hover { color: var(--text); }
+
+    /* ── Store detail header ────────────────────────────────────────────────── */
+
+    .store-header-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 24px;
       padding: 24px;
-    }
-
-    .panel.hidden { display: none; }
-    .hidden { display: none; }
-
-    .panel h2 {
-      font-size: 20px;
-      margin-bottom: 6px;
-    }
-
-    .panel > p {
-      color: var(--muted);
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-
-    /* ── Pickers ────────────────────────────────────────────────────────────── */
-
-    .picker-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
       margin-bottom: 16px;
     }
 
-    @media (min-width: 640px) {
-      .picker-grid { grid-template-columns: 1fr 1fr; }
+    .store-detail-layout {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
     }
 
-    .picker-label {
+    .store-detail-logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .store-detail-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      background: var(--accent-soft);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .store-detail-logo img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .logo-initial-lg {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .store-detail-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .store-name-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .store-detail-name {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .store-name-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .store-name-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    /* ── Detail sections ────────────────────────────────────────────────────── */
+
+    .detail-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 20px 24px;
+      margin-bottom: 12px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .section-title {
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--muted);
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-
-    .picker {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 320px;
-      overflow-y: auto;
-      padding-right: 2px;
-    }
-
-    .picker-inline {
-      max-height: 200px;
-      margin-bottom: 20px;
-    }
-
-    .pick-card {
-      width: 100%;
-      text-align: left;
-      border: 1px solid var(--border);
-      background: var(--surface-strong);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-    }
-
-    .pick-card:hover { border-color: var(--border-strong); }
-    .pick-card.selected { border-color: var(--accent); background: var(--accent-soft); }
-
-    .pick-title {
-      display: block;
-      font-size: 14px;
       font-weight: 600;
-      margin-bottom: 2px;
     }
 
-    .pick-sub {
-      display: block;
-      color: var(--muted);
+    .section-title-count {
       font-family: var(--mono);
       font-size: 11px;
-      word-break: break-all;
+      color: var(--hint);
+      margin-left: 6px;
     }
-
-    /* ── Forms ──────────────────────────────────────────────────────────────── */
-
-    .form-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .form-row .picker-label { margin-bottom: 0; flex-shrink: 0; }
-
-    .input {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px 14px;
-      font-size: 14px;
-      font-family: var(--ui);
-      background: var(--surface-strong);
-      color: var(--text);
-      outline: none;
-    }
-
-    .input:focus { border-color: var(--border-strong); }
-    .input-grow { flex: 1; }
-    .input-pts { width: 80px; }
-
-    /* ── Summary row ────────────────────────────────────────────────────────── */
-
-    .summary-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .summary-text { font-size: 14px; color: var(--muted); }
-    .summary-text strong { color: var(--text); }
-
-    /* ── Buttons ────────────────────────────────────────────────────────────── */
-
-    .btn-primary {
-      border: none;
-      border-radius: 999px;
-      background: var(--text);
-      color: white;
-      padding: 12px 22px;
-      font-size: 14px;
-      cursor: pointer;
-      white-space: nowrap;
-      font-family: inherit;
-    }
-
-    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
-    .btn-primary:not(:disabled):hover { background: #3a3529; }
-
-    .btn-sm {
-      border: 1px solid var(--border-strong);
-      background: var(--surface-strong);
-      border-radius: 8px;
-      padding: 5px 10px;
-      font-size: 12px;
-      cursor: pointer;
-      color: var(--text);
-      white-space: nowrap;
-      font-family: inherit;
-    }
-
-    .btn-sm:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-    .btn-sm:disabled { opacity: 0.35; cursor: not-allowed; }
-
-    .btn-danger-sm {
-      border: 1px solid transparent;
-      background: none;
-      border-radius: 8px;
-      padding: 5px 10px;
-      font-size: 12px;
-      cursor: pointer;
-      color: var(--danger);
-      white-space: nowrap;
-      font-family: inherit;
-    }
-
-    .btn-danger-sm:hover { background: var(--danger-soft); }
-    .btn-danger-sm:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* ── Directory rows ─────────────────────────────────────────────────────── */
 
     .dir-list {
       display: flex;
       flex-direction: column;
-      max-height: 480px;
+      max-height: 420px;
       overflow-y: auto;
     }
 
@@ -341,69 +368,82 @@
       display: flex;
       gap: 6px;
       flex-shrink: 0;
+      flex-wrap: wrap;
     }
 
-    /* ── Inline edit ────────────────────────────────────────────────────────── */
+    /* ── Forms ──────────────────────────────────────────────────────────────── */
 
-    .inline-edit-row {
+    .form-row {
       display: flex;
       gap: 8px;
       align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
     }
 
-    .inline-edit-row:last-child { border-bottom: none; }
-
-    /* ── Manage sections ────────────────────────────────────────────────────── */
-
-    .manage-section { margin-bottom: 24px; }
-
-    .logo-upload-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 0 4px;
+    .input {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: var(--ui);
+      background: var(--surface-strong);
+      color: var(--text);
+      outline: none;
     }
 
-    .logo-preview-slot {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      overflow: hidden;
-      background: var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
+    .input:focus { border-color: var(--border-strong); }
+    .input-grow { flex: 1; min-width: 140px; }
+    .input-pts { width: 80px; }
 
-    .logo-preview-slot img {
-      width: 48px;
-      height: 48px;
-      object-fit: cover;
-      display: block;
-    }
+    /* ── Buttons ────────────────────────────────────────────────────────────── */
 
-    .logo-none {
-      font-size: 11px;
-      color: var(--hint);
-    }
-
-    .logo-upload-label {
+    .btn-primary {
+      border: none;
+      border-radius: 999px;
+      background: var(--text);
+      color: white;
+      padding: 10px 20px;
+      font-size: 14px;
       cursor: pointer;
+      white-space: nowrap;
+      font-family: inherit;
+      transition: background 0.1s;
     }
 
-    .manage-section-title {
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary:not(:disabled):hover { background: #3a3529; }
+
+    .btn-sm {
+      border: 1px solid var(--border-strong);
+      background: var(--surface-strong);
+      border-radius: 8px;
+      padding: 5px 10px;
       font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      font-weight: 500;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 12px;
+      cursor: pointer;
+      color: var(--text);
+      white-space: nowrap;
+      font-family: inherit;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
     }
+
+    .btn-sm:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    .btn-sm:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-danger-sm {
+      border: 1px solid transparent;
+      background: none;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--danger);
+      white-space: nowrap;
+      font-family: inherit;
+      transition: background 0.1s;
+    }
+
+    .btn-danger-sm:hover { background: var(--danger-soft); }
+    .btn-danger-sm:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* ── Role badge ─────────────────────────────────────────────────────────── */
 
@@ -416,29 +456,16 @@
       padding: 2px 8px;
       text-transform: uppercase;
       flex-shrink: 0;
-    }
-
-    /* ── Candidate group titles ─────────────────────────────────────────────── */
-
-    .candidate-group-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 4px;
+      white-space: nowrap;
     }
 
     /* ── Reward rules ───────────────────────────────────────────────────────── */
 
-    .rules-store-name {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-
-    #rulesList {
+    .rules-list {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      margin-bottom: 16px;
       max-height: 400px;
       overflow-y: auto;
     }
@@ -451,10 +478,8 @@
       background: var(--surface-strong);
       border: 1px solid var(--border);
       border-radius: 12px;
-      transition: border-color 0.1s;
     }
 
-    /* Kind badge — base */
     .rule-badge {
       font-family: var(--mono);
       font-size: 11px;
@@ -469,7 +494,6 @@
       color: var(--accent);
     }
 
-    /* Kind badge — per-type colour */
     .rule-badge[data-kind="redeem"]       { background: var(--danger-soft); color: var(--danger); }
     .rule-badge[data-kind="bonus_reason"],
     .rule-badge[data-kind="bonus_amount"] { background: rgba(55,47,34,0.07); color: var(--muted); }
@@ -483,7 +507,6 @@
       flex-shrink: 0;
     }
 
-    /* Order controls — minimal icon buttons */
     .rule-order-btns {
       display: flex;
       flex-direction: column;
@@ -508,7 +531,6 @@
     .rule-order-btn:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
     .rule-order-btn:disabled { opacity: 0.18; cursor: default; }
 
-    /* Delete — matches btn-danger-sm exactly */
     .rule-delete-btn {
       flex-shrink: 0;
       border: 1px solid transparent;
@@ -525,13 +547,78 @@
     .rule-delete-btn:hover { background: var(--danger-soft); }
     .rule-delete-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* Add-rule inputs row */
     .rule-inputs {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
       align-items: center;
-      margin-bottom: 8px;
+    }
+
+    /* ── Sub-sections within detail ─────────────────────────────────────────── */
+
+    .sub-section { margin-bottom: 20px; }
+    .sub-section:last-child { margin-bottom: 0; }
+
+    .sub-section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--hint);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    /* ── Inline edit rows ───────────────────────────────────────────────────── */
+
+    .inline-edit-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .inline-edit-row:last-child { border-bottom: none; }
+
+    /* ── Users section (landing) ────────────────────────────────────────────── */
+
+    .users-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px 24px;
+      margin-top: 24px;
+    }
+
+    /* ── Status / empty / loading ───────────────────────────────────────────── */
+
+    .status {
+      min-height: 18px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .status.error { color: var(--danger); }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      padding: 10px 0;
+    }
+
+    .loading-text {
+      color: var(--hint);
+      font-size: 14px;
+      padding: 8px 0;
+    }
+
+    .error-text { color: var(--danger); font-size: 14px; }
+
+    /* ── Logo upload ────────────────────────────────────────────────────────── */
+
+    .logo-upload-label {
+      cursor: pointer;
     }
 
     /* ── Debug overlay + header bar ────────────────────────────────────────── */
@@ -550,7 +637,6 @@
       font-size: 10px;
       color: var(--muted);
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      pointer-events: auto;
     }
 
     .dbg-row   { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
@@ -560,6 +646,7 @@
     .dbg-time  { color: var(--hint); margin-top: 6px; font-size: 9px; }
     .dbg-ok    { color: var(--accent); }
     .dbg-no    { color: var(--danger); }
+    .dbg-err   { color: var(--danger); }
     .dbg-dim   { color: var(--muted); }
 
     .dbg-btn {
@@ -606,229 +693,75 @@
       background: rgba(255,255,255,0.6);
       border: 0.5px solid currentColor;
     }
-
-    /* ── Archived badge ─────────────────────────────────────────────────────── */
-
-    .archived-badge {
-      font-family: var(--mono);
-      font-size: 11px;
-      background: var(--danger-soft);
-      color: var(--danger);
-      border-radius: 6px;
-      padding: 2px 8px;
-      text-transform: uppercase;
-      flex-shrink: 0;
-    }
-
-    /* ── Status / empty ─────────────────────────────────────────────────────── */
-
-    .status {
-      min-height: 20px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .status.error { color: var(--danger); }
-
-    .empty {
-      color: var(--muted);
-      font-size: 14px;
-      padding: 12px 4px;
-    }
   </style>
 </head>
 <body>
   <main class="page">
 
-    <header class="header">
-      <div class="header-id">
-        <span class="id-label">Admin ID</span>
-        <span id="adminId">—</span>
-      </div>
-    </header>
-
     <div id="dbgHeader">Loading context…</div>
 
-    <nav class="actions">
-      <button class="action-btn" data-section="createStore">
-        <span class="action-num">01</span>
-        <span class="action-label">Create Store</span>
-      </button>
-      <button class="action-btn" data-section="assignManager">
-        <span class="action-num">02</span>
-        <span class="action-label">Assign Manager</span>
-      </button>
-      <button class="action-btn" data-section="assignStaff">
-        <span class="action-num">03</span>
-        <span class="action-label">Assign Staff</span>
-      </button>
-      <button class="action-btn" data-section="rewardRules">
-        <span class="action-num">04</span>
-        <span class="action-label">Reward Rules</span>
-      </button>
-      <button class="action-btn" data-section="allStores">
-        <span class="action-num">05</span>
-        <span class="action-label">All Stores</span>
-      </button>
-      <button class="action-btn" data-section="allUsers">
-        <span class="action-num">06</span>
-        <span class="action-label">All Users</span>
-      </button>
-      <button class="action-btn" data-section="manageStore">
-        <span class="action-num">07</span>
-        <span class="action-label">Manage Store</span>
-      </button>
-    </nav>
+    <!-- ── View: Stores landing ─────────────────────────────────────────────── -->
+    <div id="viewStores" class="view">
 
-    <div id="panelArea">
-
-      <section class="panel hidden" id="panel-createStore">
-        <h2>Create Store</h2>
-        <p>Add a new store to the directory.</p>
-        <div class="form-row">
-          <input type="text" id="newStoreName" class="input input-grow" placeholder="Store name..." />
-          <button class="btn-primary" id="createStoreBtn">Create</button>
+      <div class="page-header">
+        <h1 class="page-title">Stores</h1>
+        <div class="page-header-actions">
+          <button class="btn-sm" id="toggleUsersBtn">All Users</button>
+          <button class="btn-primary" id="addStoreBtn">+ New Store</button>
         </div>
+      </div>
+
+      <div id="createStoreForm" class="create-store-form hidden">
+        <input type="text" id="newStoreName" class="input input-grow" placeholder="Store name…" />
+        <button class="btn-primary" id="createStoreBtn">Create</button>
+        <button class="btn-sm" id="cancelNewStoreBtn">Cancel</button>
         <div class="status" id="createStoreStatus"></div>
-      </section>
+      </div>
 
-      <section class="panel hidden" id="panel-assignManager">
-        <h2>Assign Manager</h2>
-        <p>Pick a store to see its current managers and assign new ones.</p>
-        <div class="picker-grid">
-          <div>
-            <div class="picker-label">Store</div>
-            <div class="picker" id="managerStoreList"><p class="empty">Loading...</p></div>
-          </div>
-          <div id="managerCandidatesCol">
-            <div class="picker-label">Candidates</div>
-            <div class="dir-list" id="managerCandidatesList"><p class="empty">Select a store</p></div>
-          </div>
+      <div id="storeGrid" class="store-grid"></div>
+
+      <div id="usersSection" class="users-section hidden">
+        <div class="section-header">
+          <span class="section-title">All Users</span>
         </div>
-        <div class="status" id="assignManagerStatus"></div>
+        <div class="dir-list" id="allUsersList"><p class="loading-text">Loading…</p></div>
+      </div>
+
+    </div>
+
+    <!-- ── View: Store detail ────────────────────────────────────────────────── -->
+    <div id="viewStore" class="view hidden">
+
+      <div class="back-nav">
+        <button class="back-btn" id="backBtn">← Stores</button>
+      </div>
+
+      <div id="storeHeader" class="store-header-card">
+        <p class="loading-text">Loading…</p>
+      </div>
+
+      <section class="detail-section" id="sectionManagers">
+        <p class="loading-text">Loading…</p>
       </section>
 
-      <section class="panel hidden" id="panel-assignStaff">
-        <h2>Assign Staff</h2>
-        <p>Pick a store to see its current staff and assign new members.</p>
-        <div class="picker-grid">
-          <div>
-            <div class="picker-label">Store</div>
-            <div class="picker" id="staffStoreList"><p class="empty">Loading...</p></div>
-          </div>
-          <div id="staffCandidatesCol">
-            <div class="picker-label">Candidates</div>
-            <div class="dir-list" id="staffCandidatesList"><p class="empty">Select a store</p></div>
-          </div>
-        </div>
-        <div class="status" id="assignStaffStatus"></div>
+      <section class="detail-section" id="sectionStaff">
+        <p class="loading-text">Loading…</p>
       </section>
 
-      <section class="panel hidden" id="panel-rewardRules">
-        <h2>Reward Rules</h2>
-        <p>Manage quick-award, redemption, and bonus buttons shown to staff.</p>
-
-        <div class="picker-label">Store</div>
-        <div class="picker picker-inline" id="rulesStoreList"><p class="empty">Loading...</p></div>
-
-        <div class="hidden" id="rulesContent">
-          <div class="rules-store-name" id="rulesStoreName"></div>
-
-          <div class="manage-section">
-            <div class="manage-section-title">Current Rules</div>
-            <div id="rulesList"></div>
-          </div>
-
-          <div class="manage-section">
-            <div class="manage-section-title">Add Rule</div>
-            <div class="rule-inputs">
-              <select id="ruleKind" class="input">
-                <optgroup label="Award / Redeem">
-                  <option value="award">Award</option>
-                  <option value="redeem">Redeem</option>
-                </optgroup>
-                <optgroup label="Bonus">
-                  <option value="bonus_reason">Bonus Reason</option>
-                  <option value="bonus_amount">Bonus Amount</option>
-                </optgroup>
-              </select>
-              <input type="text" id="ruleLabel" placeholder="Label" class="input input-grow" />
-              <input type="number" id="rulePoints" placeholder="Pts" class="input input-pts" min="1" />
-              <button class="btn-primary" id="addRuleBtn">Add</button>
-            </div>
-            <div class="status" id="addRuleStatus"></div>
-          </div>
-
-          <div class="manage-section">
-            <div class="manage-section-title">Bonus Configuration</div>
-            <div class="form-row">
-              <span class="picker-label">Cap</span>
-              <input type="number" id="bonusCapInput" class="input input-pts" placeholder="None" min="1" />
-              <button class="btn-sm" id="saveBonusCapBtn">Save</button>
-              <button class="btn-danger-sm" id="removeBonusCapBtn">Remove</button>
-            </div>
-            <div class="status" id="bonusCapStatus"></div>
-          </div>
-        </div>
+      <section class="detail-section" id="sectionMembers">
+        <p class="loading-text">Loading…</p>
       </section>
 
-      <section class="panel hidden" id="panel-allStores">
-        <h2>All Stores</h2>
-        <p>Every store in the directory. Edit names, archive, or restore stores.</p>
-        <div class="dir-list" id="allStoresList"><p class="empty">Loading...</p></div>
-        <div class="status" id="allStoresStatus"></div>
+      <section class="detail-section" id="sectionRewards">
+        <p class="loading-text">Loading…</p>
       </section>
 
-      <section class="panel hidden" id="panel-allUsers">
-        <h2>All Users</h2>
-        <p>Every registered user.</p>
-        <div class="dir-list" id="allUsersList"><p class="empty">Loading...</p></div>
-      </section>
-
-      <section class="panel hidden" id="panel-manageStore">
-        <h2>Manage Store</h2>
-        <p>Pick a store to view and remove its managers and staff.</p>
-        <div class="picker-label">Store</div>
-        <div class="picker picker-inline" id="manageStoreList"><p class="empty">Loading...</p></div>
-        <div class="hidden" id="manageStoreContent">
-          <div class="rules-store-name" id="manageStoreName"></div>
-          <div class="manage-section">
-            <div class="manage-section-title">Logo</div>
-            <div class="logo-upload-row">
-              <div id="manageStoreLogo" class="logo-preview-slot"></div>
-              <label class="btn-sm logo-upload-label">
-                Change logo
-                <input type="file" id="logoFileInput" accept="image/*" style="display:none">
-              </label>
-            </div>
-            <div class="status" id="logoUploadStatus"></div>
-          </div>
-          <div class="manage-section">
-            <div class="manage-section-title">Managers</div>
-            <div class="dir-list" id="manageManagersList"></div>
-          </div>
-          <div class="manage-section">
-            <div class="manage-section-title">Staff</div>
-            <div class="dir-list" id="manageStaffList"></div>
-          </div>
-          <div class="manage-section">
-            <div class="manage-section-title">Members</div>
-            <div class="dir-list" id="manageMembersList"></div>
-            <div class="status" id="manageMembersStatus"></div>
-          </div>
-          <div class="manage-section">
-            <div class="manage-section-title">Outlets</div>
-            <div class="dir-list" id="manageOutletsList"></div>
-            <div style="margin-top:8px">
-              <button class="btn-sm" id="addOutletBtn">+ Add outlet</button>
-            </div>
-            <div class="status" id="manageOutletsStatus"></div>
-          </div>
-          <div class="status" id="manageStoreStatus"></div>
-        </div>
+      <section class="detail-section" id="sectionOutlets">
+        <p class="loading-text">Loading…</p>
       </section>
 
     </div>
+
   </main>
 
   <div id="dbg">Loading…</div>

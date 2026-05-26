@@ -16,495 +16,606 @@ import {
 import { getStoreBonusCap } from '../../services/stores.js'
 import { getLogoUrl } from '../../lib/logoUrl.js'
 import { escapeHtml } from '../../lib/escape.js'
-import { $, $$, $q } from '../../lib/dom.js'
+import { $ } from '../../lib/dom.js'
 
-let users = []
-let stores = []
-let currentRules = []
-let currentOutlets = []
+// ── State ─────────────────────────────────────────────────────────────────────
+let allStores = []
+let allUsers  = []
 
-let selectedManagerStoreId = null
-let selectedStaffStoreId = null
-let selectedRulesStoreId = null
-let selectedManageStoreId = null
-let selectedManageStoreName = null
+let currentStoreId   = null
+let currentStoreName = null
+let loadSeq  = 0    // race guard for store detail loads
 
-let managerReqId = 0
-let staffReqId = 0
-let manageStoreReqId = 0
+let rulesLocal   = []  // local copy for optimistic reorder
+let outletsLocal = []  // local copy for outlet list render
+
+// ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
   try {
-    const session = await initAuth()
-    const [{ data: u, error: ue }, { data: s, error: se }] = await Promise.all([
+    await initAuth()
+    const [{ data: users, error: ue }, { data: stores, error: se }] = await Promise.all([
       loadAdminUsers(),
-      loadAllStores()
+      loadAllStores(),
     ])
     if (ue) throw ue
     if (se) throw se
 
-    users = u || []
-    stores = s || []
+    allUsers  = users  || []
+    allStores = stores || []
 
-    const me = users.find(u => u.user_id === session?.id)
-    if (me?.public_id) $('adminId').textContent = me.public_id
-
-    const activeStores = stores.filter(s => s.is_active !== false)
-    renderPicker('managerStoreList', activeStores, 'store')
-    renderPicker('staffStoreList', activeStores, 'store')
-    renderPicker('rulesStoreList', activeStores, 'store')
-    renderPicker('manageStoreList', activeStores, 'store')
-    renderAllStores()
+    renderStoreGrid()
     renderAllUsers()
-
     bindEvents()
   } catch (err) {
-    console.error(err)
+    console.error('Admin init failed:', err)
   }
 }
 
-// ── Pickers ──────────────────────────────────────────────────────────────────
+// ── View switching ────────────────────────────────────────────────────────────
 
-function renderPicker(containerId, items, type) {
-  const el = $(containerId)
+function showStoreList() {
+  $('viewStores').classList.remove('hidden')
+  $('viewStore').classList.add('hidden')
+  currentStoreId   = null
+  currentStoreName = null
+  renderStoreGrid()
+  refreshDebugUI(null)
+}
+
+async function showStoreDetail(storeId, storeName) {
+  currentStoreId   = storeId
+  currentStoreName = storeName
+  $('viewStores').classList.add('hidden')
+  $('viewStore').classList.remove('hidden')
+  refreshDebugUI(storeId)
+  await loadAndRenderStoreDetail(storeId)
+}
+
+// ── Store grid ────────────────────────────────────────────────────────────────
+
+function renderStoreGrid() {
+  const el = $('storeGrid')
   if (!el) return
 
-  if (!items.length) {
-    el.innerHTML = '<p class="empty">None found</p>'
+  if (!allStores.length) {
+    el.innerHTML = '<p class="empty">No stores yet. Hit "+ New Store" to create one.</p>'
     return
   }
 
-  if (type === 'user') {
-    el.innerHTML = items.map(u => `
-      <button class="pick-card" data-user-id="${escapeHtml(u.user_id)}">
-        <span class="pick-title">${escapeHtml(u.public_id || 'No public ID')}</span>
-        <span class="pick-sub">${escapeHtml(u.user_id)}</span>
-      </button>
-    `).join('')
-  } else {
-    el.innerHTML = items.map(s => `
-      <button class="pick-card" data-store-id="${escapeHtml(s.id)}" data-store-name="${escapeHtml(s.name || 'Untitled')}">
-        <span class="pick-title">${escapeHtml(s.name || 'Untitled store')}</span>
-        <span class="pick-sub">${escapeHtml(s.id)}</span>
-      </button>
-    `).join('')
-  }
-}
-
-// ── Directory lists ───────────────────────────────────────────────────────────
-
-function renderAllStores() {
-  const el = $('allStoresList')
-  if (!el) return
-  if (!stores.length) { el.innerHTML = '<p class="empty">No stores yet.</p>'; return }
-  el.innerHTML = stores.map(s => {
+  el.innerHTML = allStores.map(s => {
+    const logoUrl  = getLogoUrl(s.logo_path, s.logo_updated_at)
     const archived = s.is_active === false
-    const actions = archived
-      ? `<button class="btn-sm" data-restore-store-id="${escapeHtml(s.id)}">Restore</button>`
-      : `<button class="btn-sm" data-edit-store-id="${escapeHtml(s.id)}" data-store-name="${escapeHtml(s.name || '')}">Edit</button>
-         <button class="btn-danger-sm" data-archive-store-id="${escapeHtml(s.id)}">Archive</button>`
+    const initial  = escapeHtml((s.name || '?').charAt(0).toUpperCase())
+    const logoHtml = logoUrl
+      ? `<img src="${escapeHtml(logoUrl)}" width="44" height="44" alt="" onerror="this.style.display='none'">`
+      : `<span class="logo-initial">${initial}</span>`
     return `
-    <div class="dir-row" data-store-id="${escapeHtml(s.id)}">
-      <div class="dir-info">
-        <span class="dir-name">${escapeHtml(s.name || 'Untitled')}</span>
-        <span class="dir-sub">${escapeHtml(s.id)}</span>
-      </div>
-      ${archived ? '<span class="archived-badge">Archived</span>' : ''}
-      <div class="dir-actions">${actions}</div>
-    </div>`
+      <button class="store-card${archived ? ' archived' : ''}"
+              data-store-id="${escapeHtml(s.id)}"
+              data-store-name="${escapeHtml(s.name || 'Untitled')}">
+        <div class="store-card-logo">${logoHtml}</div>
+        <div class="store-card-body">
+          <span class="store-card-name">${escapeHtml(s.name || 'Untitled')}</span>
+          <span class="badge ${archived ? 'badge-archived' : 'badge-active'}">${archived ? 'Archived' : 'Active'}</span>
+        </div>
+        <span class="store-card-arrow">→</span>
+      </button>`
   }).join('')
 }
 
 function renderAllUsers() {
   const el = $('allUsersList')
   if (!el) return
-  if (!users.length) { el.innerHTML = '<p class="empty">No users yet.</p>'; return }
-  el.innerHTML = users.map(u => `
+  if (!allUsers.length) { el.innerHTML = '<p class="empty">No users yet.</p>'; return }
+  el.innerHTML = allUsers.map(u => `
     <div class="dir-row">
       <div class="dir-info">
-        <span class="dir-name">${escapeHtml(u.public_id || 'No public ID')}</span>
+        <span class="dir-name">${escapeHtml(u.public_id || '—')}</span>
         <span class="dir-sub">${escapeHtml(u.user_id)}</span>
       </div>
+    </div>`).join('')
+}
+
+// ── Store detail: load all data ───────────────────────────────────────────────
+
+async function loadAndRenderStoreDetail(storeId) {
+  const seq = ++loadSeq
+
+  // Show skeleton immediately
+  setSectionLoading('storeHeader',     'Loading…')
+  setSectionLoading('sectionManagers', 'Loading…')
+  setSectionLoading('sectionStaff',    'Loading…')
+  setSectionLoading('sectionMembers',  'Loading…')
+  setSectionLoading('sectionRewards',  'Loading…')
+  setSectionLoading('sectionOutlets',  'Loading…')
+
+  const store = allStores.find(s => s.id === storeId) || { id: storeId, name: currentStoreName }
+
+  const [
+    { data: managers, error: me  },
+    { data: staff,    error: se  },
+    { data: members,  error: mbe },
+    { data: outlets,  error: oe  },
+    { data: rules,    error: re  },
+    { data: bonusCap },
+  ] = await Promise.all([
+    loadStoreManagers(storeId),
+    loadStoreStaff(storeId),
+    loadStoreMembers(storeId),
+    loadStoreOutlets(storeId),
+    loadRewardRules(storeId),
+    getStoreBonusCap(storeId),
+  ])
+
+  if (seq !== loadSeq) return  // superseded by a newer load
+
+  // De-duplicate people sections: each person appears in at most one section
+  const managerIds = new Set((managers || []).map(m => m.user_id))
+  const staffIds   = new Set((staff    || []).map(s => s.user_id))
+  const pureStaff  = (staff || []).filter(s => !managerIds.has(s.user_id))
+  const pureMembers = (members || []).filter(m => !staffIds.has(m.user_id) && !managerIds.has(m.user_id))
+
+  rulesLocal   = rules   ? [...rules]   : []
+  outletsLocal = outlets ? [...outlets] : []
+
+  // Sync store state (logo/active may have changed from header actions)
+  const freshStore = allStores.find(s => s.id === storeId) || store
+
+  renderStoreHeader(freshStore)
+  renderManagers(managers || [], me)
+  renderStaff(pureStaff, se)
+  renderMembers(pureMembers, mbe)
+  renderRewards(rulesLocal, bonusCap ?? null, re)
+  renderOutlets(outletsLocal, oe)
+}
+
+function setSectionLoading(id, text) {
+  const el = $(id)
+  if (el) el.innerHTML = `<p class="loading-text">${escapeHtml(text)}</p>`
+}
+
+// ── Store header ──────────────────────────────────────────────────────────────
+
+function renderStoreHeader(store) {
+  const logoUrl  = getLogoUrl(store.logo_path, store.logo_updated_at)
+  const archived = store.is_active === false
+  const initial  = escapeHtml((store.name || '?').charAt(0).toUpperCase())
+
+  const logoHtml = logoUrl
+    ? `<img src="${escapeHtml(logoUrl)}" width="64" height="64" alt="" onerror="this.style.display='none'">`
+    : `<span class="logo-initial-lg">${initial}</span>`
+
+  $('storeHeader').innerHTML = `
+    <div class="store-detail-layout">
+      <div class="store-detail-logo-wrap">
+        <div class="store-detail-logo" id="headerLogoSlot">${logoHtml}</div>
+        <label class="btn-sm logo-upload-label" style="font-size:11px">
+          ${logoUrl ? 'Change' : 'Add logo'}
+          <input type="file" id="logoFileInput" accept="image/*" style="display:none">
+        </label>
+      </div>
+      <div class="store-detail-info">
+        <div class="store-name-display" id="storeNameDisplay">
+          <h2 class="store-detail-name" id="storeDetailName">${escapeHtml(store.name || 'Untitled')}</h2>
+          <span class="badge ${archived ? 'badge-archived' : 'badge-active'}" id="storeStatusBadge">
+            ${archived ? 'Archived' : 'Active'}
+          </span>
+          <div class="store-name-actions">
+            <button class="btn-sm" id="editNameBtn">Rename</button>
+            <button class="${archived ? 'btn-sm' : 'btn-danger-sm'}" id="archiveRestoreBtn">
+              ${archived ? 'Restore' : 'Archive'}
+            </button>
+          </div>
+        </div>
+        <div class="store-name-edit-row hidden" id="storeNameEditRow">
+          <input class="input" id="storeNameInput" value="${escapeHtml(store.name || '')}" style="width:220px" />
+          <button class="btn-primary" id="saveNameBtn" style="padding:8px 16px">Save</button>
+          <button class="btn-sm" id="cancelNameBtn">Cancel</button>
+        </div>
+        <div class="status" id="storeHeaderStatus"></div>
+        <div class="status" id="logoUploadStatus"></div>
+      </div>
     </div>
-  `).join('')
+  `
+
+  // Bind header-specific events (re-bound each render because innerHTML replaces elements)
+  $('logoFileInput')?.addEventListener('change', handleLogoUpload)
+
+  $('editNameBtn')?.addEventListener('click', () => {
+    $('storeNameDisplay').classList.add('hidden')
+    $('storeNameEditRow').classList.remove('hidden')
+    $('storeNameInput').focus()
+    $('storeNameInput').select()
+  })
+
+  $('cancelNameBtn')?.addEventListener('click', () => {
+    $('storeNameDisplay').classList.remove('hidden')
+    $('storeNameEditRow').classList.add('hidden')
+    setStatus('storeHeaderStatus', '')
+  })
+
+  $('saveNameBtn')?.addEventListener('click', handleSaveStoreName)
+  $('storeNameInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleSaveStoreName() })
+
+  $('archiveRestoreBtn')?.addEventListener('click', handleArchiveRestore)
 }
 
-function resolvePublicId(userId) {
-  const u = users.find(u => u.user_id === userId)
-  return u ? (u.public_id || userId) : userId
+// ── Section renderers ─────────────────────────────────────────────────────────
+
+function renderManagers(managers, error) {
+  const count = managers.length
+  const title = `Managers${count ? ` (${count})` : ''}`
+
+  if (error) {
+    $('sectionManagers').innerHTML = sectionWrap(title, '<p class="error-text">Could not load.</p>')
+    return
+  }
+
+  const rows = count
+    ? managers.map(m => personRow(m.user_id, [
+        `<span class="role-badge">Manager</span>`,
+        `<button class="btn-danger-sm" data-demote-manager="${escapeHtml(m.user_id)}">Demote</button>`,
+      ])).join('')
+    : '<p class="empty">No managers yet.</p>'
+
+  $('sectionManagers').innerHTML = sectionWrap(title, `<div class="dir-list">${rows}</div>`)
 }
 
-function renderMemberList(containerId, members, removeAttr) {
-  const el = $(containerId)
-  if (!el) return
-  if (!members.length) { el.innerHTML = '<p class="empty">None.</p>'; return }
-  el.innerHTML = members.map(m => `
+function renderStaff(staff, error) {
+  const count = staff.length
+  const title = `Staff${count ? ` (${count})` : ''}`
+
+  if (error) {
+    $('sectionStaff').innerHTML = sectionWrap(title, '<p class="error-text">Could not load.</p>')
+    return
+  }
+
+  const rows = count
+    ? staff.map(s => personRow(s.user_id, [
+        `<span class="role-badge">Staff</span>`,
+        `<button class="btn-sm" data-promote-to-mgr="${escapeHtml(s.user_id)}">→ Manager</button>`,
+        `<button class="btn-danger-sm" data-demote-staff="${escapeHtml(s.user_id)}">Demote</button>`,
+      ])).join('')
+    : '<p class="empty">No staff yet.</p>'
+
+  $('sectionStaff').innerHTML = sectionWrap(title, `<div class="dir-list">${rows}</div>`)
+}
+
+function renderMembers(members, error) {
+  const count = members.length
+  const title = `Members${count ? ` (${count})` : ''}`
+
+  if (error) {
+    $('sectionMembers').innerHTML = sectionWrap(title, '<p class="error-text">Could not load.</p>')
+    return
+  }
+
+  const rows = count
+    ? members.map(m => personRow(m.user_id, [
+        `<button class="btn-sm" data-promote-to-staff="${escapeHtml(m.user_id)}">→ Staff</button>`,
+        `<button class="btn-sm" data-promote-to-mgr="${escapeHtml(m.user_id)}">→ Manager</button>`,
+        `<button class="btn-danger-sm" data-remove-member="${escapeHtml(m.user_id)}">Remove</button>`,
+      ])).join('')
+    : '<p class="empty">No members yet.</p>'
+
+  $('sectionMembers').innerHTML = sectionWrap(title, `<div class="dir-list">${rows}</div>`)
+}
+
+const KIND_LABEL = { award: 'Award', redeem: 'Redeem', bonus_reason: 'Bonus Reason', bonus_amount: 'Bonus Amt' }
+
+function renderRewards(rules, bonusCap, error) {
+  if (error) {
+    $('sectionRewards').innerHTML = sectionWrap('Rewards', '<p class="error-text">Could not load.</p>')
+    return
+  }
+
+  const ruleRows = rules.length
+    ? rules.map((r, i) => {
+        let pts
+        if (r.kind === 'bonus_reason')  pts = '—'
+        else if (r.kind === 'redeem')   pts = `−${r.points} pts`
+        else                            pts = `+${r.points} pts`
+        return `
+          <div class="rule-row">
+            <div class="rule-order-btns">
+              <button class="rule-order-btn" data-move-rule="${escapeHtml(r.id)}" data-direction="up" ${i === 0 ? 'disabled' : ''}>↑</button>
+              <button class="rule-order-btn" data-move-rule="${escapeHtml(r.id)}" data-direction="down" ${i === rules.length - 1 ? 'disabled' : ''}>↓</button>
+            </div>
+            <span class="rule-badge" data-kind="${escapeHtml(r.kind)}">${KIND_LABEL[r.kind] || escapeHtml(r.kind)}</span>
+            <span class="rule-label-text">${escapeHtml(r.label || '—')}</span>
+            <span class="rule-pts-text">${pts}</span>
+            <button class="rule-delete-btn" data-delete-rule="${escapeHtml(r.id)}">Remove</button>
+          </div>`
+      }).join('')
+    : '<p class="empty">No rules yet.</p>'
+
+  const content = `
+    <div class="sub-section">
+      <div class="sub-section-title">Rules</div>
+      <div class="rules-list" id="rulesList">${ruleRows}</div>
+    </div>
+    <div class="sub-section">
+      <div class="sub-section-title">Add Rule</div>
+      <div class="rule-inputs">
+        <select id="ruleKind" class="input">
+          <optgroup label="Award / Redeem">
+            <option value="award">Award</option>
+            <option value="redeem">Redeem</option>
+          </optgroup>
+          <optgroup label="Bonus">
+            <option value="bonus_reason">Bonus Reason</option>
+            <option value="bonus_amount">Bonus Amount</option>
+          </optgroup>
+        </select>
+        <input type="text" id="ruleLabel" placeholder="Label" class="input input-grow" />
+        <input type="number" id="rulePoints" placeholder="Pts" class="input input-pts" min="1" />
+        <button class="btn-primary" id="addRuleBtn" style="padding:10px 16px">Add</button>
+      </div>
+      <div class="status" id="addRuleStatus"></div>
+    </div>
+    <div class="sub-section">
+      <div class="sub-section-title">Bonus Cap</div>
+      <div class="form-row">
+        <input type="number" id="bonusCapInput" class="input input-pts"
+               value="${bonusCap !== null ? escapeHtml(String(bonusCap)) : ''}"
+               placeholder="None" min="1" />
+        <button class="btn-sm" id="saveBonusCapBtn">Save cap</button>
+        <button class="btn-danger-sm" id="removeBonusCapBtn">Remove cap</button>
+      </div>
+      <div class="status" id="bonusCapStatus"></div>
+    </div>
+  `
+
+  $('sectionRewards').innerHTML = sectionWrap(`Rewards (${rules.length})`, content)
+
+  // Bind form buttons (re-bound each render)
+  $('addRuleBtn')?.addEventListener('click', handleAddRule)
+  $('saveBonusCapBtn')?.addEventListener('click', handleSaveBonusCap)
+  $('removeBonusCapBtn')?.addEventListener('click', handleRemoveBonusCap)
+}
+
+function renderOutlets(outlets, error) {
+  if (error) {
+    $('sectionOutlets').innerHTML = sectionWrap('Outlets', '<p class="error-text">Could not load.</p>')
+    return
+  }
+
+  const rows = outlets.length
+    ? outlets.map(o => `
+        <div class="dir-row" data-outlet-id="${escapeHtml(o.id)}">
+          <div class="dir-info">
+            <span class="dir-name">${escapeHtml(o.name)}</span>
+          </div>
+          <div class="dir-actions">
+            <button class="btn-sm"
+              data-rename-outlet="${escapeHtml(o.id)}"
+              data-outlet-name="${escapeHtml(o.name)}">Rename</button>
+            <button class="btn-danger-sm"
+              data-delete-outlet="${escapeHtml(o.id)}">Remove</button>
+          </div>
+        </div>`).join('')
+    : '<p class="empty">No outlets yet.</p>'
+
+  const content = `
+    <div class="dir-list" id="outletsList">${rows}</div>
+    <div style="margin-top:10px">
+      <button class="btn-sm" id="addOutletBtn">+ Add outlet</button>
+    </div>
+    <div class="status" id="outletsStatus"></div>
+  `
+
+  $('sectionOutlets').innerHTML = sectionWrap(`Outlets (${outlets.length})`, content)
+
+  // Bind add outlet button (re-bound each render)
+  $('addOutletBtn')?.addEventListener('click', handleAddOutletRow)
+}
+
+// ── HTML helpers ──────────────────────────────────────────────────────────────
+
+function sectionWrap(title, content) {
+  return `
+    <div class="section-header">
+      <span class="section-title">${escapeHtml(title)}</span>
+    </div>
+    ${content}
+  `
+}
+
+function personRow(userId, actionEls) {
+  const pid = escapeHtml(resolvePublicId(userId))
+  const uid = escapeHtml(userId)
+  return `
     <div class="dir-row">
       <div class="dir-info">
-        <span class="dir-name">${escapeHtml(resolvePublicId(m.user_id))}</span>
-        <span class="dir-sub">${escapeHtml(m.user_id)}</span>
+        <span class="dir-name">${pid}</span>
+        <span class="dir-sub">${uid}</span>
       </div>
-      <div class="dir-actions">
-        <button class="btn-danger-sm" ${removeAttr}="${escapeHtml(m.user_id)}">Remove</button>
-      </div>
-    </div>
-  `).join('')
+      <div class="dir-actions">${actionEls.join('')}</div>
+    </div>`
 }
 
-// ── Events ────────────────────────────────────────────────────────────────────
+// ── Event binding ─────────────────────────────────────────────────────────────
 
 function bindEvents() {
-  $$('.action-btn[data-section]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      showSection(btn.dataset.section, btn)
-    })
+  // Store list: card click → detail
+  $('storeGrid')?.addEventListener('click', e => {
+    const card = e.target.closest('[data-store-id]')
+    if (!card) return
+    showStoreDetail(card.dataset.storeId, card.dataset.storeName)
   })
 
-  $('managerStoreList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-store-id]')
-    if (!btn) return
-    selectedManagerStoreId = btn.dataset.storeId
-    selectInPicker('managerStoreList', btn)
-    setStatus('assignManagerStatus', '')
-    await loadAndRenderManagerCandidates(btn.dataset.storeId)
-    refreshDebugUI(btn.dataset.storeId)
+  // Back button
+  $('backBtn')?.addEventListener('click', showStoreList)
+
+  // "+ New Store" toggle
+  $('addStoreBtn')?.addEventListener('click', () => {
+    $('createStoreForm').classList.remove('hidden')
+    $('newStoreName').focus()
+    $('addStoreBtn').classList.add('hidden')
   })
 
-  $('managerCandidatesList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-make-manager-id]')
-    if (!btn) return
-    btn.disabled = true
-    const { error } = await assignManager(btn.dataset.makeManagerId, selectedManagerStoreId)
-    if (error) { btn.disabled = false; setStatus('assignManagerStatus', error.message || 'Could not assign.', true); return }
-    setStatus('assignManagerStatus', 'Manager assigned.')
-    await loadAndRenderManagerCandidates(selectedManagerStoreId)
-  })
-
-  $('staffStoreList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-store-id]')
-    if (!btn) return
-    selectedStaffStoreId = btn.dataset.storeId
-    selectInPicker('staffStoreList', btn)
-    setStatus('assignStaffStatus', '')
-    await loadAndRenderStaffCandidates(btn.dataset.storeId)
-    refreshDebugUI(btn.dataset.storeId)
-  })
-
-  $('staffCandidatesList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-make-staff-id]')
-    if (!btn) return
-    btn.disabled = true
-    const { error } = await assignStaff(btn.dataset.makeStaffId, selectedStaffStoreId)
-    if (error) { btn.disabled = false; setStatus('assignStaffStatus', error.message || 'Could not assign.', true); return }
-    setStatus('assignStaffStatus', 'Staff assigned.')
-    await loadAndRenderStaffCandidates(selectedStaffStoreId)
-  })
+  $('cancelNewStoreBtn')?.addEventListener('click', cancelCreateStore)
 
   $('createStoreBtn')?.addEventListener('click', handleCreateStore)
-  $('newStoreName')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleCreateStore() })
-
-  $('rulesStoreList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-store-id]')
-    if (!btn) return
-    selectedRulesStoreId = btn.dataset.storeId
-    selectInPicker('rulesStoreList', btn)
-    await loadAndRenderRules(btn.dataset.storeId, btn.dataset.storeName)
-    refreshDebugUI(btn.dataset.storeId)
+  $('newStoreName')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  handleCreateStore()
+    if (e.key === 'Escape') cancelCreateStore()
   })
 
-  $('rulesList')?.addEventListener('click', async e => {
-    const deleteBtn = e.target.closest('[data-delete-rule-id]')
+  // All Users toggle
+  $('toggleUsersBtn')?.addEventListener('click', () => {
+    const section = $('usersSection')
+    const hidden = section.classList.toggle('hidden')
+    $('toggleUsersBtn').textContent = hidden ? 'All Users' : 'Hide Users'
+  })
+
+  // ── Store detail — managers ──────────────────────────────────────────────
+  $('sectionManagers')?.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-demote-manager]')
+    if (!btn) return
+    if (!confirmStep(btn, 'Demote')) return
+    btn.disabled = true
+    const seq = loadSeq
+    const { error } = await removeManager(btn.dataset.demoteManager, currentStoreId)
+    if (seq !== loadSeq) return
+    if (error) { btn.disabled = false; setStatus('storeHeaderStatus', error.message || 'Could not demote.', true); return }
+    await loadAndRenderStoreDetail(currentStoreId)
+  })
+
+  // ── Store detail — staff ─────────────────────────────────────────────────
+  $('sectionStaff')?.addEventListener('click', async e => {
+    const promoteBtn = e.target.closest('[data-promote-to-mgr]')
+    if (promoteBtn && promoteBtn.closest('#sectionStaff')) {
+      promoteBtn.disabled = true
+      const seq = loadSeq
+      const { error } = await assignManager(promoteBtn.dataset.promoteToMgr, currentStoreId)
+      if (seq !== loadSeq) return
+      if (error) { promoteBtn.disabled = false; setStatus('storeHeaderStatus', error.message || 'Could not promote.', true); return }
+      await loadAndRenderStoreDetail(currentStoreId)
+      return
+    }
+
+    const demoteBtn = e.target.closest('[data-demote-staff]')
+    if (!demoteBtn) return
+    if (!confirmStep(demoteBtn, 'Demote')) return
+    demoteBtn.disabled = true
+    const seq = loadSeq
+    const { error } = await removeStaffAdmin(demoteBtn.dataset.demoteStaff, currentStoreId)
+    if (seq !== loadSeq) return
+    if (error) { demoteBtn.disabled = false; setStatus('storeHeaderStatus', error.message || 'Could not demote.', true); return }
+    await loadAndRenderStoreDetail(currentStoreId)
+  })
+
+  // ── Store detail — members ───────────────────────────────────────────────
+  $('sectionMembers')?.addEventListener('click', async e => {
+    const toStaffBtn = e.target.closest('[data-promote-to-staff]')
+    if (toStaffBtn) {
+      toStaffBtn.disabled = true
+      const seq = loadSeq
+      const { error } = await assignStaff(toStaffBtn.dataset.promoteToStaff, currentStoreId)
+      if (seq !== loadSeq) return
+      if (error) { toStaffBtn.disabled = false; setStatus('storeHeaderStatus', error.message || 'Could not promote.', true); return }
+      await loadAndRenderStoreDetail(currentStoreId)
+      return
+    }
+
+    const toMgrBtn = e.target.closest('[data-promote-to-mgr]')
+    if (toMgrBtn && toMgrBtn.closest('#sectionMembers')) {
+      toMgrBtn.disabled = true
+      const seq = loadSeq
+      const { error } = await assignManager(toMgrBtn.dataset.promoteToMgr, currentStoreId)
+      if (seq !== loadSeq) return
+      if (error) { toMgrBtn.disabled = false; setStatus('storeHeaderStatus', error.message || 'Could not promote.', true); return }
+      await loadAndRenderStoreDetail(currentStoreId)
+      return
+    }
+
+    const removeBtn = e.target.closest('[data-remove-member]')
+    if (!removeBtn) return
+    if (!confirmStep(removeBtn, 'Remove')) return
+    removeBtn.disabled = true
+    const seq = loadSeq
+    const { error } = await removeCustomerFromStore(removeBtn.dataset.removeMember, currentStoreId)
+    if (seq !== loadSeq) return
+    if (error) { removeBtn.disabled = false; setStatus('storeHeaderStatus', error.message || 'Could not remove.', true); return }
+    await loadAndRenderStoreDetail(currentStoreId)
+  })
+
+  // ── Store detail — rewards ───────────────────────────────────────────────
+  $('sectionRewards')?.addEventListener('click', async e => {
+    const deleteBtn = e.target.closest('[data-delete-rule]')
     if (deleteBtn) {
       deleteBtn.disabled = true
-      const { error } = await deleteRewardRule(deleteBtn.dataset.deleteRuleId)
-      if (error) { deleteBtn.disabled = false; return }
-      await loadAndRenderRules(selectedRulesStoreId, $('rulesStoreName').textContent)
+      const { error } = await deleteRewardRule(deleteBtn.dataset.deleteRule)
+      if (error) { deleteBtn.disabled = false; setStatus('addRuleStatus', error.message || 'Could not delete.', true); return }
+      const { data, error: re } = await loadRewardRules(currentStoreId)
+      rulesLocal = data || []
+      const cap = $('bonusCapInput')?.value
+      renderRewards(rulesLocal, cap !== undefined ? (cap || null) : null, re)
       return
     }
-    const moveBtn = e.target.closest('[data-move-rule-id]')
-    if (moveBtn) await handleMoveRule(moveBtn.dataset.moveRuleId, moveBtn.dataset.direction)
-  })
 
-  $('addRuleBtn')?.addEventListener('click', handleAddRule)
-
-  $('saveBonusCapBtn')?.addEventListener('click', async () => {
-    const val = parseInt($('bonusCapInput').value)
-    if (!val || val < 1) { setStatus('bonusCapStatus', 'Enter a value of 1 or more.', true); return }
-    const btn = $('saveBonusCapBtn')
-    btn.disabled = true
-    const { error } = await setBonusCap(selectedRulesStoreId, val)
-    btn.disabled = false
-    if (error) { setStatus('bonusCapStatus', error.message || 'Could not save.', true); return }
-    setStatus('bonusCapStatus', `Cap set to ${val} pts.`)
-  })
-
-  $('removeBonusCapBtn')?.addEventListener('click', async () => {
-    const btn = $('removeBonusCapBtn')
-    btn.disabled = true
-    const { error } = await setBonusCap(selectedRulesStoreId, null)
-    btn.disabled = false
-    if (error) { setStatus('bonusCapStatus', error.message || 'Could not remove.', true); return }
-    $('bonusCapInput').value = ''
-    setStatus('bonusCapStatus', 'Cap removed.')
-  })
-
-  $('allStoresList')?.addEventListener('click', async e => {
-    const editBtn = e.target.closest('[data-edit-store-id]')
-    if (editBtn) { showInlineEdit(editBtn.dataset.editStoreId, editBtn.dataset.storeName); return }
-
-    const archiveBtn = e.target.closest('[data-archive-store-id]')
-    if (archiveBtn) { await handleArchiveStore(archiveBtn); return }
-
-    const restoreBtn = e.target.closest('[data-restore-store-id]')
-    if (restoreBtn) { await handleRestoreStore(restoreBtn); return }
-
-    const saveBtn = e.target.closest('[data-save-store-id]')
-    if (saveBtn) await handleSaveStoreName(saveBtn)
-
-    const cancelBtn = e.target.closest('[data-cancel-store-id]')
-    if (cancelBtn) { renderAllStores(); setStatus('allStoresStatus', '') }
-  })
-
-  $('manageStoreList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-store-id]')
-    if (!btn) return
-    selectedManageStoreId = btn.dataset.storeId
-    selectedManageStoreName = btn.dataset.storeName
-    selectInPicker('manageStoreList', btn)
-    const reqId = ++manageStoreReqId
-    await loadAndRenderManageStore(btn.dataset.storeId, btn.dataset.storeName, reqId)
-    refreshDebugUI(btn.dataset.storeId)
-  })
-
-  $('logoFileInput')?.addEventListener('change', async e => {
-    const file = e.target.files?.[0]
-    if (!file || !selectedManageStoreId) return
-    e.target.value = ''
-
-    setStatus('logoUploadStatus', 'Uploading...')
-
-    try {
-      const blob = await processLogoFile(file)
-      const path = `stores/${selectedManageStoreId}/logo.webp`
-
-      const { error: uploadError } = await uploadStoreLogo(selectedManageStoreId, blob)
-      if (uploadError) { setStatus('logoUploadStatus', uploadError.message, true); return }
-
-      const { error: rpcError } = await setStoreLogo(selectedManageStoreId, path)
-      if (rpcError) { setStatus('logoUploadStatus', rpcError.message, true); return }
-
-      const updatedAt = new Date().toISOString()
-      stores = stores.map(s =>
-        s.id === selectedManageStoreId
-          ? { ...s, logo_path: path, logo_updated_at: updatedAt }
-          : s
-      )
-
-      renderManageLogo(selectedManageStoreId)
-      setStatus('logoUploadStatus', 'Logo updated.')
-    } catch {
-      setStatus('logoUploadStatus', 'Could not process image. Use a different file.', true)
+    const moveBtn = e.target.closest('[data-move-rule]')
+    if (moveBtn) {
+      await handleMoveRule(moveBtn.dataset.moveRule, moveBtn.dataset.direction)
     }
   })
 
-  $('manageManagersList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-remove-manager-id]')
-    if (!btn) return
-    btn.disabled = true
-    const reqId = manageStoreReqId
-    const { error } = await removeManager(btn.dataset.removeManagerId, selectedManageStoreId)
-    if (reqId !== manageStoreReqId) return
-    if (error) { btn.disabled = false; setStatus('manageStoreStatus', error.message || 'Could not remove.', true); return }
-    await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
-  })
-
-  $('manageStaffList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-remove-staff-id]')
-    if (!btn) return
-    btn.disabled = true
-    const reqId = manageStoreReqId
-    const { error } = await removeStaffAdmin(btn.dataset.removeStaffId, selectedManageStoreId)
-    if (reqId !== manageStoreReqId) return
-    if (error) { btn.disabled = false; setStatus('manageStoreStatus', error.message || 'Could not remove.', true); return }
-    await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
-  })
-
-  $('manageMembersList')?.addEventListener('click', async e => {
-    const btn = e.target.closest('[data-remove-customer-id]')
-    if (!btn) return
-    await handleRemoveCustomer(btn.dataset.removeCustomerId, btn)
-  })
-
-  // ── Outlets ────────────────────────────────────────────────────────────────
-
-  $('addOutletBtn')?.addEventListener('click', handleAddOutletRow)
-
-  $('manageOutletsList')?.addEventListener('click', async e => {
-    const renameBtn = e.target.closest('[data-rename-outlet-id]')
+  // ── Store detail — outlets ───────────────────────────────────────────────
+  $('sectionOutlets')?.addEventListener('click', async e => {
+    const renameBtn = e.target.closest('[data-rename-outlet]')
     if (renameBtn) {
-      showOutletInlineEdit(renameBtn.dataset.renameOutletId, renameBtn.dataset.outletName)
+      showOutletInlineEdit(renameBtn.dataset.renameOutlet, renameBtn.dataset.outletName)
       return
     }
 
-    const saveRenameBtn = e.target.closest('[data-save-outlet-id]')
-    if (saveRenameBtn) {
-      await handleSaveOutletRename(saveRenameBtn.dataset.saveOutletId)
+    const saveRename = e.target.closest('[data-save-outlet]')
+    if (saveRename) {
+      await handleSaveOutletRename(saveRename.dataset.saveOutlet)
       return
     }
 
-    const cancelRenameBtn = e.target.closest('[data-cancel-outlet-id]')
-    if (cancelRenameBtn) {
-      renderOutletsList(currentOutlets)
+    const cancelRename = e.target.closest('[data-cancel-outlet]')
+    if (cancelRename) {
+      renderOutlets(outletsLocal, null)
       return
     }
 
-    const saveNewBtn = e.target.closest('[data-save-new-outlet]')
-    if (saveNewBtn) {
+    const saveNew = e.target.closest('[data-save-new-outlet]')
+    if (saveNew) {
       await handleSaveNewOutlet()
       return
     }
 
-    const cancelNewBtn = e.target.closest('[data-cancel-new-outlet]')
-    if (cancelNewBtn) {
-      renderOutletsList(currentOutlets)
+    const cancelNew = e.target.closest('[data-cancel-new-outlet]')
+    if (cancelNew) {
+      renderOutlets(outletsLocal, null)
       return
     }
 
-    const removeBtn = e.target.closest('[data-remove-outlet-id]')
-    if (removeBtn) {
-      await handleDeleteOutlet(removeBtn.dataset.removeOutletId, removeBtn)
+    const deleteBtn = e.target.closest('[data-delete-outlet]')
+    if (deleteBtn) {
+      await handleDeleteOutlet(deleteBtn.dataset.deleteOutlet, deleteBtn)
     }
   })
 }
 
-// ── Section nav ───────────────────────────────────────────────────────────────
-
-function showSection(name, activeBtn) {
-  $$('#panelArea .panel').forEach(p => p.classList.add('hidden'))
-  $$('.action-btn[data-section]').forEach(b => b.classList.remove('active'))
-  const panel = $(`panel-${name}`)
-  if (panel) panel.classList.remove('hidden')
-  if (activeBtn) activeBtn.classList.add('active')
-}
-
-function selectInPicker(containerId, activeBtn) {
-  $$(`#${containerId} .pick-card`).forEach(b => {
-    b.classList.toggle('selected', b === activeBtn)
-  })
-}
-
-// ── Manager candidates (race-safe) ────────────────────────────────────────────
-
-async function loadAndRenderManagerCandidates(storeId) {
-  const el = $('managerCandidatesList')
-  const reqId = ++managerReqId
-
-  el.innerHTML = '<p class="empty">Loading...</p>'
-
-  const [{ data: managers, error }, { data: members }] = await Promise.all([
-    loadStoreManagers(storeId),
-    loadStoreMembers(storeId)
-  ])
-
-  if (reqId !== managerReqId) return
-  if (error) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
-
-  const managerIds = new Set((managers || []).map(m => m.user_id))
-  const memberIds  = new Set((members  || []).map(m => m.user_id))
-
-  const managerHtml = (managers || []).length
-    ? (managers || []).map(m => `
-        <div class="dir-row">
-          <div class="dir-info">
-            <span class="dir-name">${escapeHtml(resolvePublicId(m.user_id))}</span>
-            <span class="dir-sub">${escapeHtml(m.user_id)}</span>
-          </div>
-          <span class="role-badge">Manager</span>
-        </div>`).join('')
-    : '<p class="empty">No managers yet.</p>'
-
-  const candidates = users.filter(u => memberIds.has(u.user_id) && !managerIds.has(u.user_id))
-  const candidateHtml = candidates.length
-    ? candidates.map(u => `
-        <div class="dir-row">
-          <div class="dir-info">
-            <span class="dir-name">${escapeHtml(u.public_id || u.user_id)}</span>
-            <span class="dir-sub">${escapeHtml(u.user_id)}</span>
-          </div>
-          <div class="dir-actions">
-            <button class="btn-sm" data-make-manager-id="${escapeHtml(u.user_id)}">Make Manager</button>
-          </div>
-        </div>`).join('')
-    : '<p class="empty">No users available.</p>'
-
-  el.innerHTML = `
-    <div class="candidate-group-title">Current Managers</div>
-    ${managerHtml}
-    <div class="candidate-group-title" style="margin-top:12px">All Users</div>
-    ${candidateHtml}
-  `
-}
-
-// ── Staff candidates (race-safe) ──────────────────────────────────────────────
-
-async function loadAndRenderStaffCandidates(storeId) {
-  const el = $('staffCandidatesList')
-  const reqId = ++staffReqId
-
-  el.innerHTML = '<p class="empty">Loading...</p>'
-
-  const [{ data: staff, error }, { data: members }] = await Promise.all([
-    loadStoreStaff(storeId),
-    loadStoreMembers(storeId)
-  ])
-
-  if (reqId !== staffReqId) return
-  if (error) { el.innerHTML = '<p class="empty">Could not load.</p>'; return }
-
-  const staffIds  = new Set((staff   || []).map(s => s.user_id))
-  const memberIds = new Set((members || []).map(m => m.user_id))
-
-  const staffHtml = (staff || []).length
-    ? (staff || []).map(s => `
-        <div class="dir-row">
-          <div class="dir-info">
-            <span class="dir-name">${escapeHtml(resolvePublicId(s.user_id))}</span>
-            <span class="dir-sub">${escapeHtml(s.user_id)}</span>
-          </div>
-          <span class="role-badge">Staff</span>
-        </div>`).join('')
-    : '<p class="empty">No staff yet.</p>'
-
-  const candidates = users.filter(u => memberIds.has(u.user_id) && !staffIds.has(u.user_id))
-  const candidateHtml = candidates.length
-    ? candidates.map(u => `
-        <div class="dir-row">
-          <div class="dir-info">
-            <span class="dir-name">${escapeHtml(u.public_id || u.user_id)}</span>
-            <span class="dir-sub">${escapeHtml(u.user_id)}</span>
-          </div>
-          <div class="dir-actions">
-            <button class="btn-sm" data-make-staff-id="${escapeHtml(u.user_id)}">Make Staff</button>
-          </div>
-        </div>`).join('')
-    : '<p class="empty">No users available.</p>'
-
-  el.innerHTML = `
-    <div class="candidate-group-title">Current Staff</div>
-    ${staffHtml}
-    <div class="candidate-group-title" style="margin-top:12px">All Users</div>
-    ${candidateHtml}
-  `
-}
-
 // ── Create store ──────────────────────────────────────────────────────────────
+
+function cancelCreateStore() {
+  $('createStoreForm').classList.add('hidden')
+  $('addStoreBtn').classList.remove('hidden')
+  $('newStoreName').value = ''
+  setStatus('createStoreStatus', '')
+}
 
 async function handleCreateStore() {
   const name = $('newStoreName').value.trim()
   if (!name) return
   const btn = $('createStoreBtn')
   btn.disabled = true
-  $('createStoreStatus').textContent = ''
+  setStatus('createStoreStatus', '')
 
   const { data, error } = await createStore(name)
   btn.disabled = false
@@ -514,236 +625,105 @@ async function handleCreateStore() {
     return
   }
 
-  $('newStoreName').value = ''
-  setStatus('createStoreStatus', `"${data.name}" created.`)
-
-  stores = [...stores, { id: data.id, name: data.name, is_active: true }]
-  refreshAllStorePickers()
-
-  // Navigate directly to Manage Store and auto-select the new store.
-  // The new store already has a 'Main' outlet (created atomically by the RPC).
-  const manageNavBtn = $q('.action-btn[data-section="manageStore"]')
-  showSection('manageStore', manageNavBtn)
-  selectedManageStoreId   = data.id
-  selectedManageStoreName = data.name
-  const pickerBtn = $q(`#manageStoreList [data-store-id="${CSS.escape(data.id)}"]`)
-  if (pickerBtn) selectInPicker('manageStoreList', pickerBtn)
-  const reqId = ++manageStoreReqId
-  await loadAndRenderManageStore(data.id, data.name, reqId)
+  allStores = [...allStores, { id: data.id, name: data.name, is_active: true, logo_path: null, logo_updated_at: null }]
+  cancelCreateStore()
+  await showStoreDetail(data.id, data.name)
 }
 
-function refreshAllStorePickers() {
-  const activeStores = stores.filter(s => s.is_active !== false)
-  renderPicker('managerStoreList', activeStores, 'store')
-  renderPicker('staffStoreList', activeStores, 'store')
-  renderPicker('rulesStoreList', activeStores, 'store')
-  renderPicker('manageStoreList', activeStores, 'store')
-  renderAllStores()
+// ── Store header actions ──────────────────────────────────────────────────────
 
-  if (selectedManagerStoreId) {
-    const btn = $q(`#managerStoreList [data-store-id="${CSS.escape(selectedManagerStoreId)}"]`)
-    if (btn) btn.classList.add('selected')
-  }
-  if (selectedStaffStoreId) {
-    const btn = $q(`#staffStoreList [data-store-id="${CSS.escape(selectedStaffStoreId)}"]`)
-    if (btn) btn.classList.add('selected')
-  }
-  if (selectedRulesStoreId) {
-    const btn = $q(`#rulesStoreList [data-store-id="${CSS.escape(selectedRulesStoreId)}"]`)
-    if (btn) btn.classList.add('selected')
-  }
-  if (selectedManageStoreId) {
-    const btn = $q(`#manageStoreList [data-store-id="${CSS.escape(selectedManageStoreId)}"]`)
-    if (btn) btn.classList.add('selected')
-  }
-}
-
-// ── All stores: edit / remove ─────────────────────────────────────────────────
-
-function showInlineEdit(storeId, currentName) {
-  const row = $('allStoresList').querySelector(`[data-store-id="${CSS.escape(storeId)}"]`)
-  if (!row) return
-  row.outerHTML = `
-    <div class="inline-edit-row" data-store-id="${escapeHtml(storeId)}">
-      <input class="input input-grow" value="${escapeHtml(currentName)}" id="edit-input-${escapeHtml(storeId)}" />
-      <button class="btn-sm" data-save-store-id="${escapeHtml(storeId)}">Save</button>
-      <button class="btn-danger-sm" data-cancel-store-id="${escapeHtml(storeId)}">Cancel</button>
-    </div>
-  `
-  $(`edit-input-${storeId}`)?.focus()
-}
-
-async function handleSaveStoreName(saveBtn) {
-  const storeId = saveBtn.dataset.saveStoreId
-  const input = $(`edit-input-${storeId}`)
-  const name = input?.value.trim()
+async function handleSaveStoreName() {
+  const input = $('storeNameInput')
+  const name  = input?.value.trim()
   if (!name) return
 
-  saveBtn.disabled = true
-  const { data, error } = await updateStoreName(storeId, name)
-  saveBtn.disabled = false
+  const btn = $('saveNameBtn')
+  btn.disabled = true
+  setStatus('storeHeaderStatus', '')
+
+  const { data, error } = await updateStoreName(currentStoreId, name)
+  btn.disabled = false
 
   if (error || !data) {
-    setStatus('allStoresStatus', error?.message || 'Could not update name.', true)
+    setStatus('storeHeaderStatus', error?.message || 'Could not rename store.', true)
     return
   }
 
-  stores = stores.map(s => s.id === storeId ? { ...s, name: data.name } : s)
-  if (selectedManageStoreId === storeId) {
-    selectedManageStoreName = data.name
-    $('manageStoreName').textContent = data.name
-  }
-  refreshAllStorePickers()
-  setStatus('allStoresStatus', 'Store name updated.')
+  allStores = allStores.map(s => s.id === currentStoreId ? { ...s, name: data.name } : s)
+  currentStoreName = data.name
+
+  // Update header in-place without reloading all sections
+  const nameEl = $('storeDetailName')
+  if (nameEl) nameEl.textContent = data.name
+  $('storeNameDisplay').classList.remove('hidden')
+  $('storeNameEditRow').classList.add('hidden')
+  setStatus('storeHeaderStatus', '')
 }
 
-async function handleArchiveStore(archiveBtn) {
-  const storeId = archiveBtn.dataset.archiveStoreId
+async function handleArchiveRestore() {
+  const btn      = $('archiveRestoreBtn')
+  const store    = allStores.find(s => s.id === currentStoreId)
+  const archived = store?.is_active === false
 
-  if (!confirmStep(archiveBtn, 'Archive')) return
+  if (!archived && !confirmStep(btn, 'Archive')) return
 
-  archiveBtn.disabled = true
-  const { error } = await archiveStore(storeId)
-  if (error) {
-    archiveBtn.disabled = false
-    setStatus('allStoresStatus', error.message || 'Could not archive store.', true)
-    return
-  }
-
-  stores = stores.map(s =>
-    s.id === storeId ? { ...s, is_active: false, deleted_at: new Date().toISOString() } : s
-  )
-
-  // Remove archived store from section pickers — pickers only show active stores
-  if (selectedManagerStoreId === storeId) {
-    selectedManagerStoreId = null
-    $('managerCandidatesList').innerHTML = '<p class="empty">Select a store</p>'
-  }
-  if (selectedStaffStoreId === storeId) {
-    selectedStaffStoreId = null
-    $('staffCandidatesList').innerHTML = '<p class="empty">Select a store</p>'
-  }
-  if (selectedRulesStoreId === storeId) {
-    selectedRulesStoreId = null
-    $('rulesContent').classList.add('hidden')
-  }
-
-  renderAllStores()
-  refreshAllStorePickers()
-  setStatus('allStoresStatus', 'Store archived.')
-}
-
-async function handleRestoreStore(restoreBtn) {
-  const storeId = restoreBtn.dataset.restoreStoreId
-
-  restoreBtn.disabled = true
-  const { error } = await restoreStore(storeId)
-  if (error) {
-    restoreBtn.disabled = false
-    setStatus('allStoresStatus', error.message || 'Could not restore store.', true)
-    return
-  }
-
-  stores = stores.map(s =>
-    s.id === storeId ? { ...s, is_active: true, deleted_at: null } : s
-  )
-
-  renderAllStores()
-  refreshAllStorePickers()
-  setStatus('allStoresStatus', 'Store restored.')
-}
-
-async function handleRemoveCustomer(userId, btn) {
-  if (!confirmStep(btn, 'Remove')) return
   btn.disabled = true
-  const reqId = manageStoreReqId
-  const { error } = await removeCustomerFromStore(userId, selectedManageStoreId)
-  if (reqId !== manageStoreReqId) return
+  const { error } = archived
+    ? await restoreStore(currentStoreId)
+    : await archiveStore(currentStoreId)
+
   if (error) {
     btn.disabled = false
-    setStatus('manageMembersStatus', error.message || 'Could not remove customer.', true)
+    btn.dataset.confirm = ''
+    btn.textContent = archived ? 'Restore' : 'Archive'
+    setStatus('storeHeaderStatus', error.message || 'Could not complete action.', true)
     return
   }
-  await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
+
+  allStores = allStores.map(s =>
+    s.id === currentStoreId ? { ...s, is_active: archived, deleted_at: archived ? null : new Date().toISOString() } : s
+  )
+
+  // Re-render header with updated store state
+  const freshStore = allStores.find(s => s.id === currentStoreId)
+  renderStoreHeader(freshStore)
+}
+
+async function handleLogoUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file || !currentStoreId) return
+  e.target.value = ''
+
+  setStatus('logoUploadStatus', 'Uploading…')
+
+  try {
+    const blob = await processLogoFile(file)
+    const path = `stores/${currentStoreId}/logo.webp`
+
+    const { error: uploadError } = await uploadStoreLogo(currentStoreId, blob)
+    if (uploadError) { setStatus('logoUploadStatus', uploadError.message, true); return }
+
+    const { error: rpcError } = await setStoreLogo(currentStoreId, path)
+    if (rpcError) { setStatus('logoUploadStatus', rpcError.message, true); return }
+
+    const updatedAt = new Date().toISOString()
+    allStores = allStores.map(s =>
+      s.id === currentStoreId ? { ...s, logo_path: path, logo_updated_at: updatedAt } : s
+    )
+
+    const freshStore = allStores.find(s => s.id === currentStoreId)
+    renderStoreHeader(freshStore)
+  } catch {
+    setStatus('logoUploadStatus', 'Could not process image. Try a different file.', true)
+  }
 }
 
 // ── Reward rules ──────────────────────────────────────────────────────────────
 
-async function loadAndRenderRules(storeId, storeName) {
-  $('rulesStoreName').textContent = storeName
-  $('rulesContent').classList.remove('hidden')
-  $('rulesList').innerHTML = '<p class="empty">Loading...</p>'
-  $('bonusCapStatus').textContent = ''
-
-  const [{ data, error }, { data: capData }] = await Promise.all([
-    loadRewardRules(storeId),
-    getStoreBonusCap(storeId)
-  ])
-
-  if (error) {
-    $('rulesList').innerHTML = '<p class="empty">Could not load rules.</p>'
-    return
-  }
-
-  currentRules = data || []
-  renderRulesList()
-
-  const cap = capData ?? null
-  $('bonusCapInput').value = cap !== null ? cap : ''
-  $('bonusCapInput').placeholder = cap !== null ? String(cap) : 'No cap'
-}
-
-const KIND_LABEL = { award: 'Award', redeem: 'Redeem', bonus_reason: 'Bonus Reason', bonus_amount: 'Bonus Amt' }
-
-function renderRulesList() {
-  if (!currentRules.length) {
-    $('rulesList').innerHTML = '<p class="empty">No rules yet. Add one below.</p>'
-    return
-  }
-
-  $('rulesList').innerHTML = currentRules.map((r, i) => {
-    let ptsDisplay
-    if (r.kind === 'bonus_reason') ptsDisplay = '—'
-    else if (r.kind === 'redeem')  ptsDisplay = `−${r.points} pts`
-    else                           ptsDisplay = `+${r.points} pts`
-
-    return `
-    <div class="rule-row">
-      <div class="rule-order-btns">
-        <button class="rule-order-btn" data-move-rule-id="${r.id}" data-direction="up" ${i === 0 ? 'disabled' : ''}>↑</button>
-        <button class="rule-order-btn" data-move-rule-id="${r.id}" data-direction="down" ${i === currentRules.length - 1 ? 'disabled' : ''}>↓</button>
-      </div>
-      <span class="rule-badge" data-kind="${escapeHtml(r.kind)}">${KIND_LABEL[r.kind] || escapeHtml(r.kind)}</span>
-      <span class="rule-label-text">${escapeHtml(r.label || '—')}</span>
-      <span class="rule-pts-text">${ptsDisplay}</span>
-      <button class="rule-delete-btn" data-delete-rule-id="${r.id}">Remove</button>
-    </div>
-  `}).join('')
-}
-
-async function handleMoveRule(ruleId, direction) {
-  const idx = currentRules.findIndex(r => r.id === ruleId)
-  if (idx === -1) return
-  const swapIdx = direction === 'up' ? idx - 1 : idx + 1
-  if (swapIdx < 0 || swapIdx >= currentRules.length) return
-
-  ;[currentRules[idx], currentRules[swapIdx]] = [currentRules[swapIdx], currentRules[idx]]
-  currentRules.forEach((r, i) => { r.sort_order = i + 1 })
-  renderRulesList()
-
-  const [{ error: e1 }, { error: e2 }] = await Promise.all([
-    updateRewardRuleOrder(currentRules[idx].id, currentRules[idx].sort_order),
-    updateRewardRuleOrder(currentRules[swapIdx].id, currentRules[swapIdx].sort_order)
-  ])
-  if (e1 || e2) {
-    await loadAndRenderRules(selectedRulesStoreId, $('rulesStoreName').textContent)
-  }
-}
-
 async function handleAddRule() {
-  const label = $('ruleLabel').value.trim()
-  const points = parseInt($('rulePoints').value, 10)
-  const kind = $('ruleKind').value
+  const label  = $('ruleLabel')?.value.trim()
+  const points = parseInt($('rulePoints')?.value, 10)
+  const kind   = $('ruleKind')?.value
 
   if (kind === 'bonus_reason') {
     if (!label) { setStatus('addRuleStatus', 'Bonus reason needs a label.', true); return }
@@ -758,9 +738,13 @@ async function handleAddRule() {
 
   const btn = $('addRuleBtn')
   btn.disabled = true
-  $('addRuleStatus').textContent = ''
+  setStatus('addRuleStatus', '')
 
-  const { error } = await insertRewardRule(selectedRulesStoreId, { label, points: effectivePoints, kind }, currentRules.length + 1)
+  const { error } = await insertRewardRule(
+    currentStoreId,
+    { label, points: effectivePoints, kind },
+    rulesLocal.length + 1
+  )
 
   if (error) {
     btn.disabled = false
@@ -768,13 +752,161 @@ async function handleAddRule() {
     return
   }
 
-  $('ruleLabel').value = ''
-  $('rulePoints').value = ''
-  await loadAndRenderRules(selectedRulesStoreId, $('rulesStoreName').textContent)
-  btn.disabled = false
+  const { data, error: re } = await loadRewardRules(currentStoreId)
+  rulesLocal = data || []
+  renderRewards(rulesLocal, $('bonusCapInput')?.value || null, re)
 }
 
-// ── Store logo ────────────────────────────────────────────────────────────────
+async function handleMoveRule(ruleId, direction) {
+  const idx = rulesLocal.findIndex(r => r.id === ruleId)
+  if (idx === -1) return
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+  if (swapIdx < 0 || swapIdx >= rulesLocal.length) return
+
+  ;[rulesLocal[idx], rulesLocal[swapIdx]] = [rulesLocal[swapIdx], rulesLocal[idx]]
+  rulesLocal.forEach((r, i) => { r.sort_order = i + 1 })
+  renderRewards(rulesLocal, $('bonusCapInput')?.value || null, null)
+
+  const [{ error: e1 }, { error: e2 }] = await Promise.all([
+    updateRewardRuleOrder(rulesLocal[idx].id, rulesLocal[idx].sort_order),
+    updateRewardRuleOrder(rulesLocal[swapIdx].id, rulesLocal[swapIdx].sort_order),
+  ])
+
+  if (e1 || e2) {
+    const { data } = await loadRewardRules(currentStoreId)
+    rulesLocal = data || []
+    renderRewards(rulesLocal, $('bonusCapInput')?.value || null, e1 || e2)
+  }
+}
+
+async function handleSaveBonusCap() {
+  const val = parseInt($('bonusCapInput').value)
+  if (!val || val < 1) { setStatus('bonusCapStatus', 'Enter a value of 1 or more.', true); return }
+
+  const btn = $('saveBonusCapBtn')
+  btn.disabled = true
+  const { error } = await setBonusCap(currentStoreId, val)
+  btn.disabled = false
+
+  if (error) { setStatus('bonusCapStatus', error.message || 'Could not save cap.', true); return }
+  setStatus('bonusCapStatus', `Cap set to ${val} pts.`)
+}
+
+async function handleRemoveBonusCap() {
+  const btn = $('removeBonusCapBtn')
+  btn.disabled = true
+  const { error } = await setBonusCap(currentStoreId, null)
+  btn.disabled = false
+
+  if (error) { setStatus('bonusCapStatus', error.message || 'Could not remove cap.', true); return }
+  $('bonusCapInput').value = ''
+  setStatus('bonusCapStatus', 'Bonus cap removed.')
+}
+
+// ── Outlets ───────────────────────────────────────────────────────────────────
+
+function handleAddOutletRow() {
+  const list = $('outletsList')
+  if (!list) return
+  if (list.querySelector('[data-new-outlet-row]')) return  // prevent duplicates
+
+  const row = document.createElement('div')
+  row.className = 'inline-edit-row'
+  row.dataset.newOutletRow = 'true'
+  row.innerHTML = `
+    <input class="input input-grow" placeholder="Outlet name…" />
+    <button class="btn-sm" data-save-new-outlet>Save</button>
+    <button class="btn-danger-sm" data-cancel-new-outlet>Cancel</button>
+  `
+  list.appendChild(row)
+  row.querySelector('input')?.focus()
+}
+
+async function handleSaveNewOutlet() {
+  const list  = $('outletsList')
+  const row   = list?.querySelector('[data-new-outlet-row]')
+  const input = row?.querySelector('input')
+  const name  = input?.value.trim()
+  if (!name) { renderOutlets(outletsLocal, null); return }
+
+  const saveBtn = row?.querySelector('[data-save-new-outlet]')
+  if (saveBtn) saveBtn.disabled = true
+
+  const seq = loadSeq
+  const { error } = await createOutlet(currentStoreId, name)
+  if (seq !== loadSeq) return
+
+  if (error) {
+    if (saveBtn) saveBtn.disabled = false
+    setStatus('outletsStatus', error.message || 'Could not create outlet.', true)
+    return
+  }
+
+  const { data, error: oe } = await loadStoreOutlets(currentStoreId)
+  outletsLocal = data || []
+  renderOutlets(outletsLocal, oe)
+}
+
+function showOutletInlineEdit(outletId, currentName) {
+  const list = $('outletsList')
+  const row  = list?.querySelector(`[data-outlet-id="${CSS.escape(outletId)}"]`)
+  if (!row) return
+  row.outerHTML = `
+    <div class="inline-edit-row" data-outlet-id="${escapeHtml(outletId)}">
+      <input class="input input-grow"
+             value="${escapeHtml(currentName)}"
+             id="outlet-edit-${escapeHtml(outletId)}" />
+      <button class="btn-sm" data-save-outlet="${escapeHtml(outletId)}">Save</button>
+      <button class="btn-danger-sm" data-cancel-outlet="${escapeHtml(outletId)}">Cancel</button>
+    </div>`
+  $(`outlet-edit-${outletId}`)?.focus()
+}
+
+async function handleSaveOutletRename(outletId) {
+  const input = $(`outlet-edit-${outletId}`)
+  const name  = input?.value.trim()
+  if (!name) { renderOutlets(outletsLocal, null); return }
+
+  const saveBtn = $('outletsList')?.querySelector(`[data-save-outlet="${CSS.escape(outletId)}"]`)
+  if (saveBtn) saveBtn.disabled = true
+
+  const seq = loadSeq
+  const { error } = await updateOutlet(outletId, name)
+  if (seq !== loadSeq) return
+
+  if (error) {
+    if (saveBtn) saveBtn.disabled = false
+    setStatus('outletsStatus', error.message || 'Could not rename outlet.', true)
+    return
+  }
+
+  const { data, error: oe } = await loadStoreOutlets(currentStoreId)
+  outletsLocal = data || []
+  renderOutlets(outletsLocal, oe)
+}
+
+async function handleDeleteOutlet(outletId, btn) {
+  if (!confirmStep(btn, 'Remove')) return
+  btn.disabled = true
+
+  const seq = loadSeq
+  const { error } = await deleteOutlet(outletId)
+  if (seq !== loadSeq) return
+
+  if (error) {
+    btn.disabled = false
+    btn.dataset.confirm = ''
+    btn.textContent = 'Remove'
+    setStatus('outletsStatus', error.message || 'Could not delete outlet.', true)
+    return
+  }
+
+  const { data, error: oe } = await loadStoreOutlets(currentStoreId)
+  outletsLocal = data || []
+  renderOutlets(outletsLocal, oe)
+}
+
+// ── Logo processing ───────────────────────────────────────────────────────────
 
 async function processLogoFile(file) {
   const TARGET = 256
@@ -790,189 +922,27 @@ async function processLogoFile(file) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       blob => blob ? resolve(blob) : reject(new Error('Image conversion failed')),
-      'image/webp',
-      0.82
+      'image/webp', 0.82
     )
   })
 }
 
-function renderManageLogo(storeId) {
-  const el = $('manageStoreLogo')
-  if (!el) return
-  const store = stores.find(s => s.id === storeId)
-  const url   = store ? getLogoUrl(store.logo_path, store.logo_updated_at) : null
-  if (url) {
-    el.innerHTML = `<img src="${escapeHtml(url)}" width="48" height="48" alt="Store logo" onerror="this.style.display='none'">`
-  } else {
-    el.innerHTML = '<span class="logo-none">No logo</span>'
-  }
-}
-
-// ── Manage store ──────────────────────────────────────────────────────────────
-
-async function loadAndRenderManageStore(storeId, storeName, reqId) {
-  $('manageStoreName').textContent = storeName
-  $('manageStoreContent').classList.remove('hidden')
-  renderManageLogo(storeId)
-  $('manageManagersList').innerHTML = '<p class="empty">Loading...</p>'
-  $('manageStaffList').innerHTML    = '<p class="empty">Loading...</p>'
-  $('manageMembersList').innerHTML  = '<p class="empty">Loading...</p>'
-  $('manageOutletsList').innerHTML  = '<p class="empty">Loading...</p>'
-  setStatus('manageStoreStatus', '')
-  setStatus('manageMembersStatus', '')
-  setStatus('manageOutletsStatus', '')
-
-  const [
-    { data: managers, error: me },
-    { data: staff,    error: se },
-    { data: members,  error: mbe },
-    { data: outlets,  error: oe },
-  ] = await Promise.all([
-    loadStoreManagers(storeId),
-    loadStoreStaff(storeId),
-    loadStoreMembers(storeId),
-    loadStoreOutlets(storeId),
-  ])
-
-  if (reqId !== manageStoreReqId) return
-
-  if (me)  { $('manageManagersList').innerHTML = '<p class="empty">Could not load.</p>' }
-  else     { renderMemberList('manageManagersList', managers || [], 'data-remove-manager-id') }
-
-  if (se)  { $('manageStaffList').innerHTML = '<p class="empty">Could not load.</p>' }
-  else     { renderMemberList('manageStaffList', staff || [], 'data-remove-staff-id') }
-
-  if (mbe) { $('manageMembersList').innerHTML = '<p class="empty">Could not load.</p>' }
-  else     { renderMemberList('manageMembersList', members || [], 'data-remove-customer-id') }
-
-  if (oe)  { $('manageOutletsList').innerHTML = '<p class="empty">Could not load.</p>' }
-  else     { currentOutlets = outlets || []; renderOutletsList(currentOutlets) }
-}
-
-// ── Outlets ───────────────────────────────────────────────────────────────────
-
-// TODO: outlets are ordered alphabetically (ORDER BY name in load_store_outlets RPC).
-// If manual ordering is needed, add sort_order to store_outlets and update the RPC.
-
-function renderOutletsList(outlets) {
-  const el = $('manageOutletsList')
-  if (!el) return
-  if (!outlets.length) {
-    el.innerHTML = '<p class="empty">No outlets yet.</p>'
-    return
-  }
-  el.innerHTML = outlets.map(o => `
-    <div class="dir-row" data-outlet-id="${escapeHtml(o.id)}">
-      <div class="dir-info">
-        <span class="dir-name">${escapeHtml(o.name)}</span>
-      </div>
-      <div class="dir-actions">
-        <button class="btn-sm"
-          data-rename-outlet-id="${escapeHtml(o.id)}"
-          data-outlet-name="${escapeHtml(o.name)}">Rename</button>
-        <button class="btn-danger-sm"
-          data-remove-outlet-id="${escapeHtml(o.id)}">Remove</button>
-      </div>
-    </div>
-  `).join('')
-}
-
-function handleAddOutletRow() {
-  const el = $('manageOutletsList')
-  if (!el) return
-  if (el.querySelector('[data-new-outlet-row]')) return  // prevent duplicates
-  const row = document.createElement('div')
-  row.className = 'inline-edit-row'
-  row.dataset.newOutletRow = 'true'
-  row.innerHTML = `
-    <input class="input input-grow" placeholder="Outlet name…" />
-    <button class="btn-sm" data-save-new-outlet>Save</button>
-    <button class="btn-danger-sm" data-cancel-new-outlet>Cancel</button>
-  `
-  el.appendChild(row)
-  row.querySelector('input')?.focus()
-}
-
-async function handleSaveNewOutlet() {
-  const el = $('manageOutletsList')
-  const row = el?.querySelector('[data-new-outlet-row]')
-  const input = row?.querySelector('input')
-  const name = input?.value.trim()
-  if (!name) { renderOutletsList(currentOutlets); return }
-
-  const saveBtn = row?.querySelector('[data-save-new-outlet]')
-  if (saveBtn) saveBtn.disabled = true
-
-  const reqId = manageStoreReqId
-  const { error } = await createOutlet(selectedManageStoreId, name)
-  if (reqId !== manageStoreReqId) return
-  if (error) {
-    if (saveBtn) saveBtn.disabled = false
-    setStatus('manageOutletsStatus', error.message || 'Could not create outlet.', true)
-    return
-  }
-  await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
-}
-
-function showOutletInlineEdit(outletId, currentName) {
-  const el = $('manageOutletsList')
-  const row = el?.querySelector(`[data-outlet-id="${CSS.escape(outletId)}"]`)
-  if (!row) return
-  row.outerHTML = `
-    <div class="inline-edit-row" data-outlet-id="${escapeHtml(outletId)}">
-      <input class="input input-grow"
-        value="${escapeHtml(currentName)}"
-        id="outlet-edit-input-${escapeHtml(outletId)}" />
-      <button class="btn-sm" data-save-outlet-id="${escapeHtml(outletId)}">Save</button>
-      <button class="btn-danger-sm" data-cancel-outlet-id="${escapeHtml(outletId)}">Cancel</button>
-    </div>
-  `
-  $(`outlet-edit-input-${outletId}`)?.focus()
-}
-
-async function handleSaveOutletRename(outletId) {
-  const input = $(`outlet-edit-input-${outletId}`)
-  const name = input?.value.trim()
-  if (!name) { renderOutletsList(currentOutlets); return }
-
-  const saveBtn = $('manageOutletsList')
-    ?.querySelector(`[data-save-outlet-id="${CSS.escape(outletId)}"]`)
-  if (saveBtn) saveBtn.disabled = true
-
-  const reqId = manageStoreReqId
-  const { error } = await updateOutlet(outletId, name)
-  if (reqId !== manageStoreReqId) return
-  if (error) {
-    if (saveBtn) saveBtn.disabled = false
-    setStatus('manageOutletsStatus', error.message || 'Could not rename outlet.', true)
-    return
-  }
-  await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
-}
-
-async function handleDeleteOutlet(outletId, btn) {
-  if (!confirmStep(btn, 'Remove')) return
-  btn.disabled = true
-  const reqId = manageStoreReqId
-  const { error } = await deleteOutlet(outletId)
-  if (reqId !== manageStoreReqId) return
-  if (error) {
-    // Reset confirm state so the button returns to its normal label.
-    btn.disabled = false
-    btn.dataset.confirm = ''
-    btn.textContent = 'Remove'
-    // The server returns the reason directly (e.g. "last outlet" constraint).
-    setStatus('manageOutletsStatus', error.message || 'Could not delete outlet.', true)
-    return
-  }
-  await loadAndRenderManageStore(selectedManageStoreId, selectedManageStoreName, reqId)
-}
-
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
-// Double-confirm helper for destructive buttons.
-// First call shows "Sure?" and returns false. Second call returns true.
-// Works with delegated event listeners — no binding needed.
+function resolvePublicId(userId) {
+  const u = allUsers.find(u => u.user_id === userId)
+  return u?.public_id || userId
+}
+
+function setStatus(id, message, isError = false) {
+  const el = $(id)
+  if (!el) return
+  el.textContent = message
+  el.classList.toggle('error', isError)
+}
+
+// Double-confirm for destructive buttons.
+// First call: shows "Sure?" and returns false. Second call: returns true.
 function confirmStep(btn, originalLabel, ms = 3000) {
   if (btn.dataset.confirm !== 'true') {
     btn.dataset.confirm = 'true'
@@ -985,14 +955,8 @@ function confirmStep(btn, originalLabel, ms = 3000) {
     }, ms)
     return false
   }
+  btn.dataset.confirm = ''
   return true
-}
-
-function setStatus(id, message, isError = false) {
-  const el = $(id)
-  if (!el) return
-  el.textContent = message
-  el.classList.toggle('error', isError)
 }
 
 init()
