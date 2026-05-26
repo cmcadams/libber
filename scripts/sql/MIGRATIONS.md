@@ -212,5 +212,6 @@ Any row returned by the drift queries is a problem.
 | 16 | `unjoin_store` — soft-removes caller's membership (was missing from canonical rebuild) | 2026-05 |
 | 17 | Outlet integrity — `admin_create_store` atomically creates 'Main' outlet; `admin_delete_outlet` blocks last-outlet deletion with store-scoped advisory lock; backfill for existing stores | 2026-05 |
 | 18 | Profile backfill — creates `profiles` rows for any `auth.users` entry that lacks one (trigger gap fix) | 2026-05 |
+| 19 | Fix `create_profile` trigger — floor instead of ceil for public_id generation; uniqueness retry loop; EXCEPTION handler logs warnings instead of silent failure | 2026-05 |
 
 > Add a row here when merging a new migration. Date format: YYYY-MM.
