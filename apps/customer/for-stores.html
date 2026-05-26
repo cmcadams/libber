@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a18" />
+  <title>Libber — For Businesses</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f9f9f7;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.1);
+      --border-strong: rgba(0,0,0,0.2);
+      --text: #1a1a18;
+      --text-muted: #888780;
+      --text-hint: #b4b2a9;
+      --success-text: #3b6d11;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --font-ui: system-ui, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(99, 153, 34, 0.07) 0%, transparent 55%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 4rem;
+    }
+
+    @media (min-width: 640px) {
+      .page { max-width: 540px; padding: 2rem 1.5rem 4rem; }
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      color: var(--text-hint);
+      text-decoration: none;
+      margin-bottom: 2.5rem;
+      transition: color 0.15s;
+    }
+
+    .back-link:hover { color: var(--text-muted); }
+
+    .wordmark {
+      font-family: 'DM Mono', 'Courier New', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--success-text);
+      letter-spacing: 0.04em;
+      margin-bottom: 2rem;
+    }
+
+    .headline {
+      font-size: clamp(22px, 5vw, 28px);
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.25;
+      margin-bottom: 1.5rem;
+    }
+
+    .body-text {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: 1rem;
+    }
+
+    .divider {
+      border: none;
+      border-top: 0.5px solid var(--border);
+      margin: 2rem 0;
+    }
+
+    .cta-label {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-hint);
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    .whatsapp-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px;
+      background: #25d366;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      border: none;
+      border-radius: var(--radius-lg);
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      -webkit-tap-highlight-color: transparent;
+      margin-bottom: 1rem;
+    }
+
+    .whatsapp-btn:hover  { background: #1fba59; }
+    .whatsapp-btn:active { transform: scale(0.98); }
+
+    .email-link {
+      display: block;
+      text-align: center;
+      font-size: 15px;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 10px 0;
+      transition: color 0.15s;
+    }
+
+    .email-link:hover { color: var(--text); }
+
+    .footnote {
+      margin-top: 2rem;
+      font-size: 13px;
+      color: var(--text-hint);
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a href="/apps/customer/index.html" class="back-link">← Back</a>
+
+    <p class="wordmark">Libber</p>
+
+    <h1 class="headline">A loyalty card. On their phone. No app to download.</h1>
+
+    <p class="body-text">
+      Libber gives your customers a simple digital loyalty card —
+      no app to download, no account to create, no forms to fill in.
+    </p>
+
+    <p class="body-text">
+      You tell me your rules. I set everything up. Your staff use
+      one simple page on any phone or tablet. That's it.
+    </p>
+
+    <p class="body-text">
+      Works best for independent cafes, salons, gyms, boutiques —
+      anywhere regulars matter.
+    </p>
+
+    <hr class="divider">
+
+    <p class="cta-label">Get in touch</p>
+
+    <p class="body-text">
+      If you're curious, just get in touch.
+      No pitch, no pressure — just a conversation to see if it makes sense for you.
+    </p>
+
+    <!-- REPLACE: update href with your WhatsApp number in international format -->
+    <!-- e.g. https://wa.me/353871234567?text=Hi%2C%20I%20saw%20Libber%20and%20I%27m%20interested -->
+    <a href="https://wa.me/REPLACEME" class="whatsapp-btn" target="_blank" rel="noopener">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.862L.057 23.428a.5.5 0 0 0 .609.61l5.652-1.462A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.907 0-3.699-.493-5.254-1.355l-.376-.214-3.904 1.01 1.036-3.793-.234-.389A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+      </svg>
+      Message on WhatsApp
+    </a>
+
+    <!-- REPLACE: update with your actual email address -->
+    <a href="mailto:hello@libber.app" class="email-link">hello@libber.app</a>
+
+    <p class="footnote">(A real person will reply. Probably quite quickly.)</p>
+  </div>
+</body>
+</html>

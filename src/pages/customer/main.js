@@ -103,6 +103,27 @@ function initShowStaff() {
   })
 }
 
+// ── Info panel (about / for businesses) ──────────────────────────────────────
+
+function initInfoPanel() {
+  const btn      = $('info-btn')
+  const panel    = $('info-panel')
+  const backdrop = $('info-backdrop')
+  if (!btn || !panel || !backdrop) return
+
+  function open()  {
+    panel.classList.add('active')
+    backdrop.classList.add('active')
+  }
+  function close() {
+    panel.classList.remove('active')
+    backdrop.classList.remove('active')
+  }
+
+  btn.addEventListener('click', open)
+  backdrop.addEventListener('click', close)
+}
+
 // ── Dev section (testing only) ────────────────────────────────────────────────
 
 function initDevSection() {
@@ -219,5 +240,6 @@ if ('serviceWorker' in navigator) {
 }
 
 applyTheme()
+initInfoPanel()
 initDevSection()
 init()

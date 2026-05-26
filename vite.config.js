@@ -44,9 +44,10 @@ export default defineConfig(({ mode }) => {
       sourcemap: 'hidden',
       rollupOptions: {
         input: {
-          customer:         resolve(__dirname, 'apps/customer/index.html'),
-          customerSave:     resolve(__dirname, 'apps/customer/save.html'),
-          customerSettings: resolve(__dirname, 'apps/customer/settings.html'),
+          customer:          resolve(__dirname, 'apps/customer/index.html'),
+          customerSave:      resolve(__dirname, 'apps/customer/save.html'),
+          customerSettings:  resolve(__dirname, 'apps/customer/settings.html'),
+          customerForStores: resolve(__dirname, 'apps/customer/for-stores.html'),
           staffPage:    resolve(__dirname, 'apps/staff/page.html'),
           staffManager: resolve(__dirname, 'apps/staff/manager.html'),
         }
