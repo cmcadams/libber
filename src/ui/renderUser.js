@@ -1,7 +1,7 @@
 import { state } from '../state/state.js'
 import { escapeHtml } from '../lib/escape.js'
 import { getLogoUrl } from '../lib/logoUrl.js'
-import { loadPointsHistory } from '../services/members.js'
+import { loadStoreHistory } from '../services/members.js'
 import { loadRewardRules } from '../services/admin.js'
 import { toHumanId, formatRelativeDate } from '../lib/format.js'
 import { $ } from '../lib/dom.js'
@@ -157,7 +157,7 @@ async function toggleHistory(card) {
   // Always refresh in background
   const [{ data: rules, error: rulesErr }, { data: history, error: histErr }] = await Promise.all([
     loadRewardRules(storeId),
-    loadPointsHistory(state.user?.id, storeId)
+    loadStoreHistory(storeId)
   ])
 
   if (rulesErr || histErr) {

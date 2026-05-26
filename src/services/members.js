@@ -15,14 +15,12 @@ export async function loadUserProfile(userId) {
 }
 
 
-export async function loadPointsHistory(userId, storeId) {
-  return supabase
-    .from('points_ledger')
-    .select('points, reason, created_at')
-    .eq('user_id', userId)
-    .eq('store_id', storeId)
-    .order('created_at', { ascending: false })
-    .limit(10)
+export async function loadStoreHistory(storeId) {
+  const { data, error } = await supabase.rpc('load_points_history', {
+    p_store_id: storeId
+  })
+  if (error) captureError(error, { fn: 'loadStoreHistory' })
+  return { data: data ?? [], error }
 }
 
 export async function loadCustomerHome(includeStores = true) {

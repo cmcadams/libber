@@ -214,5 +214,6 @@ Any row returned by the drift queries is a problem.
 | 18 | Profile backfill — creates `profiles` rows for any `auth.users` entry that lacks one (trigger gap fix) | 2026-05 |
 | 19 | Fix `create_profile` trigger — floor instead of ceil for public_id generation; uniqueness retry loop; EXCEPTION handler logs warnings instead of silent failure | 2026-05 |
 | 20 | Grant SELECT on all tables to authenticated — stripped when 11-security-hardening.sql revoked PUBLIC (Supabase had granted via PUBLIC, not directly to authenticated) | 2026-05 |
+| 21 | Ledger hardening — RESTRICTIVE UPDATE/DELETE on points_ledger; `load_points_history` RPC replaces direct frontend table query; `award_points` + `adjust_points` add `assert_active_membership` | 2026-05 |
 
 > Add a row here when merging a new migration. Date format: YYYY-MM.

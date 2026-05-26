@@ -1,8 +1,8 @@
 # Libber — Frozen Baseline Specification
 
-**Baseline version**: 17  
-**Frozen**: 2026-05-25 (extended 2026-05-25)  
-**Status**: Files 00–15 immutable. File 16 added `unjoin_store`. File 17 enforces outlet integrity.
+**Baseline version**: 21  
+**Frozen**: 2026-05-26  
+**Status**: Files 00–15 immutable. Files 16–21 extend the baseline; all must run in order.
 
 This document is the authoritative record of the database state produced by
 running migrations 00–15 on an empty Supabase project. Any production database
@@ -34,6 +34,10 @@ Run in this exact order on a fresh database:
 | 15 | `15-final-grants.sql` | Final REVOKE anon/PUBLIC + re-grant authenticated on all functions |
 | 16 | `16-unjoin-store.sql` | unjoin_store customer RPC |
 | 17 | `17-outlet-integrity.sql` | admin_create_store auto-creates 'Main' outlet; admin_delete_outlet blocks last-outlet deletion; backfill for existing stores |
+| 18 | `18-backfill-profiles.sql` | Creates profiles rows for auth.users entries that lack one (trigger gap fix) |
+| 19 | `19-fix-create-profile.sql` | Fix create_profile trigger: floor not ceil, retry loop, EXCEPTION handler |
+| 20 | `20-grant-authenticated-select.sql` | Explicit SELECT grants to authenticated on 6 tables (stripped by migration 11) |
+| 21 | `21-ledger-hardening.sql` | RESTRICTIVE UPDATE/DELETE on points_ledger; load_points_history RPC; award_points + adjust_points add assert_active_membership |
 
 ---
 
@@ -251,6 +255,7 @@ All functions: `SECURITY DEFINER SET search_path = ''` · GRANT EXECUTE TO authe
 | unjoin_store | (uuid) | json |
 | load_customer_home | (boolean) | json |
 | mark_account_linked | () | void |
+| load_points_history | (uuid) | json — array of {points, reason, created_at} for auth.uid() at the given store |
 
 ### Staff / Manager
 | Function | Signature | Returns |
@@ -265,7 +270,7 @@ All functions: `SECURITY DEFINER SET search_path = ''` · GRANT EXECUTE TO authe
 | load_store_staff_profiles | (uuid) | json |
 | load_member_recent_transactions | (uuid, uuid) | json |
 
-**Total: 38 functions**
+**Total: 39 functions**
 
 ---
 
@@ -312,6 +317,8 @@ All functions: `SECURITY DEFINER SET search_path = ''` · GRANT EXECUTE TO authe
 |---|---|---|---|
 | ledger: select own | permissive | SELECT | `user_id = auth.uid()` |
 | ledger: no direct insert | RESTRICTIVE | INSERT | `false` |
+| ledger: no direct update | RESTRICTIVE | UPDATE | `false` |
+| ledger: no direct delete | RESTRICTIVE | DELETE | `false` |
 
 ### `public.store_reward_rules`
 | Policy | Type | Operation | Expression |
