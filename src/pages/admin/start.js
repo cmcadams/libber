@@ -423,7 +423,8 @@ function sectionWrap(title, content) {
 }
 
 function personRow(userId, actionEls) {
-  const pid = escapeHtml(resolvePublicId(userId))
+  const u   = allUsers.find(u => u.user_id === userId)
+  const pid = escapeHtml(u?.public_id || '—')
   const uid = escapeHtml(userId)
   return `
     <div class="dir-row">
@@ -929,10 +930,7 @@ async function processLogoFile(file) {
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
-function resolvePublicId(userId) {
-  const u = allUsers.find(u => u.user_id === userId)
-  return u?.public_id || userId
-}
+
 
 function setStatus(id, message, isError = false) {
   const el = $(id)
