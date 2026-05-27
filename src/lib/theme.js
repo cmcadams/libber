@@ -1,5 +1,5 @@
 const VALID   = new Set(['min', 'mid', 'max'])
-const KEY     = 'libber_theme'
+const KEY     = 'gotya_theme'
 const DEFAULT = 'mid'
 
 export function getTheme() {

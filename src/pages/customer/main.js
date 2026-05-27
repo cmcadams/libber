@@ -9,6 +9,7 @@ import * as savePrompt   from '../../ui/savePrompt.js'
 import { state } from '../../state/state.js'
 import { $ } from '../../lib/dom.js'
 import { applyTheme } from '../../lib/theme.js'
+import { migrateStorage } from '../../lib/migrate.js'
 
 // ── Balance helpers ───────────────────────────────────────────────────────────
 
@@ -24,8 +25,8 @@ function hasNewPoints(prevBal, freshData, hadCache) {
 
 // ── Cache helpers ─────────────────────────────────────────────────────────────
 
-const homeKey    = id => `libber_home_${id}`
-const STORES_KEY = 'libber_stores'
+const homeKey    = id => `gotya_home_${id}`
+const STORES_KEY = 'gotya_stores'
 const STORES_TTL = 24 * 60 * 60 * 1000
 
 function readJson(key)        { try { return JSON.parse(localStorage.getItem(key)) } catch { return null } }
@@ -239,6 +240,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/customer/sw.js').catch(() => {})
 }
 
+migrateStorage()
 applyTheme()
 initInfoPanel()
 initDevSection()

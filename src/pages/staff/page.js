@@ -14,6 +14,9 @@ import { renderCustomers, initCustomerHandlers } from '../../ui/renderCustomers.
 import { toHumanId } from '../../lib/format.js'
 import { $ } from '../../lib/dom.js'
 import { escapeHtml } from '../../lib/escape.js'
+import { migrateStorage } from '../../lib/migrate.js'
+
+migrateStorage()
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/apps/staff/sw.js').catch(() => {})
