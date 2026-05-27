@@ -1,5 +1,5 @@
 // Minimal service worker — enables PWA installability.
-const CACHE = 'libber-staff-v__SW_CACHE_VERSION__'
+const CACHE = 'gotya-staff-v__SW_CACHE_VERSION__'
 const SHELL = ['/apps/staff/page.html']
 
 self.addEventListener('install', e => {
