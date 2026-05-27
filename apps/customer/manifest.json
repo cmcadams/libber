@@ -8,6 +8,11 @@
   "theme_color": "#1a1a18",
   "icons": [
     {
+      "src": "/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    },
+    {
       "src": "/apps/customer/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml"
