@@ -1,7 +1,7 @@
 {
-  "name": "Libber Staff",
-  "short_name": "Libber Staff",
-  "description": "Staff tools for Libber",
+  "name": "Gotya Staff",
+  "short_name": "Gotya Staff",
+  "description": "Staff tools for Gotya",
   "start_url": "/apps/staff/",
   "display": "standalone",
   "background_color": "#f3f0ea",

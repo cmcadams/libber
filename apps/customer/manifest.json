@@ -1,6 +1,6 @@
 {
-  "name": "Libber",
-  "short_name": "Libber",
+  "name": "Gotya",
+  "short_name": "Gotya",
   "description": "Your loyalty points",
   "start_url": "/apps/customer/",
   "display": "standalone",

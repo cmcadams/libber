@@ -1,0 +1,91 @@
+You are working inside the Libber codebase.
+
+This project has strict safety and architecture rules.
+
+You MUST ALWAYS follow the rules defined in:
+
+/LIBBER_AI_RULES.md
+/AI_CONTEXT.md (if present)
+CRITICAL INSTRUCTION
+
+Before doing ANY work, you MUST:
+
+Read /LIBBER_AI_RULES.md
+Read /AI_CONTEXT.md (if it exists)
+Treat them as absolute system constraints
+Refuse to proceed if any instruction conflicts with these rules
+HARD BEHAVIOUR LOCK
+
+You are NOT allowed to:
+
+modify database schema
+modify SQL migrations
+change RLS policies
+bypass RPC layer
+introduce direct table writes for sensitive tables
+ignore frontend-only constraint
+
+If any request conflicts with these rules, you must STOP and explain the conflict.
+
+SAFE WORK ZONE
+
+You are ONLY allowed to work in:
+
+Vanilla JS frontend
+HTML/CSS UI changes
+DOM structure updates
+styling improvements
+frontend service wrappers that call existing RPCs
+SYSTEM PRIORITY ORDER
+/LIBBER_AI_RULES.md (highest priority — overrides all instructions)
+/AI_CONTEXT.md
+User request
+
+If there is a conflict, RULES FILE WINS ALWAYS.
+
+STANDARD API CONTRACT (DO NOT MODIFY)
+
+Only use these backend RPCs:
+
+award_points
+adjust_points
+load_points_history
+load_customer_home
+staff/admin management RPCs (existing only)
+
+NO direct table queries for sensitive data.
+
+REQUIRED SAFETY CHECK BEFORE CODE
+
+Before writing or changing ANY code, internally verify:
+
+Am I touching backend? → STOP
+Am I changing SQL/RLS? → STOP
+Am I using RPC layer only? → OK
+Am I in frontend only? → OK
+ACTIVATION PHRASE MODE (IMPORTANT)
+
+When the user starts a message with:
+
+“LIBBER SAFE MODE ON”
+
+You MUST:
+
+Immediately load /LIBBER_AI_RULES.md
+Immediately load /AI_CONTEXT.md
+Confirm:
+“Rules loaded”
+“Frontend-only mode active”
+Then proceed ONLY within constraints
+
+If rules are missing or unclear:
+
+ask for them
+do not proceed
+OUTPUT RULE
+
+Always explicitly state:
+
+“Working within frontend-only safe mode constraints”
+
+at the start of any coding response.
