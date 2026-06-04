@@ -142,11 +142,31 @@
 
     .error-msg[hidden] { display: none; }
 
+    /* ── Text link ────────────────────────────────────────────────────────────── */
+
+    .text-link {
+      display: inline-block;
+      font-size: 14px;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-bottom: 1.5rem;
+    }
+
+    .text-link:hover { color: var(--text); }
+
+    /* ── Section separator ────────────────────────────────────────────────────── */
+
+    .section-sep {
+      border: none;
+      border-top: 0.5px solid var(--border);
+      margin: 0.5rem 0 1.75rem;
+    }
+
   </style>
 </head>
 <body>
   <div class="page">
-    <a href="/apps/customer/" class="back-link">← My points</a>
+    <a href="/" onclick="event.preventDefault();history.back()" class="back-link">← My points</a>
     <h1 class="page-title">Account</h1>
 
     <div id="linked-section" hidden>
@@ -164,10 +184,24 @@
         Save your points
         <span class="save-link-arrow" aria-hidden="true">›</span>
       </a>
+      <a href="/apps/customer/save.html" class="text-link">On a new device? Sign in to restore your points →</a>
     </div>
 
-
     <p id="error-msg" class="error-msg" hidden>Could not load account details.</p>
+
+    <hr class="section-sep">
+
+    <p class="section-title">Suggestions &amp; bugs</p>
+    <a href="mailto:hello@libber.app?subject=Gotya%20feedback" class="save-link">
+      Send feedback
+      <span class="save-link-arrow" aria-hidden="true">›</span>
+    </a>
+
+    <p class="section-title">For businesses</p>
+    <a href="/apps/customer/for-stores.html" class="save-link">
+      Own a shop?
+      <span class="save-link-arrow" aria-hidden="true">›</span>
+    </a>
   </div>
   <script type="module" src="/src/pages/customer/settings.js"></script>
 </body>

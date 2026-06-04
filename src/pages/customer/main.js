@@ -1,7 +1,7 @@
 import QRCode from 'qrcode'
 import { captureError } from '../../lib/sentry.js'
 import { escapeHtml } from '../../lib/escape.js'
-import { initAuth, resetSession } from '../../services/auth.js'
+import { initAuth } from '../../services/auth.js'
 import { loadCustomerHome, subscribeToPointsInserts } from '../../services/members.js'
 import { renderUser, renderUserStores } from '../../ui/renderUser.js'
 import { renderStores } from '../../ui/renderStores.js'
@@ -104,55 +104,6 @@ function initShowStaff() {
   })
 }
 
-// ── Info panel (about / for businesses) ──────────────────────────────────────
-
-function initInfoPanel() {
-  const btn      = $('info-btn')
-  const panel    = $('info-panel')
-  const backdrop = $('info-backdrop')
-  if (!btn || !panel || !backdrop) return
-
-  function open()  {
-    panel.classList.add('active')
-    backdrop.classList.add('active')
-  }
-  function close() {
-    panel.classList.remove('active')
-    backdrop.classList.remove('active')
-  }
-
-  btn.addEventListener('click', open)
-  backdrop.addEventListener('click', close)
-}
-
-// ── Dev section (testing only) ────────────────────────────────────────────────
-
-function initDevSection() {
-  const tap     = $('dev-tap')
-  const section = $('dev-section')
-  const resetBtn = $('dev-reset')
-  if (!tap || !section || !resetBtn) return
-
-  let count = 0
-  let timer = null
-
-  tap.addEventListener('click', () => {
-    count++
-    clearTimeout(timer)
-    timer = setTimeout(() => { count = 0 }, 1500)
-    if (count >= 7) {
-      count = 0
-      clearTimeout(timer)
-      section.classList.add('visible')
-    }
-  })
-
-  resetBtn.addEventListener('click', async () => {
-    if (!confirm('Clear all local data and start as a new user?')) return
-    await resetSession()
-  })
-}
-
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 async function init() {
@@ -242,6 +193,4 @@ if ('serviceWorker' in navigator) {
 
 migrateStorage()
 applyTheme()
-initInfoPanel()
-initDevSection()
 init()
