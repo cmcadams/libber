@@ -5,6 +5,12 @@
 -- Never inline the admin check — always call is_admin().
 --
 -- Run order: AFTER 03-auth-helpers.sql.
+--
+-- Audit: no functional changes required. The kind CHECK reduction in
+-- 01-schema.sql (removing bonus_reason/bonus_amount) means
+-- admin_insert_reward_rule now rejects those values at the DB constraint
+-- level — no RPC code change is needed. The function still validates only
+-- that p_kind IS NOT NULL; the schema enforces the allowed set.
 
 -- ── admin_create_store ────────────────────────────────────────────────────────
 -- Atomically creates a store AND a default 'Main' outlet in one transaction.
@@ -89,6 +95,8 @@ END $$;
 
 -- ── admin_archive_store ───────────────────────────────────────────────────────
 -- Soft-delete: marks is_active = false, sets deleted_at. Reversible.
+-- Both columns are set atomically to satisfy the schema CHECK:
+--   CHECK (deleted_at IS NULL OR is_active = false)
 
 CREATE OR REPLACE FUNCTION public.admin_archive_store(p_store_id uuid)
 RETURNS json
@@ -112,6 +120,7 @@ END $$;
 
 -- ── admin_restore_store ───────────────────────────────────────────────────────
 -- Reverses an archive: marks is_active = true, clears deleted_at.
+-- Both columns are set atomically to satisfy the schema CHECK.
 
 CREATE OR REPLACE FUNCTION public.admin_restore_store(p_store_id uuid)
 RETURNS json
@@ -136,6 +145,8 @@ END $$;
 -- ── admin_set_bonus_cap ───────────────────────────────────────────────────────
 -- Sets or clears the per-store cap on free-form (no rule_id) bonus awards.
 -- Pass NULL for p_max_bonus_points to remove the cap entirely.
+-- The schema also enforces max_bonus_points >= 1 OR NULL; the RPC check here
+-- is belt-and-suspenders with a cleaner error message.
 
 CREATE OR REPLACE FUNCTION public.admin_set_bonus_cap(
   p_store_id         uuid,
@@ -188,6 +199,9 @@ BEGIN
 END $$;
 
 -- ── Reward rule RPCs ──────────────────────────────────────────────────────────
+-- kind is validated by the schema CHECK (kind IN ('award', 'redeem')).
+-- The RPC only validates that p_kind IS NOT NULL; invalid values are rejected
+-- by the constraint with a clear PostgreSQL error.
 
 CREATE OR REPLACE FUNCTION public.admin_insert_reward_rule(
   p_store_id   uuid,
@@ -246,6 +260,9 @@ BEGIN
 END $$;
 
 -- ── Outlet RPCs ───────────────────────────────────────────────────────────────
+-- UNIQUE (store_id, name) is enforced at the schema level (01-schema.sql).
+-- admin_create_outlet and admin_update_outlet will receive a constraint
+-- violation error if a duplicate name is attempted within the same store.
 
 CREATE OR REPLACE FUNCTION public.admin_create_outlet(p_store_id uuid, p_name text)
 RETURNS json
@@ -276,7 +293,7 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_outlet public.store_outlets;
+  v_outlet   public.store_outlets;
   v_store_id uuid;
 BEGIN
   IF NOT public.is_admin() THEN RAISE EXCEPTION 'not authorized'; END IF;
@@ -400,6 +417,50 @@ BEGIN
     FROM   public.store_memberships sm
     WHERE  sm.store_id  = p_store_id
       AND  sm.is_active = true;
+END $$;
+
+-- ── admin_store_audit_log ─────────────────────────────────────────────────────
+-- Returns the full points ledger for one store over the last p_days days,
+-- with both the member's and the staff member's public_id included.
+-- Admin-only for now. When the product is ready to expose this to managers,
+-- replace IF NOT public.is_admin() with PERFORM public.assert_store_manager().
+-- Re-run 08-grants.sql after that change — no other code needs updating.
+--
+-- Designed for weekly/monthly digest emails to store managers:
+--   call with p_days = 7 for last week, p_days = 30 for last month.
+-- Returns NULL created_by_public_id when the staff account has been deleted.
+
+CREATE OR REPLACE FUNCTION public.admin_store_audit_log(
+  p_store_id uuid,
+  p_days     integer DEFAULT 7
+)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF NOT public.is_admin() THEN RAISE EXCEPTION 'not authorized'; END IF;
+  IF p_store_id IS NULL    THEN RAISE EXCEPTION 'missing store_id'; END IF;
+  IF p_days IS NULL OR p_days < 1 THEN RAISE EXCEPTION 'p_days must be at least 1'; END IF;
+
+  RETURN (
+    SELECT COALESCE(json_agg(row_to_json(t) ORDER BY t.created_at DESC), '[]'::json)
+    FROM (
+      SELECT
+        pl.created_at,
+        pl.points,
+        pl.reason,
+        member.public_id  AS member_public_id,
+        staff.public_id   AS staff_public_id
+      FROM   public.points_ledger pl
+      LEFT JOIN public.profiles member ON member.user_id = pl.user_id
+      LEFT JOIN public.profiles staff  ON staff.user_id  = pl.created_by
+      WHERE  pl.store_id   = p_store_id
+        AND  pl.created_at >= now() - (p_days || ' days')::interval
+      ORDER  BY pl.created_at DESC
+    ) t
+  );
 END $$;
 
 -- ── admin_user_directory ──────────────────────────────────────────────────────

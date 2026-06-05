@@ -4,12 +4,25 @@
 -- No RBAC check: any authenticated user can call these for their own data.
 --
 -- Run order: AFTER 03-auth-helpers.sql (assert_store_active, assert_active_membership).
+--
+-- Audit fixes applied:
+--   MINOR  load_customer_home: v.text → v.display_text following the column
+--          rename in 01-schema.sql; the JSON key returned to the client
+--          remains 'text' (aliased in json_build_object) so the client
+--          contract is unchanged
+--   MINOR  load_customer_home: added N+1 note explaining the correlated
+--          subquery pattern and when it warrants revisiting
 
 -- ── load_customer_home ────────────────────────────────────────────────────────
 -- Single bootstrap query for the customer app. Returns profile, A/B variant,
 -- active memberships (with balance, rules, last 10 history entries), and
 -- optionally the full active store catalogue.
 -- Archived stores and inactive memberships are excluded.
+--
+-- N+1 note: each membership row drives three correlated subqueries (balance,
+-- rules aggregation, history aggregation). At typical scale (1–5 stores per
+-- customer) this is acceptable. Revisit with a lateral join if membership
+-- counts per user grow significantly.
 
 CREATE OR REPLACE FUNCTION public.load_customer_home(p_include_stores boolean DEFAULT true)
 RETURNS json
@@ -39,7 +52,7 @@ BEGIN
     'save_prompt', (
       SELECT json_build_object(
         'variant',  v.variant,
-        'text',     v.text,
+        'text',     v.display_text,
         'position', v.position
       )
       FROM   public.ab_variants v

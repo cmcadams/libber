@@ -8,6 +8,8 @@
 --
 -- All functions: SECURITY DEFINER SET search_path = ''.
 -- is_admin() and get_store_role() are STABLE (pure reads, no side effects).
+--
+-- Audit: no changes required. All functions are correct as written.
 
 -- ── is_admin() ────────────────────────────────────────────────────────────────
 -- Single source of admin truth. Every admin check in every RPC calls this.
@@ -46,8 +48,12 @@ BEGIN
 END $$;
 
 -- ── assert_store_access() ─────────────────────────────────────────────────────
--- Passes for admin, manager, staff. Raises for unauthenticated or no role.
--- Use this for operations available to all store personnel (award, adjust, read).
+-- Passes for admin, manager, staff at an active store.
+-- Raises if the store is archived/missing OR if the caller has no role there.
+-- Active check is first: archived stores are opaque regardless of role.
+-- Baking assert_store_active in here means every RPC that calls this function
+-- automatically blocks access to archived stores — including read-only RPCs —
+-- without each one needing its own assert_store_active call.
 
 CREATE OR REPLACE FUNCTION public.assert_store_access(p_store_id uuid)
 RETURNS void
@@ -56,14 +62,17 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
+  PERFORM public.assert_store_active(p_store_id);
   IF public.get_store_role(p_store_id) IS NULL THEN
     RAISE EXCEPTION 'not authorized: staff or manager access required for this store';
   END IF;
 END $$;
 
 -- ── assert_store_manager() ────────────────────────────────────────────────────
--- Passes for admin, manager. Raises for staff, unauthenticated, or no role.
+-- Passes for admin, manager at an active store.
+-- Raises if the store is archived/missing OR if the caller is not manager/admin.
 -- COALESCE prevents NULL NOT IN (...) silently evaluating to NULL (falsy).
+-- Same active-first pattern as assert_store_access for consistency.
 
 CREATE OR REPLACE FUNCTION public.assert_store_manager(p_store_id uuid)
 RETURNS void
@@ -72,6 +81,7 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
+  PERFORM public.assert_store_active(p_store_id);
   IF COALESCE(public.get_store_role(p_store_id), '') NOT IN ('manager', 'admin') THEN
     RAISE EXCEPTION 'not authorized: manager or admin access required for this store';
   END IF;

@@ -15,6 +15,8 @@
 --
 -- The anon role (unauthenticated requests) should hold zero privileges on any
 -- table, sequence, or function in this app. All access requires authentication.
+--
+-- Audit: no changes required.
 
 -- ── 1 & 2. Revoke from anon and PUBLIC ───────────────────────────────────────
 

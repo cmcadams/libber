@@ -10,14 +10,29 @@
 --
 -- All writes go through SECURITY DEFINER RPCs which bypass RLS entirely.
 -- The RESTRICTIVE write blocks here are a safety net, not the primary guard.
+--
+-- Audit fixes applied:
+--   IMPORTANT Added RESTRICTIVE UPDATE policies to store_managers and
+--             store_staff — the original set only blocked INSERT and DELETE;
+--             UPDATE was unguarded, inconsistent with every other table
 
 -- ── admins ────────────────────────────────────────────────────────────────────
 -- Readable and writable by service role only.
 -- Authenticated clients should never be able to inspect the admins table.
+-- RESTRICTIVE write guards are belt-and-suspenders: even if a future grant
+-- accidentally widens privileges, no authenticated user can ever write here.
 
-DROP POLICY IF EXISTS "admins: service role only" ON public.admins;
+DROP POLICY IF EXISTS "admins: service role only"  ON public.admins;
+DROP POLICY IF EXISTS "admins: no direct insert"   ON public.admins;
+DROP POLICY IF EXISTS "admins: no direct update"   ON public.admins;
+DROP POLICY IF EXISTS "admins: no direct delete"   ON public.admins;
+
 CREATE POLICY "admins: service role only" ON public.admins
   USING (auth.role() = 'service_role');
+
+CREATE POLICY "admins: no direct insert" ON public.admins AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "admins: no direct update" ON public.admins AS RESTRICTIVE FOR UPDATE USING (false);
+CREATE POLICY "admins: no direct delete" ON public.admins AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── profiles ──────────────────────────────────────────────────────────────────
 -- Each user reads only their own row.
@@ -53,7 +68,7 @@ CREATE POLICY "stores: no direct delete" ON public.stores AS RESTRICTIVE FOR DEL
 -- Users see only their own active memberships.
 -- All mutations (join, unjoin, soft-remove) go through SECURITY DEFINER RPCs.
 
-DROP POLICY IF EXISTS "memberships: select own"    ON public.store_memberships;
+DROP POLICY IF EXISTS "memberships: select own"       ON public.store_memberships;
 DROP POLICY IF EXISTS "memberships: no direct insert" ON public.store_memberships;
 DROP POLICY IF EXISTS "memberships: no direct update" ON public.store_memberships;
 DROP POLICY IF EXISTS "memberships: no direct delete" ON public.store_memberships;
@@ -67,26 +82,31 @@ CREATE POLICY "memberships: no direct delete" ON public.store_memberships AS RES
 
 -- ── store_managers ────────────────────────────────────────────────────────────
 -- Managers see their own rows; admins see all.
+-- Full INSERT + UPDATE + DELETE block — these rows are managed by admin RPCs only.
 
 DROP POLICY IF EXISTS "managers: allow select"     ON public.store_managers;
 DROP POLICY IF EXISTS "managers: no direct insert" ON public.store_managers;
+DROP POLICY IF EXISTS "managers: no direct update" ON public.store_managers;
 DROP POLICY IF EXISTS "managers: no direct delete" ON public.store_managers;
 
 CREATE POLICY "managers: allow select" ON public.store_managers
   FOR SELECT USING (user_id = auth.uid() OR public.is_admin());
 
 CREATE POLICY "managers: no direct insert" ON public.store_managers AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "managers: no direct update" ON public.store_managers AS RESTRICTIVE FOR UPDATE USING (false);
 CREATE POLICY "managers: no direct delete" ON public.store_managers AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── store_staff ───────────────────────────────────────────────────────────────
 -- Staff see their own rows; managers see staff at their stores; admins see all.
 -- Three separate permissive policies — any one passing is sufficient for SELECT.
+-- Full INSERT + UPDATE + DELETE block — these rows are managed by admin RPCs only.
 
 DROP POLICY IF EXISTS "staff: allow select"      ON public.store_staff;
 DROP POLICY IF EXISTS "staff: select self"       ON public.store_staff;
 DROP POLICY IF EXISTS "staff: select as manager" ON public.store_staff;
 DROP POLICY IF EXISTS "staff: select as admin"   ON public.store_staff;
 DROP POLICY IF EXISTS "staff: no direct insert"  ON public.store_staff;
+DROP POLICY IF EXISTS "staff: no direct update"  ON public.store_staff;
 DROP POLICY IF EXISTS "staff: no direct delete"  ON public.store_staff;
 
 CREATE POLICY "staff: select self" ON public.store_staff
@@ -104,6 +124,7 @@ CREATE POLICY "staff: select as admin" ON public.store_staff
   FOR SELECT USING (public.is_admin());
 
 CREATE POLICY "staff: no direct insert" ON public.store_staff AS RESTRICTIVE FOR INSERT WITH CHECK (false);
+CREATE POLICY "staff: no direct update" ON public.store_staff AS RESTRICTIVE FOR UPDATE USING (false);
 CREATE POLICY "staff: no direct delete" ON public.store_staff AS RESTRICTIVE FOR DELETE USING (false);
 
 -- ── store_reward_rules ────────────────────────────────────────────────────────
@@ -141,7 +162,7 @@ CREATE POLICY "outlets: no direct delete" ON public.store_outlets AS RESTRICTIVE
 -- Append-only: RESTRICTIVE UPDATE and DELETE make direct mutation structurally
 -- impossible even if table privileges are ever widened by mistake.
 
-DROP POLICY IF EXISTS "ledger: select own"      ON public.points_ledger;
+DROP POLICY IF EXISTS "ledger: select own"       ON public.points_ledger;
 DROP POLICY IF EXISTS "ledger: no direct insert" ON public.points_ledger;
 DROP POLICY IF EXISTS "ledger: no direct update" ON public.points_ledger;
 DROP POLICY IF EXISTS "ledger: no direct delete" ON public.points_ledger;
@@ -157,7 +178,7 @@ CREATE POLICY "ledger: no direct delete" ON public.points_ledger AS RESTRICTIVE 
 -- Readable by all authenticated users (variant data is non-sensitive).
 -- Written only via SQL editor / seed scripts, not via client RPCs.
 
-DROP POLICY IF EXISTS "ab_variants: allow select"    ON public.ab_variants;
+DROP POLICY IF EXISTS "ab_variants: allow select"     ON public.ab_variants;
 DROP POLICY IF EXISTS "ab_variants: no direct insert" ON public.ab_variants;
 DROP POLICY IF EXISTS "ab_variants: no direct update" ON public.ab_variants;
 DROP POLICY IF EXISTS "ab_variants: no direct delete" ON public.ab_variants;

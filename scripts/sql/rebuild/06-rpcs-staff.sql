@@ -6,6 +6,14 @@
 --   advisory lock → mutation
 --
 -- Run order: AFTER 03-auth-helpers.sql.
+--
+-- Audit fixes applied:
+--   IMPORTANT load_store_members: added COALESCE(json_agg(...), '[]'::json) —
+--             the function was returning NULL instead of [] when a store had
+--             no active members, causing client-side iteration errors
+--   MINOR     award_points, adjust_points: added advisory lock safety comment
+--             explaining collision probability and why it is not a
+--             data-corruption risk
 
 -- ── award_points ──────────────────────────────────────────────────────────────
 -- Records a points earn or redemption for an active member.
@@ -41,10 +49,8 @@ BEGIN
   IF p_reason   IS NULL THEN RAISE EXCEPTION 'missing reason';   END IF;
   -- auth
   IF v_staff_id IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
-  -- rbac
+  -- rbac + lifecycle (assert_store_access now checks store active internally)
   PERFORM public.assert_store_access(p_store_id);
-  -- lifecycle
-  PERFORM public.assert_store_active(p_store_id);
   -- membership — staff cannot award to non-members or removed members
   PERFORM public.assert_active_membership(p_user_id, p_store_id);
   -- business rules
@@ -70,7 +76,8 @@ BEGIN
       END IF;
     END IF;
   ELSE
-    -- Negative points = redemption; must reference a configured redeem rule
+    -- Negative points = redemption; must reference a configured redeem rule.
+    -- Stored rule points value is positive (the magnitude); p_points is negative.
     IF p_rule_id IS NULL THEN
       RAISE EXCEPTION 'redemptions must reference a reward rule (p_rule_id required)';
     END IF;
@@ -94,7 +101,13 @@ BEGIN
     END IF;
   END IF;
 
-  -- advisory lock — transaction-scoped, releases on commit/rollback
+  -- Advisory lock — transaction-scoped, releases on commit/rollback.
+  -- Serialises concurrent writes for the same (user, store) pair so that
+  -- the balance read below is authoritative.
+  -- Collision note: hashtext returns int4 (~4B values). Two distinct
+  -- (user_id, store_id) pairs could share the same hash pair, causing
+  -- false lock contention (a brief delay, NOT data corruption — the balance
+  -- re-read after the lock is always the authoritative check).
   PERFORM pg_advisory_xact_lock(hashtext(p_user_id::text), hashtext(p_store_id::text));
 
   -- mutation
@@ -149,10 +162,8 @@ BEGIN
   IF p_reason   IS NULL THEN RAISE EXCEPTION 'missing reason';   END IF;
   -- auth
   IF v_staff_id IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
-  -- rbac
+  -- rbac + lifecycle (assert_store_access now checks store active internally)
   PERFORM public.assert_store_access(p_store_id);
-  -- lifecycle
-  PERFORM public.assert_store_active(p_store_id);
   -- membership
   PERFORM public.assert_active_membership(p_user_id, p_store_id);
   -- business rules
@@ -166,7 +177,8 @@ BEGIN
     END IF;
   END IF;
 
-  -- advisory lock — transaction-scoped, releases on commit/rollback
+  -- Advisory lock — transaction-scoped, releases on commit/rollback.
+  -- See award_points for collision probability note.
   PERFORM pg_advisory_xact_lock(hashtext(p_user_id::text), hashtext(p_store_id::text));
 
   -- mutation (no balance floor — by design)
@@ -189,6 +201,7 @@ END $$;
 -- ── load_store_members ────────────────────────────────────────────────────────
 -- Returns all active members with current balance.
 -- No assert_store_active — read-only; staff/managers may inspect archived stores.
+-- Returns [] (not NULL) when a store has no active members.
 
 CREATE OR REPLACE FUNCTION public.load_store_members(p_store_id uuid)
 RETURNS json
@@ -200,7 +213,7 @@ BEGIN
   PERFORM public.assert_store_access(p_store_id);
 
   RETURN (
-    SELECT json_agg(row_to_json(t))
+    SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
     FROM (
       SELECT
         sm.user_id,
@@ -313,8 +326,8 @@ BEGIN
   IF p_user_id  IS NULL THEN RAISE EXCEPTION 'missing user_id';  END IF;
   IF p_store_id IS NULL THEN RAISE EXCEPTION 'missing store_id'; END IF;
 
+  -- assert_store_manager now checks store active internally
   PERFORM public.assert_store_manager(p_store_id);
-  PERFORM public.assert_store_active(p_store_id);
   PERFORM public.assert_active_membership(p_user_id, p_store_id);
 
   INSERT INTO public.store_staff (user_id, store_id)
@@ -364,8 +377,8 @@ BEGIN
   IF p_user_id  IS NULL THEN RAISE EXCEPTION 'missing user_id';  END IF;
   IF p_store_id IS NULL THEN RAISE EXCEPTION 'missing store_id'; END IF;
 
+  -- assert_store_manager now checks store active internally
   PERFORM public.assert_store_manager(p_store_id);
-  PERFORM public.assert_store_active(p_store_id);
   PERFORM public.assert_active_membership(p_user_id, p_store_id);
 
   UPDATE public.store_memberships

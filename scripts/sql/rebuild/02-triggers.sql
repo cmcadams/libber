@@ -7,15 +7,19 @@
 -- Trigger functions are SECURITY DEFINER and not called directly by clients —
 -- no GRANT EXECUTE needed.
 --
--- Bugs fixed vs the original (07-schema-ab-testing.sql):
+-- Audit: no changes required. The trigger selects only the `variant` column
+-- from ab_variants (not the renamed display_text column). No other audit
+-- finding applies to this file.
+--
+-- Bugs fixed vs the original migration chain:
 --   1. ceil(random() * N) can produce 0 when random() = 0.0 exactly; substring
 --      at position 0 returns ''. Fixed: floor(random() * N) + 1 always → 1..N.
---   2. No retry loop for uniqueness collisions. A collision caused a constraint
---      violation that the trigger swallowed silently, leaving the user profileless.
---      Fixed: LOOP … EXIT WHEN NOT EXISTS, identical to the backfill script.
---   3. No EXCEPTION handler. Trigger failures were invisible.
---      Fixed: EXCEPTION WHEN OTHERS logs a WARNING and returns NEW so user
---      creation in auth.users is never blocked.
+--   2. No retry loop for public_id uniqueness collisions. A collision caused a
+--      constraint violation that the trigger swallowed, leaving the user with no
+--      profile row. Fixed: LOOP … EXIT WHEN NOT EXISTS.
+--   3. No EXCEPTION handler. Trigger failures were invisible and silently
+--      prevented downstream operations. Fixed: EXCEPTION WHEN OTHERS logs a
+--      WARNING and returns NEW so auth.users INSERT is never blocked.
 
 CREATE OR REPLACE FUNCTION public.create_profile()
 RETURNS trigger
@@ -28,7 +32,9 @@ DECLARE
   v_pid     text;
 BEGIN
   -- Assign A/B variant via weighted reservoir sampling (Efraimidis-Spirakis).
-  -- Gracefully handles zero variants (v_variant stays NULL).
+  -- Selects only the variant key ('A', 'B', …); display text is looked up at
+  -- query time by load_customer_home. Gracefully handles zero variants
+  -- (v_variant stays NULL, profile is created without a variant assignment).
   SELECT variant INTO v_variant
   FROM   public.ab_variants
   WHERE  test_name = 'save_prompt'
